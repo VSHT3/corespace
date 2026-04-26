@@ -144,6 +144,16 @@ body {
 @utility tag-mint   { background: var(--mint); }
 @utility tag-sky    { background: var(--sky); }
 
+/* Standard page wrapper — use on <main> for all inner pages */
+@utility page-main {
+  flex: 1 1 auto;
+  max-width: 860px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 4rem 1.5rem;
+  box-sizing: border-box;
+}
+
 @utility divider {
   border: none;
   border-bottom: var(--border-w) solid var(--border);

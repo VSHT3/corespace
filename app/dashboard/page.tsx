@@ -5,27 +5,30 @@ import { redirect } from "next/navigation";
 const modules = [
   {
     id: "tok",
-    label: "TOK Exhibition",
+    label: "Theory of Knowledge",
     description:
-      "Build and refine your Theory of Knowledge exhibition. Choose a prompt, select objects, and develop your justifications.",
+      "Pick a prompt, build your exhibition, and sharpen every object justification.",
     href: "/dashboard/tok",
     available: true,
+    accent: "#fde68a",
   },
   {
     id: "cas",
-    label: "CAS Reflections",
+    label: "Creativity Activity Service",
     description:
-      "Track Creativity, Activity, and Service hours. Write structured reflections against learning outcomes.",
+      "Log hours, write structured reflections, and hit every learning outcome.",
     href: "#",
     available: false,
+    accent: "#bbf7d0",
   },
   {
     id: "ee",
     label: "Extended Essay",
     description:
-      "Outline and draft your Extended Essay with AI-guided feedback at every stage.",
+      "Outline, draft, and iterate with AI feedback at every stage.",
     href: "#",
     available: false,
+    accent: "#fbcfe8",
   },
 ];
 
@@ -38,7 +41,7 @@ export default async function DashboardPage() {
   if (!user) redirect("/login");
 
   return (
-    <main className="flex flex-col flex-1 px-6 py-16 max-w-4xl mx-auto w-full">
+    <main className="page-main">
       <div className="mb-10 space-y-1">
         <p className="eyebrow">Signed in as {user.email}</p>
         <h1 className="heading" style={{ fontSize: "36px" }}>Dashboard</h1>
@@ -47,21 +50,30 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {modules.map((mod) =>
           mod.available ? (
-            <Link key={mod.id} href={mod.href} className="card-link space-y-3">
-              <span className="heading" style={{ fontSize: "15px", display: "block" }}>{mod.label}</span>
-              <p style={{ color: "#555", fontSize: "13px", lineHeight: "1.6" }}>{mod.description}</p>
+            <Link
+              key={mod.id}
+              href={mod.href}
+              className="card-bump"
+              style={{ padding: 0, overflow: "hidden", display: "block", textDecoration: "none", color: "inherit", position: "relative", minHeight: "180px" }}
+            >
+              <div style={{ height: "6px", background: mod.accent }} />
+              <div style={{ padding: "1.25rem 1.5rem 1.5rem" }} className="space-y-3">
+                <span className="heading" style={{ fontSize: "14px", display: "block" }}>{mod.label}</span>
+                <p style={{ color: "#555", fontSize: "13px", lineHeight: "1.6" }}>{mod.description}</p>
+              </div>
             </Link>
           ) : (
             <div
               key={mod.id}
-              className="card space-y-3"
-              style={{ opacity: 0.5, cursor: "not-allowed" }}
+              className="card-bump"
+              style={{ padding: 0, overflow: "hidden", position: "relative", minHeight: "180px", opacity: 0.6, cursor: "not-allowed" }}
             >
-              <div className="flex items-center gap-2">
-                <span className="heading" style={{ fontSize: "15px" }}>{mod.label}</span>
-                <span className="tag tag-sky">Soon</span>
+              <div style={{ height: "6px", background: mod.accent }} />
+              <div style={{ padding: "1.25rem 1.5rem 2.75rem" }} className="space-y-3">
+                <span className="heading" style={{ fontSize: "14px", display: "block" }}>{mod.label}</span>
+                <p style={{ color: "#555", fontSize: "13px", lineHeight: "1.6" }}>{mod.description}</p>
               </div>
-              <p style={{ color: "#555", fontSize: "13px", lineHeight: "1.6" }}>{mod.description}</p>
+              <span className="tag tag-sky" style={{ position: "absolute", bottom: "12px", right: "12px" }}>Soon</span>
             </div>
           )
         )}

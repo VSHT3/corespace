@@ -54,16 +54,34 @@ const plans = [
 
 export default function PricingPage() {
   return (
-    <main style={{ maxWidth: "860px", margin: "0 auto", padding: "4rem 1.5rem" }}>
-      <div className="space-y-2" style={{ marginBottom: "3rem", textAlign: "center" }}>
+    <main className="page-main">
+      <div
+        className="space-y-2"
+        style={{ marginBottom: "3rem", textAlign: "center" }}
+      >
         <p className="eyebrow">Pricing</p>
-        <h1 className="heading" style={{ fontSize: "40px" }}>Simple, honest pricing</h1>
-        <p style={{ color: "#555", maxWidth: "400px", margin: "0 auto", lineHeight: "1.7" }}>
-          No hidden fees. Cancel anytime. Payments via Stripe.
+        <h1 className="heading" style={{ fontSize: "40px" }}>
+          Simple, honest pricing
+        </h1>
+        <p
+          style={{
+            color: "#555",
+            maxWidth: "400px",
+            margin: "0 auto",
+            lineHeight: "1.7",
+          }}
+        >
+          No hidden fees. Cancel anytime.
         </p>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1rem" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: "1rem",
+        }}
+      >
         {plans.map((p) => (
           <div
             key={p.name}
@@ -77,20 +95,60 @@ export default function PricingPage() {
           >
             <div style={{ height: "5px", background: p.accent }} />
             <div style={{ padding: "1.5rem" }}>
-              <p className="eyebrow" style={{ marginBottom: "0.25rem" }}>{p.name}</p>
-              <div style={{ display: "flex", alignItems: "baseline", gap: "0.4rem", marginBottom: "0.5rem" }}>
-                <span className="heading" style={{ fontSize: "32px" }}>{p.price}</span>
-                <span style={{ color: "#888", fontSize: "12px" }}>{p.period}</span>
+              <p className="eyebrow" style={{ marginBottom: "0.25rem" }}>
+                {p.name}
+              </p>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "baseline",
+                  gap: "0.4rem",
+                  marginBottom: "0.5rem",
+                }}
+              >
+                <span className="heading" style={{ fontSize: "32px" }}>
+                  {p.price}
+                </span>
+                <span style={{ color: "#888", fontSize: "12px" }}>
+                  {p.period}
+                </span>
               </div>
-              <p style={{ color: "#555", fontSize: "13px", marginBottom: "1.25rem", lineHeight: "1.6" }}>{p.description}</p>
+              <p
+                style={{
+                  color: "#555",
+                  fontSize: "13px",
+                  marginBottom: "1.25rem",
+                  lineHeight: "1.6",
+                }}
+              >
+                {p.description}
+              </p>
               <div className="divider" style={{ marginBottom: "1rem" }} />
-              <ul style={{ margin: "0 0 1.5rem", paddingLeft: "1rem", color: "#444", fontSize: "13px", lineHeight: "2" }}>
-                {p.features.map((f) => <li key={f}>{f}</li>)}
+              <ul
+                style={{
+                  margin: "0 0 1.5rem",
+                  paddingLeft: "1rem",
+                  color: "#444",
+                  fontSize: "13px",
+                  lineHeight: "2",
+                }}
+              >
+                {p.features.map((f) => (
+                  <li key={f}>{f}</li>
+                ))}
               </ul>
               <Link
                 href={p.ctaHref}
-                className={p.primary ? "btn-primary btn-primary-hover" : "btn-ghost btn-ghost-hover"}
-                style={{ width: "100%", padding: "9px 16px", textAlign: "center" }}
+                className={
+                  p.primary
+                    ? "btn-primary btn-primary-hover"
+                    : "btn-ghost btn-ghost-hover"
+                }
+                style={{
+                  width: "100%",
+                  padding: "9px 16px",
+                  textAlign: "center",
+                }}
               >
                 {p.cta}
               </Link>
@@ -99,8 +157,16 @@ export default function PricingPage() {
         ))}
       </div>
 
-      <p style={{ textAlign: "center", color: "#888", fontSize: "12px", marginTop: "2.5rem" }}>
-        Student plan renews monthly. Cancel from your profile anytime. Stripe handles all payments securely.
+      <p
+        style={{
+          textAlign: "center",
+          color: "#888",
+          fontSize: "12px",
+          marginTop: "2.5rem",
+        }}
+      >
+        Student plan renews monthly. Cancel from your profile anytime. Stripe
+        handles all payments securely.
       </p>
     </main>
   );

@@ -19,26 +19,25 @@ export default async function Navbar() {
     >
       <div
         style={{
-          maxWidth: "960px",
-          margin: "0 auto",
+          width: "100%",
           padding: "0 1.5rem",
           height: "52px",
-          display: "flex",
+          display: "grid",
+          gridTemplateColumns: "1fr auto 1fr",
           alignItems: "center",
-          justifyContent: "space-between",
-          gap: "1.5rem",
+          gap: "1rem",
         }}
       >
-        {/* Logo */}
+        {/* Logo — far left */}
         <Link
           href="/"
           className="heading"
-          style={{ fontSize: "14px", textDecoration: "none", color: "var(--fg)", letterSpacing: "-0.02em" }}
+          style={{ fontSize: "14px", textDecoration: "none", color: "var(--fg)", letterSpacing: "-0.02em", justifySelf: "start" }}
         >
-          IB Core OS
+          <mark className="highlight-yellow">IB Core</mark>{" "}OS
         </Link>
 
-        {/* Centre nav */}
+        {/* Centre nav — truly centered */}
         <nav style={{ display: "flex", gap: "1.5rem", alignItems: "center" }}>
           <Link href="/features" className="back-link" style={{ fontSize: "12px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>
             Features
@@ -48,14 +47,18 @@ export default async function Navbar() {
           </Link>
         </nav>
 
-        {/* Right */}
-        <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+        {/* Right — far right */}
+        <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", justifySelf: "end" }}>
           {user ? (
             <>
               <Link href="/profile" className="back-link" style={{ fontSize: "12px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>
                 Profile
               </Link>
-              <Link href="/dashboard" className="btn-primary btn-primary-hover" style={{ padding: "6px 14px" }}>
+              <Link
+                href="/dashboard"
+                className="btn-primary btn-primary-hover"
+                style={{ padding: "6px 14px", background: "var(--sky)", color: "var(--fg)", borderColor: "var(--fg)" }}
+              >
                 Dashboard
               </Link>
             </>

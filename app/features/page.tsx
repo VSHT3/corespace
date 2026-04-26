@@ -44,7 +44,7 @@ const features = [
 
 export default function FeaturesPage() {
   return (
-    <main style={{ maxWidth: "800px", margin: "0 auto", padding: "4rem 1.5rem" }}>
+    <main className="page-main">
       <div className="space-y-2" style={{ marginBottom: "3rem" }}>
         <p className="eyebrow">What's inside</p>
         <h1 className="heading" style={{ fontSize: "40px" }}>Features</h1>

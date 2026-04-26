@@ -18,7 +18,7 @@ export default async function ProfilePage() {
   });
 
   return (
-    <main style={{ maxWidth: "640px", margin: "0 auto", padding: "4rem 1.5rem" }}>
+    <main className="page-main">
       <div style={{ marginBottom: "2.5rem" }}>
         <p className="eyebrow">Account</p>
         <h1 className="heading" style={{ fontSize: "36px" }}>Profile</h1>

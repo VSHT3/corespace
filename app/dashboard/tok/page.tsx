@@ -11,7 +11,7 @@ export default async function TOKPage() {
   if (!user) redirect("/login");
 
   return (
-    <main className="flex flex-col flex-1 px-6 py-16 max-w-4xl mx-auto w-full">
+    <main className="page-main">
       <div className="mb-6">
         <Link href="/dashboard" className="back-link">← Dashboard</Link>
       </div>
