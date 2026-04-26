@@ -25,7 +25,7 @@ node node_modules/typescript/bin/tsc --noEmit
 
 ## Architecture
 
-Corespace — SaaS for IB Diploma students. TOK Exhibition helper is live; CAS and EE are stubs.
+Corespace — SaaS for IB Diploma students. TOK Exhibition helper live; CAS and EE stubs.
 
 ### Pages
 
@@ -68,33 +68,33 @@ Justification saves go through `app/api/tok/justification/route.ts` (POST) — v
 
 ### Design system
 
-Brutalist Pastel theme. CSS vars + reusable `@utility` classes defined in `app/globals.css`. No component libraries, Tailwind only. No shadows, gradients, blur, or pill shapes.
+Brutalist Pastel theme. CSS vars + reusable `@utility` classes in `app/globals.css`. No component libraries, Tailwind only. No shadows, gradients, blur, or pill shapes.
 
 **Tokens:** `--bg` `--fg` `--border` `--surface` `--yellow` `--pink` `--mint` `--sky` `--radius` (4px) `--border-w` (2px)
 
-**Utility classes** (use these, don't reinvent):
+**Utility classes** (use, don't reinvent):
 - `.card` — white surface, 2px border, 4px radius, 1.5rem padding
 - `.card-bump` — card + diagonal hover shadow (`translate(-4px,-4px)` + `box-shadow: 8px 8px 0 0 var(--fg)`)
-- `.card-link` — card with hover bg tint, for non-bump clickable cards
+- `.card-link` — card with hover bg tint, non-bump clickable cards
 - `.btn-primary` + `.btn-primary-hover` — black bg, cream text, uppercase 12px
 - `.btn-ghost` + `.btn-ghost-hover` — transparent bg, black border
 - `.btn-sky` — sky-blue bg, darkens on hover (use for Dashboard nav button)
-- `.field-input` — full-width input with 2px border, focus outline
+- `.field-input` — full-width input, 2px border, focus outline
 - `.tag` — base badge (add `.tag-yellow` / `.tag-pink` / `.tag-mint` / `.tag-sky` for fill)
 - `.eyebrow` — 11px uppercase label, `#888`, letter-spacing 0.08em
 - `.heading` — font-weight 700, letter-spacing -0.03em, line-height 1.1
 - `.divider` — 2px solid bottom border
 - `.page-main` — flex:1, max-width 860px, auto margins, 4rem padding, fadeUp animation. Use on `<main>` for all inner pages.
-- `.highlight-yellow` / `.highlight-mint` / `.highlight-pink` — SVG brush-stroke highlight (svgbox.net). `display: inline-block`. For navbar logo use `marginRight: "-0.28em"` to close gap with following text.
+- `.highlight-yellow` / `.highlight-mint` / `.highlight-pink` — SVG brush-stroke highlight (svgbox.net). `display: inline-block`. Navbar logo: `marginRight: "-0.28em"` to close gap with following text.
 - `.back-link` — muted grey link, darkens on hover
 
-**Page enter animation:** `fadeUp` keyframe (opacity + translateY 6px, 280ms) applied via `page-main`. Home page applies it via inline style.
+**Page enter animation:** `fadeUp` keyframe (opacity + translateY 6px, 280ms) via `page-main`. Home page applies via inline style.
 
-**Font:** system-ui stack (`--font-sans`). No Google Fonts loaded.
+**Font:** system-ui stack (`--font-sans`). No Google Fonts.
 
 ### Database
 
-Cloud Supabase (project `pjjupictmrlpxbvhcgxf`). Migration SQL in `supabase/migrations/` — run manually in Supabase SQL Editor, never via CLI. RLS enabled on all tables; policies user-scoped via `auth.uid()`.
+Cloud Supabase (project `pjjupictmrlpxbvhcgxf`). Migration SQL in `supabase/migrations/` — run manually in Supabase SQL Editor, never via CLI. RLS enabled all tables; policies user-scoped via `auth.uid()`.
 
 Tables:
 - `tok_exhibitions` — `id`, `user_id`, `prompt_id` (1–35), `title`, `created_at`
@@ -115,7 +115,7 @@ Migrations to run:
 
 ### Payments — Paddle (Merchant of Record)
 
-Paddle handles VAT, invoicing, and tax compliance. We are not the merchant of record — Paddle is. No Stripe.
+Paddle handles VAT, invoicing, tax compliance. Paddle is merchant of record, not us. No Stripe.
 
 **Env vars:**
 - `PADDLE_API_KEY` — server-only
