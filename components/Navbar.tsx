@@ -56,8 +56,8 @@ export default async function Navbar() {
               </Link>
               <Link
                 href="/dashboard"
-                className="btn-primary btn-primary-hover"
-                style={{ padding: "6px 14px", background: "var(--sky)", color: "var(--fg)", borderColor: "var(--fg)" }}
+                className="btn-primary btn-sky"
+                style={{ padding: "6px 14px" }}
               >
                 Dashboard
               </Link>
