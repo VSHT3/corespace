@@ -1,0 +1,77 @@
+"use server";
+
+import { createClient } from "@/lib/supabase-server";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+
+export async function createExhibition(formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const title = (formData.get("title") as string)?.trim() || "Untitled Exhibition";
+  const promptId = parseInt(formData.get("prompt_id") as string);
+
+  const { data, error } = await supabase
+    .from("tok_exhibitions")
+    .insert({ user_id: user.id, title, prompt_id: promptId })
+    .select("id")
+    .single();
+
+  if (error) throw new Error(error.message);
+  redirect(`/dashboard/tok/${data.id}`);
+}
+
+export async function deleteExhibition(id: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  await supabase.from("tok_exhibitions").delete().eq("id", id).eq("user_id", user.id);
+  revalidatePath("/dashboard/tok");
+}
+
+export async function saveObject(formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const exhibitionId = formData.get("exhibition_id") as string;
+  const objectId = formData.get("object_id") as string | null;
+  const title = (formData.get("title") as string)?.trim();
+  const description = (formData.get("description") as string)?.trim();
+  const objectType = (formData.get("object_type") as string)?.trim();
+  const position = parseInt(formData.get("position") as string);
+
+  if (objectId) {
+    await supabase
+      .from("tok_objects")
+      .update({ title, description, object_type: objectType })
+      .eq("id", objectId);
+  } else {
+    await supabase
+      .from("tok_objects")
+      .insert({ exhibition_id: exhibitionId, title, description, object_type: objectType, position });
+  }
+
+  revalidatePath(`/dashboard/tok/${exhibitionId}`);
+}
+
+export async function saveJustification(exhibitionId: string, objectId: string, justification: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  await supabase
+    .from("tok_objects")
+    .update({ justification })
+    .eq("id", objectId);
+
+  revalidatePath(`/dashboard/tok/${exhibitionId}`);
+}
+
+export async function deleteObject(exhibitionId: string, objectId: string) {
+  const supabase = await createClient();
+  await supabase.from("tok_objects").delete().eq("id", objectId);
+  revalidatePath(`/dashboard/tok/${exhibitionId}`);
+}
