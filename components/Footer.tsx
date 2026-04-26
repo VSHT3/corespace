@@ -14,9 +14,14 @@ export default function Footer() {
         flexShrink: 0,
       }}
     >
-      <p style={{ fontSize: "11px", color: "#aaa", margin: 0 }}>
-        © {new Date().getFullYear()} IB Core OS
-      </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+        <p style={{ fontSize: "11px", color: "#aaa", margin: 0 }}>
+          © {new Date().getFullYear()} IB Core OS
+        </p>
+        <p style={{ fontSize: "10px", color: "#bbb", margin: 0 }}>
+          Not affiliated with or endorsed by the International Baccalaureate Organization.
+        </p>
+      </div>
       <nav style={{ display: "flex", gap: "1.25rem" }}>
         {[
           { label: "Privacy", href: "/privacy" },

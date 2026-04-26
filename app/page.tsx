@@ -6,16 +6,16 @@ export default function Home() {
       <div className="max-w-2xl w-full text-center space-y-8">
         <div className="space-y-3">
           <p className="eyebrow">IB Core OS</p>
-          <h1 className="heading text-5xl">
+          <h1 className="heading" style={{ fontSize: "clamp(2.5rem, 6vw, 4rem)" }}>
             Master the <mark className="highlight-yellow">IB Core.</mark>
             <br />
             <span style={{ color: "#888" }}>Without the chaos.</span>
           </h1>
         </div>
 
-        <p style={{ color: "#555", fontSize: "16px", lineHeight: "1.6", maxWidth: "36rem", margin: "0 auto" }}>
-          AI-powered tools for TOK Exhibitions, CAS reflections, and Extended
-          Essays. Built for serious IB students.
+        <p style={{ color: "#555", fontSize: "18px", lineHeight: "1.7", maxWidth: "36rem", margin: "0 auto" }}>
+          AI-powered tools for Theory of Knowledge, CAS reflections, and Extended
+          Essays — built by an IB student, for IB students.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -59,8 +59,8 @@ export default function Home() {
           >
             <div style={{ height: "6px", background: f.accent }} />
             <div className="space-y-3" style={{ padding: "1.25rem 1.5rem 2.75rem" }}>
-              <span className="heading block" style={{ fontSize: "14px", display: "block" }}>{f.label}</span>
-              <p style={{ color: "#555", fontSize: "13px", lineHeight: "1.6" }}>{f.desc}</p>
+              <span className="heading block" style={{ fontSize: "16px", display: "block" }}>{f.label}</span>
+              <p style={{ color: "#555", fontSize: "14px", lineHeight: "1.6" }}>{f.desc}</p>
             </div>
             {!f.available && (
               <span

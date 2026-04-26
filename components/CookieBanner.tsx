@@ -24,8 +24,7 @@ export default function CookieBanner() {
       style={{
         position: "fixed",
         bottom: "1.25rem",
-        left: "50%",
-        transform: "translateX(-50%)",
+        left: "1.25rem",
         zIndex: 100,
         background: "var(--bg)",
         border: "2px solid var(--border)",

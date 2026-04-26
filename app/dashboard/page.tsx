@@ -44,7 +44,7 @@ export default async function DashboardPage() {
     <main className="page-main">
       <div className="mb-10 space-y-1">
         <p className="eyebrow">Signed in as {user.email}</p>
-        <h1 className="heading" style={{ fontSize: "36px" }}>Dashboard</h1>
+        <h1 className="heading" style={{ fontSize: "42px" }}>Dashboard</h1>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -58,8 +58,8 @@ export default async function DashboardPage() {
             >
               <div style={{ height: "6px", background: mod.accent }} />
               <div style={{ padding: "1.25rem 1.5rem 1.5rem" }} className="space-y-3">
-                <span className="heading" style={{ fontSize: "14px", display: "block" }}>{mod.label}</span>
-                <p style={{ color: "#555", fontSize: "13px", lineHeight: "1.6" }}>{mod.description}</p>
+                <span className="heading" style={{ fontSize: "16px", display: "block" }}>{mod.label}</span>
+                <p style={{ color: "#555", fontSize: "14px", lineHeight: "1.6" }}>{mod.description}</p>
               </div>
             </Link>
           ) : (
@@ -70,8 +70,8 @@ export default async function DashboardPage() {
             >
               <div style={{ height: "6px", background: mod.accent }} />
               <div style={{ padding: "1.25rem 1.5rem 2.75rem" }} className="space-y-3">
-                <span className="heading" style={{ fontSize: "14px", display: "block" }}>{mod.label}</span>
-                <p style={{ color: "#555", fontSize: "13px", lineHeight: "1.6" }}>{mod.description}</p>
+                <span className="heading" style={{ fontSize: "16px", display: "block" }}>{mod.label}</span>
+                <p style={{ color: "#555", fontSize: "14px", lineHeight: "1.6" }}>{mod.description}</p>
               </div>
               <span className="tag tag-sky" style={{ position: "absolute", bottom: "12px", right: "12px" }}>Soon</span>
             </div>
