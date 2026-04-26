@@ -8,7 +8,7 @@ AI-powered tools for IB Diploma students. Currently: **TOK Exhibition helper**. 
 - Tailwind CSS
 - Supabase (auth + database)
 - Anthropic API (claude-haiku-3-5)
-- Stripe (scaffolded)
+- Paddle (Merchant of Record — payments, VAT, invoicing)
 
 ## Setup
 

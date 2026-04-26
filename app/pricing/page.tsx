@@ -165,8 +165,7 @@ export default function PricingPage() {
           marginTop: "2.5rem",
         }}
       >
-        Student plan renews monthly. Cancel from your profile anytime. Stripe
-        handles all payments securely.
+        Student plan renews monthly. Cancel from your profile anytime. Payments processed by Paddle — they handle VAT and invoicing.
       </p>
     </main>
   );

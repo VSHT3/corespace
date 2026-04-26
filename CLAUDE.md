@@ -49,8 +49,10 @@ browser → proxy.ts (auth gate) → app/ route → Supabase / AI API
 
 ### Shared components
 
-- `components/Navbar.tsx` — server component, shows auth state. Sticky, 2px border-bottom.
+- `components/Navbar.tsx` — server component, shows auth state. Sticky, 2px border-bottom. 3-col grid layout (logo | nav | actions).
 - `components/LogoutButton.tsx` — client component, calls `supabase.auth.signOut()`.
+- `components/Footer.tsx` — server component, tucked legal links.
+- `components/CookieBanner.tsx` — client component, sessionStorage dismiss.
 
 ### Supabase: two clients, never mixed
 
@@ -85,6 +87,52 @@ Cloud Supabase (project `pjjupictmrlpxbvhcgxf`). Migration SQL in `supabase/migr
 
 Tables: `tok_exhibitions` (prompt_id 1–35) → `tok_objects` (title, description, object_type, scores jsonb).
 
+### Payments — Paddle (Merchant of Record)
+
+Paddle handles VAT, invoicing, and tax compliance. We are not the merchant of record — Paddle is. No Stripe.
+
+**Env vars:**
+- `PADDLE_API_KEY` — server-only, never expose to client
+- `PADDLE_WEBHOOK_SECRET` — for verifying webhook signatures
+- `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` — used in Paddle.js overlay (client-safe)
+- `NEXT_PUBLIC_PADDLE_STUDENT_PRICE_ID` — price ID for Student plan
+
+**Not yet implemented** — scaffold only. When building:
+- Use `@paddle/paddle-node-sdk` server-side
+- Use Paddle.js overlay client-side (script tag + `Paddle.Checkout.open()`)
+- Webhook route at `app/api/webhooks/paddle/route.ts` — verify signature, update `profiles.plan` in Supabase
+- Add `profiles` table to Supabase with `plan` column (`free` | `student` | `school`)
+
+### Database
+
+Cloud Supabase (project `pjjupictmrlpxbvhcgxf`). Migration SQL in `supabase/migrations/` — run manually in Supabase SQL Editor, never via CLI. RLS enabled on all tables; policies user-scoped via `auth.uid()`.
+
+Tables: `tok_exhibitions` (prompt_id 1–35) → `tok_objects` (title, description, object_type, scores jsonb).
+
 ### Path alias
 
 `@/*` maps to repo root (e.g. `@/lib/supabase-server`).
+
+---
+
+## Backlog — not yet built
+
+### P0 — Core product (TOK helper is the entire value prop)
+1. **Prompt selector** — `/dashboard/tok`: show all 35 official TOK prompts, let user pick one, save `tok_exhibitions` row
+2. **Object builder** — add 3 objects per exhibition (title, description, object_type), save `tok_objects` rows
+3. **AI justification** — per object: POST to `/api/ai` with prompt + object context, stream/display response
+4. **Exhibition overview** — read all 3 objects + justifications together on one page
+
+### P1 — Auth gaps
+5. **Email confirmation** — enable in Supabase Auth settings, add `/auth/confirm` callback route
+6. **Password reset** — `/forgot-password` page → Supabase `resetPasswordForEmail`, `/auth/reset` callback
+
+### P2 — Payments
+7. **Paddle checkout** — wire upgrade button on `/profile` to `Paddle.Checkout.open()`
+8. **Paddle webhook** — `app/api/webhooks/paddle/route.ts` → verify signature → update `profiles.plan`
+9. **Usage gates** — free tier: max 3 exhibitions, 20 AI calls/month (check server-side before AI route)
+
+### P3 — Polish
+10. **Loading/error states** — AI calls need spinner + error display
+11. **Exhibition PDF export** — printable summary for coordinator
+12. **CAS tracker** — stub → real feature (after TOK ships)
