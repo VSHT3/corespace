@@ -7,7 +7,7 @@ export default function Home() {
         <div className="space-y-3">
           <p className="eyebrow">Corespace</p>
           <h1 className="heading" style={{ fontSize: "clamp(2.5rem, 6vw, 4rem)" }}>
-            Master the <mark className="highlight-yellow">IB Core.</mark>
+            Master the <mark className="highlight-yellow" style={{ paddingRight: "0.6em", paddingTop: "0.18em", marginTop: "-0.08em" }}>IB Core.</mark>
             <br />
             <span style={{ color: "#888" }}>Without the chaos.</span>
           </h1>
