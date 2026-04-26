@@ -65,8 +65,8 @@ export default async function DashboardPage() {
           ) : (
             <div
               key={mod.id}
-              className="card-bump"
-              style={{ padding: 0, overflow: "hidden", position: "relative", minHeight: "180px", opacity: 0.6, cursor: "not-allowed" }}
+              className="card"
+              style={{ padding: 0, overflow: "hidden", position: "relative", minHeight: "180px", opacity: 0.5, cursor: "not-allowed" }}
             >
               <div style={{ height: "6px", background: mod.accent }} />
               <div style={{ padding: "1.25rem 1.5rem 2.75rem" }} className="space-y-3">
