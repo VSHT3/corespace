@@ -67,6 +67,13 @@ export default function TermsPage() {
           <h2 className="heading" style={{ fontSize: "16px", marginBottom: "0.5rem" }}>Contact</h2>
           <p><a href="mailto:hello@ibcoreos.com" style={{ color: "var(--fg)" }}>hello@ibcoreos.com</a></p>
         </section>
+
+        <div className="divider" />
+
+        <section>
+          <h2 className="heading" style={{ fontSize: "16px", marginBottom: "0.5rem" }}>Trademark notice</h2>
+          <p>All content on this website has been developed independently from and is not endorsed by the International Baccalaureate Organization. International Baccalaureate and IB are registered trademarks owned by the International Baccalaureate Organization.</p>
+        </section>
       </div>
     </main>
   );
