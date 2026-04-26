@@ -32,9 +32,9 @@ export default async function Navbar() {
         <Link
           href="/"
           className="heading"
-          style={{ fontSize: "14px", textDecoration: "none", color: "var(--fg)", letterSpacing: "-0.02em", justifySelf: "start" }}
+          style={{ fontSize: "17px", textDecoration: "none", color: "var(--fg)", letterSpacing: "-0.02em", justifySelf: "start" }}
         >
-          <mark className="highlight-yellow">Core</mark>space
+          <mark className="highlight-yellow">Core</mark><span>space</span>
         </Link>
 
         {/* Centre nav — truly centered */}

@@ -193,10 +193,11 @@ body {
   background-position: center;
   background-size: 100% 100%;
   background-repeat: no-repeat;
-  padding: 0.08em 0.28em;
+  padding: 0.08em 0.28em 0.08em 0.28em;
   margin: 0 -0.12em;
   color: inherit;
   font-style: normal;
+  display: inline-block;
 }
 @utility highlight-mint {
   background-color: transparent !important;
