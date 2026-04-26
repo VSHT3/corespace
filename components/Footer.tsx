@@ -11,6 +11,7 @@ export default function Footer() {
         alignItems: "center",
         flexWrap: "wrap",
         gap: "0.5rem",
+        flexShrink: 0,
       }}
     >
       <p style={{ fontSize: "11px", color: "#aaa", margin: 0 }}>
