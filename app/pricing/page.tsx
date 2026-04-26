@@ -47,7 +47,7 @@ const plans = [
       "Onboarding support",
     ],
     cta: "Contact us",
-    ctaHref: "mailto:hello@ibcoreos.com",
+    ctaHref: "mailto:hello@corespace.app",
     primary: false,
   },
 ];

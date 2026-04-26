@@ -48,7 +48,7 @@ export default function PrivacyPage() {
 
         <section>
           <h2 className="heading" style={{ fontSize: "16px", marginBottom: "0.5rem" }}>Your rights (GDPR)</h2>
-          <p>You have the right to access, correct, export, or delete your data at any time. Email us at <a href="mailto:privacy@ibcoreos.com" style={{ color: "var(--fg)" }}>privacy@ibcoreos.com</a> and we will respond within 30 days.</p>
+          <p>You have the right to access, correct, export, or delete your data at any time. Email us at <a href="mailto:privacy@corespace.app" style={{ color: "var(--fg)" }}>privacy@corespace.app</a> and we will respond within 30 days.</p>
         </section>
 
         <div className="divider" />
@@ -62,7 +62,7 @@ export default function PrivacyPage() {
 
         <section>
           <h2 className="heading" style={{ fontSize: "16px", marginBottom: "0.5rem" }}>Contact</h2>
-          <p>Questions? <a href="mailto:privacy@ibcoreos.com" style={{ color: "var(--fg)" }}>privacy@ibcoreos.com</a></p>
+          <p>Questions? <a href="mailto:privacy@corespace.app" style={{ color: "var(--fg)" }}>privacy@corespace.app</a></p>
         </section>
       </div>
     </main>

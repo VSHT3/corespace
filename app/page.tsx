@@ -5,7 +5,7 @@ export default function Home() {
     <main className="flex flex-col flex-1 items-center justify-center px-6 py-24" style={{ animation: "fadeUp 0.28s ease both" }}>
       <div className="max-w-2xl w-full text-center space-y-8">
         <div className="space-y-3">
-          <p className="eyebrow">IB Core OS</p>
+          <p className="eyebrow">Corespace</p>
           <h1 className="heading" style={{ fontSize: "clamp(2.5rem, 6vw, 4rem)" }}>
             Master the <mark className="highlight-yellow">IB Core.</mark>
             <br />

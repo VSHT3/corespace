@@ -34,7 +34,7 @@ export default async function Navbar() {
           className="heading"
           style={{ fontSize: "14px", textDecoration: "none", color: "var(--fg)", letterSpacing: "-0.02em", justifySelf: "start" }}
         >
-          <mark className="highlight-yellow">IB Core</mark>{" "}OS
+          <mark className="highlight-yellow">Core</mark>space
         </Link>
 
         {/* Centre nav — truly centered */}

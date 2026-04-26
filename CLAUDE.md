@@ -105,7 +105,7 @@ Paddle handles VAT, invoicing, and tax compliance. We are not the merchant of re
 
 ### Database
 
-Cloud Supabase (project `pjjupictmrlpxbvhcgxf`). Migration SQL in `supabase/migrations/` — run manually in Supabase SQL Editor, never via CLI. RLS enabled on all tables; policies user-scoped via `auth.uid()`.
+Cloud Supabase (project `pjjupictmrlpxbvhcgxf`). RLS enabled on all tables; policies user-scoped via `auth.uid()`.
 
 Tables: `tok_exhibitions` (prompt_id 1–35) → `tok_objects` (title, description, object_type, scores jsonb).
 

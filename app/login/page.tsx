@@ -38,7 +38,7 @@ export default function LoginPage() {
     <main className="flex flex-1 items-center justify-center px-6 py-24">
       <div className="w-full space-y-8" style={{ maxWidth: "360px" }}>
         <div className="space-y-1 text-center">
-          <p className="eyebrow">IB Core OS</p>
+          <p className="eyebrow">Corespace</p>
           <h1 className="heading" style={{ fontSize: "28px" }}>
             {mode === "login" ? "Welcome back" : "Create account"}
           </h1>

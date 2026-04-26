@@ -5,7 +5,7 @@ import Footer from "@/components/Footer";
 import CookieBanner from "@/components/CookieBanner";
 
 export const metadata: Metadata = {
-  title: "IB Core OS",
+  title: "Corespace",
   description: "Tools for IB Diploma students — TOK, CAS, and EE",
 };
 

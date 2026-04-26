@@ -15,7 +15,7 @@ export default function Footer() {
       }}
     >
       <p style={{ fontSize: "11px", color: "#aaa", margin: 0 }}>
-        © {new Date().getFullYear()} IB Core OS
+        © {new Date().getFullYear()} Corespace
       </p>
       <nav style={{ display: "flex", gap: "1.25rem" }}>
         {[

@@ -1,4 +1,4 @@
-# IB Core OS
+# Corespace
 
 AI-powered tools for IB Diploma students. Currently: **TOK Exhibition helper**. CAS and EE coming soon.
 
