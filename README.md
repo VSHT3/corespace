@@ -1,36 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# IB Core OS
 
-## Getting Started
+AI-powered tools for IB Diploma students. Currently: **TOK Exhibition helper**. CAS and EE coming soon.
 
-First, run the development server:
+## Stack
+
+- Next.js (App Router) + TypeScript
+- Tailwind CSS
+- Supabase (auth + database)
+- Anthropic API (claude-haiku-3-5)
+- Stripe (scaffolded)
+
+## Setup
+
+### 1. Supabase
+
+1. Go to [supabase.com](https://supabase.com) and create a new project.
+2. Go to **Project Settings → API** and copy:
+   - `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
+   - `anon public` key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+3. In the **SQL Editor**, run the contents of `supabase/migrations/001_initial.sql`.
+4. In **Authentication → Providers**, ensure Email is enabled.
+
+### 2. Anthropic
+
+Get an API key from [console.anthropic.com](https://console.anthropic.com) → `ANTHROPIC_API_KEY`.
+
+### 3. Environment variables
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.local.example .env.local
+# Fill in the values
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 4. Run locally
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm install
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Open [http://localhost:3000](http://localhost:3000).
 
-## Learn More
+## Folder structure
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+app/                  Next.js App Router pages
+  api/ai/route.ts     Server-side Anthropic API route
+  dashboard/          Protected app pages
+  login/              Auth page
+lib/
+  supabase-client.ts  Browser Supabase client
+  supabase-server.ts  Server Supabase client (RSC + API routes)
+  anthropic.ts        Anthropic SDK instance
+types/
+  index.ts            Shared TypeScript types
+supabase/migrations/  SQL migration files (run manually in Supabase SQL editor)
+middleware.ts         Auth middleware — protects /dashboard, redirects /login
+```
