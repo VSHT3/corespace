@@ -5,9 +5,8 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { TOK_PROMPTS, TOK_CATEGORIES, type TOKCategoryId } from "@/lib/tok-prompts";
 
-const SEEN_KEY = "tok-prompt-tour-seen-v4";
+const SEEN_KEY = "tok-prompt-tour-seen-v5";
 const TOUR_DURATION_MS = 11000;
-const MESSY_HEIGHT = 1100;
 const CARD_WIDTH_RANGE: [number, number] = [200, 280];
 const SORTED_CARD_GAP = 14;
 
@@ -17,7 +16,7 @@ function rng(id: number, salt: number) {
 }
 
 // Deterministic masonry-style packing for messy phase
-function computeMessyLayout(containerW: number, allIds: number[]): Map<number, { x: number; y: number; w: number; rot: number }> {
+function computeMessyLayout(containerW: number, allIds: number[]): { positions: Map<number, { x: number; y: number; w: number; rot: number }>; totalHeight: number } {
   const map = new Map<number, { x: number; y: number; w: number; rot: number }>();
   // Use 4 columns for masonry-like staggered packing, with random vertical jitter
   const cols = Math.max(3, Math.floor(containerW / 260));
@@ -45,7 +44,7 @@ function computeMessyLayout(containerW: number, allIds: number[]): Map<number, {
     colHeights[minCol] += cardH + 60 + rng(id, 29) * 60; // big varied gaps
   }
 
-  return map;
+  return { positions: map, totalHeight: Math.max(...colHeights) + 80 };
 }
 
 // Sorted layout — 6 category columns. Uses measured heights when available.
@@ -56,7 +55,7 @@ function computeSortedLayout(
   const cols = TOK_CATEGORIES.length;
   const gap = 16;
   const colW = (containerW - gap * (cols - 1)) / cols;
-  const headingOffset = 56;
+  const headingOffset = 0; // Headings moved to top pill row
 
   const perCategory = new Map<TOKCategoryId, { x: number; w: number }>();
   const cardsPerId = new Map<number, { x: number; y: number; w: number }>();
@@ -101,18 +100,20 @@ function smoothstep(x: number) {
 }
 
 // Phase mapping over t (0..1) — over 11s total:
-//  0.00–0.05 : hold messy (~0.5s)
-//  0.05–0.32 : descriptions fade in (~3s, slow + continuous)
-//  0.32–0.45 : colorize + de-rotate (~1.4s)
-//  0.45–0.62 : pause — let the user see the colored grid (~1.9s)
-//  0.62–0.92 : flight to columns (~3.3s)
-//  0.92–1.00 : category headings fade in (~0.9s)
+//  0.00–0.05 : hold messy
+//  0.05–0.32 : descriptions fade in
+//  0.32–0.45 : colorize + de-rotate
+//  0.40–0.55 : equalize w/h (overlap with end of colorize)
+//  0.55–0.65 : pause
+//  0.65–0.92 : flight to columns
+//  0.92–1.00 : category headings fade in
 function phaseValues(t: number) {
   return {
     desc:    smoothstep((t - 0.05) / 0.27),
     color:   smoothstep((t - 0.32) / 0.13),
     derot:   smoothstep((t - 0.32) / 0.16),
-    flight:  smoothstep((t - 0.62) / 0.30),
+    equalize: smoothstep((t - 0.40) / 0.15),
+    flight:  smoothstep((t - 0.65) / 0.27),
     headings: smoothstep((t - 0.92) / 0.08),
   };
 }
@@ -144,8 +145,20 @@ export default function PromptPicker({ createAction }: { createAction: (formData
   }, []);
 
   const allIds = useMemo(() => Object.keys(TOK_PROMPTS).map(Number), []);
-  const messyLayout = useMemo(() => computeMessyLayout(containerW, allIds), [containerW, allIds]);
+  const messyLayoutFull = useMemo(() => computeMessyLayout(containerW, allIds), [containerW, allIds]);
+  const messyLayout = messyLayoutFull.positions;
+  const messyTotalHeight = messyLayoutFull.totalHeight;
   const sortedLayout = useMemo(() => computeSortedLayout(containerW, measuredHeights), [containerW, measuredHeights]);
+
+  // Common card dims for the equalize phase — biggest measured to fit all content
+  const equalW = useMemo(() => {
+    const sortedColW = sortedLayout.perCategory.values().next().value?.w ?? 220;
+    return sortedColW;
+  }, [sortedLayout]);
+  const equalH = useMemo(() => {
+    if (!measuredHeights || measuredHeights.size === 0) return 140;
+    return Math.max(...Array.from(measuredHeights.values()));
+  }, [measuredHeights]);
 
   function runTour() {
     cancel();
@@ -192,7 +205,7 @@ export default function PromptPicker({ createAction }: { createAction: (formData
   const ph = phaseValues(t);
 
   // Compute container height (interpolates between messy and sorted)
-  const containerH = (1 - ph.flight) * MESSY_HEIGHT + ph.flight * sortedLayout.totalHeight;
+  const containerH = (1 - ph.flight) * messyTotalHeight + ph.flight * sortedLayout.totalHeight;
 
   const sortedColW = sortedLayout.perCategory.values().next().value?.w ?? 200;
 
@@ -218,79 +231,73 @@ export default function PromptPicker({ createAction }: { createAction: (formData
         )}
       </div>
 
-      {/* Filter pills — appear at end of tour */}
+      {/* Category pills double as filter + heading — appear at end of tour */}
       <motion.div
         animate={{ opacity: ph.headings, y: ph.headings > 0 ? 0 : -8 }}
-        style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1.25rem", pointerEvents: ph.headings > 0.5 ? "auto" : "none", minHeight: "32px" }}
+        style={{
+          display: "grid",
+          gridTemplateColumns: `auto repeat(${TOK_CATEGORIES.length}, 1fr)`,
+          gap: "0.6rem",
+          marginBottom: "1.25rem",
+          pointerEvents: ph.headings > 0.5 ? "auto" : "none",
+          minHeight: "44px",
+          alignItems: "stretch",
+        }}
       >
         <button
           onClick={() => setActiveCategory(null)}
-          className="tag"
           style={{
             cursor: "pointer",
             background: activeCategory === null ? "var(--fg)" : "transparent",
             color: activeCategory === null ? "var(--bg)" : "var(--fg)",
             border: "2px solid var(--fg)",
+            borderRadius: "var(--radius)",
+            padding: "0.5rem 0.9rem",
+            fontSize: "11px",
+            fontWeight: 700,
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+            whiteSpace: "nowrap",
           }}
         >
-          All ({allIds.length})
+          All · {allIds.length}
         </button>
-        {TOK_CATEGORIES.map((cat) => (
-          <button
-            key={cat.id}
-            onClick={() => setActiveCategory(activeCategory === cat.id ? null : cat.id)}
-            className="tag"
-            style={{
-              cursor: "pointer",
-              background: activeCategory === cat.id ? cat.color : "transparent",
-              border: "2px solid var(--fg)",
-            }}
-          >
-            {cat.label} ({cat.promptIds.length})
-          </button>
-        ))}
+        {TOK_CATEGORIES.map((cat) => {
+          const active = activeCategory === cat.id;
+          const dimmed = activeCategory !== null && !active;
+          return (
+            <button
+              key={cat.id}
+              onClick={() => setActiveCategory(active ? null : cat.id)}
+              style={{
+                cursor: "pointer",
+                background: active ? cat.color : "transparent",
+                border: "2px solid var(--fg)",
+                borderBottom: `5px solid ${cat.color}`,
+                borderRadius: "var(--radius)",
+                padding: "0.4rem 0.6rem 0.5rem",
+                fontSize: "10.5px",
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.04em",
+                opacity: dimmed ? 0.5 : 1,
+                lineHeight: 1.25,
+                textAlign: "left",
+                color: "var(--fg)",
+                transition: "opacity 0.15s ease, background 0.15s ease",
+              }}
+            >
+              <span style={{ display: "block" }}>{cat.label}</span>
+              <span style={{ display: "block", fontSize: "9.5px", opacity: 0.55, marginTop: "2px" }}>{cat.promptIds.length} prompts</span>
+            </button>
+          );
+        })}
       </motion.div>
 
       <div
         ref={containerRef}
         style={{ position: "relative", width: "100%", height: containerH, transition: "height 0.3s ease" }}
       >
-        {/* Category headings — appear at the end of the tour */}
-        {TOK_CATEGORIES.map((cat) => {
-          const colInfo = sortedLayout.perCategory.get(cat.id)!;
-          const dimmed = activeCategory !== null && activeCategory !== cat.id;
-          return (
-            <motion.div
-              key={`h-${cat.id}`}
-              animate={{
-                opacity: ph.headings * (dimmed ? 0.25 : 1),
-                y: ph.headings > 0 ? 0 : -8,
-              }}
-              style={{
-                position: "absolute",
-                left: colInfo.x,
-                top: 0,
-                width: colInfo.w,
-                pointerEvents: "none",
-              }}
-            >
-              <h3
-                className="heading"
-                style={{
-                  fontSize: "12px",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.06em",
-                  paddingBottom: "0.4rem",
-                  borderBottom: `3px solid ${cat.color}`,
-                  marginBottom: 0,
-                }}
-              >
-                {cat.label}
-              </h3>
-            </motion.div>
-          );
-        })}
-
         {/* Cards — single render, never unmount, animate from messy to sorted */}
         {allIds.map((id) => {
           const prompt = TOK_PROMPTS[id];
@@ -300,7 +307,10 @@ export default function PromptPicker({ createAction }: { createAction: (formData
 
           const x = (1 - ph.flight) * messy.x + ph.flight * sorted.x;
           const y = (1 - ph.flight) * messy.y + ph.flight * sorted.y;
-          const w = (1 - ph.flight) * messy.w + ph.flight * sorted.w;
+          // Width: messy → equalize lerps to equalW, then flight stays at equalW (which equals sorted.w)
+          const w = ph.flight > 0
+            ? (1 - ph.flight) * equalW + ph.flight * sorted.w
+            : (1 - ph.equalize) * messy.w + ph.equalize * equalW;
           const rot = messy.rot * (1 - ph.derot);
           const bg = lerpColor("#ffffff", resolveColor(cat.color), ph.color);
 
@@ -335,9 +345,18 @@ export default function PromptPicker({ createAction }: { createAction: (formData
               <motion.div
                 layoutId={`prompt-${id}`}
                 onClick={() => done && setExpandedId(id)}
-                animate={{ backgroundColor: bg }}
-                transition={{ backgroundColor: { type: "tween", duration: 0, ease: "linear" } }}
-                className={done ? "hover-bump" : undefined}
+                animate={{
+                  backgroundColor: bg,
+                  minHeight: ph.flight > 0 ? 0 : ph.equalize * equalH,
+                }}
+                whileHover={done ? { x: -4, y: -4, boxShadow: "8px 8px 0 0 var(--fg)" } : undefined}
+                transition={{
+                  backgroundColor: { type: "tween", duration: 0, ease: "linear" },
+                  minHeight: { type: "tween", duration: 0, ease: "linear" },
+                  x: { type: "spring", stiffness: 400, damping: 30 },
+                  y: { type: "spring", stiffness: 400, damping: 30 },
+                  boxShadow: { type: "spring", stiffness: 400, damping: 30 },
+                }}
                 style={{
                   border: "2px solid var(--border)",
                   borderRadius: "var(--radius)",
@@ -402,7 +421,7 @@ function MeasurementLayer({ ids, colW, onMeasured }: { ids: number[]; colW: numb
     <div
       aria-hidden
       style={{
-        position: "absolute",
+        position: "fixed",
         left: -99999,
         top: 0,
         width: colW,
