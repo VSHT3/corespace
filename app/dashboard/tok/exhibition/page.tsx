@@ -64,13 +64,9 @@ export default async function ExhibitionEntryPage() {
         <Link href="/dashboard/tok" className="back-link">← TOK</Link>
       </div>
 
-      <div className="mb-6 space-y-2">
+      <div className="mb-4 space-y-2">
         <p className="eyebrow">TOK Exhibition</p>
         <h1 className="heading" style={{ fontSize: "32px" }}>Choose your prompt</h1>
-        <p style={{ color: "#555", maxWidth: "640px" }}>
-          Pick one of the 35 official IB prompts. Watch them organize themselves into themes —
-          then click any prompt to start your exhibition.
-        </p>
       </div>
 
       <PromptPicker createAction={createExhibition} />

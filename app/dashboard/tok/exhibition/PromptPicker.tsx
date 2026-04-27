@@ -71,11 +71,11 @@ function computeSortedLayout(
     const truncDesc = prompt.description.length > 100 ? prompt.description.slice(0, 100) + "…" : prompt.description;
     const titleLines = Math.ceil(prompt.title.length / charsPerLine);
     const descLines = Math.ceil(truncDesc.length / charsPerLine);
-    const titleH = titleLines * 18;
-    const descH = descLines * 18;
-    const padding = 32;
-    const innerGap = 8;
-    return titleH + descH + padding + innerGap + 16; // +16 generous buffer
+    const titleH = titleLines * 17;
+    const descH = descLines * 17;
+    const padding = 28;
+    const innerGap = 6;
+    return titleH + descH + padding + innerGap + 4; // tight buffer when fallback
   };
 
   TOK_CATEGORIES.forEach((cat, ci) => {
@@ -99,6 +99,13 @@ function smoothstep(x: number) {
   return x * x * (3 - 2 * x);
 }
 
+// Stronger ease-in-out (smootherstep / quintic) — slow start + slow end, fast middle
+function easeInOut(x: number) {
+  if (x <= 0) return 0;
+  if (x >= 1) return 1;
+  return x * x * x * (x * (x * 6 - 15) + 10);
+}
+
 // Phase mapping over t (0..1) — over 11s total:
 //  0.00–0.05 : hold messy
 //  0.05–0.32 : descriptions fade in
@@ -109,12 +116,12 @@ function smoothstep(x: number) {
 //  0.92–1.00 : category headings fade in
 function phaseValues(t: number) {
   return {
-    desc:    smoothstep((t - 0.05) / 0.27),
-    color:   smoothstep((t - 0.32) / 0.16),
-    derot:   smoothstep((t - 0.32) / 0.16),
-    equalize: smoothstep((t - 0.32) / 0.16),
-    flight:  smoothstep((t - 0.65) / 0.27),
-    headings: smoothstep((t - 0.92) / 0.08),
+    desc:    smoothstep((t - 0.05) / 0.30),
+    color:   smoothstep((t - 0.40) / 0.10),
+    derot:   smoothstep((t - 0.40) / 0.10),
+    equalize: smoothstep((t - 0.40) / 0.10),
+    flight:  easeInOut((t - 0.58) / 0.27),
+    headings: smoothstep((t - 0.86) / 0.10),
   };
 }
 
@@ -218,14 +225,17 @@ export default function PromptPicker({ createAction }: { createAction: (formData
         onMeasured={setMeasuredHeights}
       />
 
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.75rem", marginBottom: "1rem", minHeight: "32px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", marginBottom: "1.25rem", minHeight: "32px" }}>
+        <p style={{ color: "#555", maxWidth: "640px", margin: 0 }}>
+          Pick one of the 35 official IB prompts. Watch them organize themselves into themes — then click any prompt to start your exhibition.
+        </p>
         {!done && (
-          <button onClick={skipTour} className="back-link" style={{ fontSize: "12px", background: "none", border: "none", cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>
+          <button onClick={skipTour} className="back-link" style={{ fontSize: "12px", background: "none", border: "none", cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700, flexShrink: 0 }}>
             Skip tour →
           </button>
         )}
         {done && skipped && (
-          <button onClick={() => { setSkipped(false); runTour(); }} className="back-link" style={{ fontSize: "12px", background: "none", border: "none", cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>
+          <button onClick={() => { setSkipped(false); runTour(); }} className="back-link" style={{ fontSize: "12px", background: "none", border: "none", cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700, flexShrink: 0 }}>
             ↻ Replay tour
           </button>
         )}
@@ -237,11 +247,12 @@ export default function PromptPicker({ createAction }: { createAction: (formData
         style={{
           display: "grid",
           gridTemplateColumns: `repeat(${TOK_CATEGORIES.length}, 1fr)`,
-          gap: "0.6rem",
+          gap: "16px",
           marginBottom: "1.25rem",
           pointerEvents: ph.headings > 0.5 ? "auto" : "none",
           minHeight: "44px",
           alignItems: "stretch",
+          width: "100%",
         }}
       >
         {TOK_CATEGORIES.map((cat) => {
