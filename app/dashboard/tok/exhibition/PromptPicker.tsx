@@ -4,10 +4,11 @@ import { useEffect, useState, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { TOK_PROMPTS, TOK_CATEGORIES, type TOKCategoryId } from "@/lib/tok-prompts";
 
-const SEEN_KEY = "tok-prompt-tour-seen-v3";
-const TOUR_DURATION_MS = 8500;
-const MESSY_HEIGHT = 720;
+const SEEN_KEY = "tok-prompt-tour-seen-v4";
+const TOUR_DURATION_MS = 11000;
+const MESSY_HEIGHT = 1100;
 const CARD_WIDTH_RANGE: [number, number] = [200, 280];
+const SORTED_CARD_GAP = 14;
 
 // Stable pseudo-random for each prompt
 function rng(id: number, salt: number) {
@@ -31,16 +32,16 @@ function computeMessyLayout(containerW: number, allIds: number[]): Map<number, {
     for (let i = 1; i < cols; i++) if (colHeights[i] < colHeights[minCol]) minCol = i;
 
     const w = CARD_WIDTH_RANGE[0] + rng(id, 11) * (CARD_WIDTH_RANGE[1] - CARD_WIDTH_RANGE[0]);
-    const cardH = 60 + rng(id, 13) * 80; // estimated height variation
-    const xJitter = (rng(id, 17) - 0.5) * 30;
-    const yJitter = (rng(id, 19) - 0.5) * 20;
-    const rot = (rng(id, 23) - 0.5) * 12; // ±6°
+    const cardH = 130 + rng(id, 13) * 60; // taller estimates for spacing
+    const xJitter = (rng(id, 17) - 0.5) * 50;
+    const yJitter = (rng(id, 19) - 0.5) * 40;
+    const rot = (rng(id, 23) - 0.5) * 14; // ±7°
 
     const x = minCol * colW + (colW - w) / 2 + xJitter;
     const y = colHeights[minCol] + yJitter;
 
     map.set(id, { x, y, w, rot });
-    colHeights[minCol] += cardH + 20 + rng(id, 29) * 40; // varied gaps
+    colHeights[minCol] += cardH + 60 + rng(id, 29) * 60; // big varied gaps
   }
 
   return map;
@@ -58,14 +59,28 @@ function computeSortedLayout(containerW: number): { perCategory: Map<TOKCategory
 
   let maxHeight = 0;
 
+  // Estimate card height based on description length + column width
+  const charsPerLine = Math.max(28, Math.floor(colW / 6.2)); // rough chars-per-line
+  const estimateHeight = (id: number): number => {
+    const prompt = TOK_PROMPTS[id];
+    const truncDesc = prompt.description.length > 90 ? prompt.description.slice(0, 90) + "…" : prompt.description;
+    const titleLines = Math.ceil(prompt.title.length / charsPerLine);
+    const descLines = Math.ceil(truncDesc.length / charsPerLine);
+    const titleH = titleLines * 17;       // 12px font × 1.35 line-height
+    const descH = descLines * 17;          // 11px font × 1.5 line-height
+    const padding = 28;                    // 0.85rem top + bottom
+    const gap = 6;                         // between title and desc
+    return titleH + descH + padding + gap + 8; // +8 buffer
+  };
+
   TOK_CATEGORIES.forEach((cat, ci) => {
     const x = ci * (colW + gap);
     perCategory.set(cat.id, { x, w: colW });
     let yOffset = headingOffset;
     cat.promptIds.forEach((id) => {
-      const cardH = 90; // estimated, doesn't need to be exact since flow positions y by accumulation
+      const cardH = estimateHeight(id);
       cardsPerId.set(id, { x, y: yOffset, w: colW });
-      yOffset += cardH + 8;
+      yOffset += cardH + SORTED_CARD_GAP;
     });
     if (yOffset > maxHeight) maxHeight = yOffset;
   });
@@ -79,19 +94,20 @@ function smoothstep(x: number) {
   return x * x * (3 - 2 * x);
 }
 
-// Phase mapping over t (0..1):
-//  0.00–0.12 : hold messy
-//  0.12–0.30 : descriptions fade in
-//  0.30–0.50 : colorize, de-rotate
-//  0.45–0.85 : flight to columns
-//  0.85–1.00 : category headings fade in + filter pills
+// Phase mapping over t (0..1) — over 11s total:
+//  0.00–0.05 : hold messy (~0.5s)
+//  0.05–0.32 : descriptions fade in (~3s, slow + continuous)
+//  0.32–0.45 : colorize + de-rotate (~1.4s)
+//  0.45–0.62 : pause — let the user see the colored grid (~1.9s)
+//  0.62–0.92 : flight to columns (~3.3s)
+//  0.92–1.00 : category headings fade in (~0.9s)
 function phaseValues(t: number) {
   return {
-    desc:    smoothstep((t - 0.12) / 0.18),
-    color:   smoothstep((t - 0.30) / 0.20),
-    derot:   smoothstep((t - 0.30) / 0.25),
-    flight:  smoothstep((t - 0.45) / 0.40),
-    headings: smoothstep((t - 0.85) / 0.15),
+    desc:    smoothstep((t - 0.05) / 0.27),
+    color:   smoothstep((t - 0.32) / 0.13),
+    derot:   smoothstep((t - 0.32) / 0.16),
+    flight:  smoothstep((t - 0.62) / 0.30),
+    headings: smoothstep((t - 0.92) / 0.08),
   };
 }
 
@@ -283,10 +299,18 @@ export default function PromptPicker({ createAction }: { createAction: (formData
                 rotate: rot,
                 backgroundColor: bg,
                 opacity: dimmed ? 0.2 : 1,
-                scale: 1,
               }}
-              whileHover={done ? { scale: 1.03, zIndex: 10, boxShadow: "6px 6px 0 0 var(--fg)" } : undefined}
-              transition={{ type: "tween", duration: 0, ease: "linear" }}
+              whileHover={done ? { scale: 1.04, boxShadow: "6px 6px 0 0 var(--fg)" } : undefined}
+              transition={{
+                x: { type: "tween", duration: 0, ease: "linear" },
+                y: { type: "tween", duration: 0, ease: "linear" },
+                width: { type: "tween", duration: 0, ease: "linear" },
+                rotate: { type: "tween", duration: 0, ease: "linear" },
+                backgroundColor: { type: "tween", duration: 0, ease: "linear" },
+                opacity: { type: "tween", duration: 0.3, ease: "easeOut" },
+                scale: { type: "spring", stiffness: 400, damping: 25 },
+                boxShadow: { type: "spring", stiffness: 400, damping: 25 },
+              }}
               style={{
                 position: "absolute",
                 left: 0,
@@ -298,6 +322,7 @@ export default function PromptPicker({ createAction }: { createAction: (formData
                 transformOrigin: "center",
                 willChange: "transform, width, background-color",
                 userSelect: "none",
+                zIndex: done ? 1 : 0,
               }}
             >
               <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem" }}>
@@ -307,10 +332,9 @@ export default function PromptPicker({ createAction }: { createAction: (formData
               <div
                 style={{
                   overflow: "hidden",
-                  height: ph.desc < 0.05 ? 0 : "auto",
+                  maxHeight: `${ph.desc * 200}px`,
                   opacity: ph.desc,
-                  marginTop: ph.desc > 0.05 ? "0.4rem" : 0,
-                  transition: "height 0.3s ease, margin-top 0.3s ease",
+                  marginTop: `${ph.desc * 6.4}px`,
                 }}
               >
                 <p style={{ fontSize: "11px", color: "#444", lineHeight: 1.5, paddingLeft: "calc(16px + 0.5rem)" }}>
@@ -343,6 +367,21 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
 
+  // ESC to close
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handler);
+    // Lock body scroll
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", handler);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [onClose]);
+
   async function askAI(question: string) {
     setAiLoading(true);
     setAiError("");
@@ -367,24 +406,41 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.25 }}
-      onClick={onClose}
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.4)",
-        zIndex: 100,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "2rem",
-        backdropFilter: "blur(8px)",
-      }}
-    >
+    <>
+      {/* Backdrop layer — full-screen blur */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.25 }}
+        onClick={onClose}
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 99,
+          background: "rgba(0,0,0,0.35)",
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
+        }}
+      />
+      {/* Modal positioning layer */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.25 }}
+        onClick={onClose}
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 100,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "2rem",
+          pointerEvents: "auto",
+        }}
+      >
       <motion.div
         layoutId={`prompt-${id}`}
         onClick={(e) => e.stopPropagation()}
@@ -462,6 +518,7 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
         </AnimatePresence>
       </motion.div>
     </motion.div>
+    </>
   );
 }
 
