@@ -36,7 +36,7 @@ export default async function ExhibitionPage({ params }: { params: Promise<{ id:
   return (
     <main className="page-main">
       <div className="mb-6">
-        <Link href="/dashboard/tok" className="back-link">← TOK Exhibitions</Link>
+        <Link href="/dashboard/tok/exhibition" className="back-link">← TOK Exhibition</Link>
       </div>
 
       <div className="mb-8 space-y-2">
