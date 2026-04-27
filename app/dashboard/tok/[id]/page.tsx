@@ -29,7 +29,8 @@ export default async function ExhibitionPage({ params }: { params: Promise<{ id:
 
   const ex = exhibition as TOKExhibition;
   const objs = (objects ?? []) as TOKObject[];
-  const prompt = TOK_PROMPTS[ex.prompt_id] ?? `Prompt ${ex.prompt_id}`;
+  const promptObj = TOK_PROMPTS[ex.prompt_id];
+  const prompt = promptObj?.title ?? `Prompt ${ex.prompt_id}`;
 
   const slots = [0, 1, 2];
 
@@ -46,7 +47,10 @@ export default async function ExhibitionPage({ params }: { params: Promise<{ id:
           <p style={{ fontSize: "12px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#666", marginBottom: "4px" }}>
             Prompt {ex.prompt_id}
           </p>
-          <p style={{ fontWeight: 600, lineHeight: 1.5 }}>{prompt}</p>
+          <p style={{ fontWeight: 600, lineHeight: 1.5, marginBottom: promptObj?.description ? "0.5rem" : 0 }}>{prompt}</p>
+          {promptObj?.description && (
+            <p style={{ fontSize: "12px", color: "#555", lineHeight: 1.6 }}>{promptObj.description}</p>
+          )}
         </div>
       </div>
 
