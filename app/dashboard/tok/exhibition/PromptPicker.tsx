@@ -1,52 +1,136 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
+import { useEffect, useState, useRef, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { TOK_PROMPTS, TOK_CATEGORIES, type TOKCategoryId } from "@/lib/tok-prompts";
 
-const SEEN_KEY = "tok-prompt-tour-seen-v2";
+const SEEN_KEY = "tok-prompt-tour-seen-v3";
+const TOUR_DURATION_MS = 8500;
+const MESSY_HEIGHT = 720;
+const CARD_WIDTH_RANGE: [number, number] = [200, 280];
 
-// Pseudo-random but stable scatter coords for messy phase, normalized 0..1
-const messyPos = (id: number) => {
-  const a = (id * 9301 + 49297) % 233280;
-  const b = (id * 4337 + 12345) % 233280;
-  const r = (id * 1597 + 51749) % 233280;
+// Stable pseudo-random for each prompt
+function rng(id: number, salt: number) {
+  return ((id * 9301 + salt * 49297 + 1) % 233280) / 233280;
+}
+
+// Deterministic masonry-style packing for messy phase
+function computeMessyLayout(containerW: number, allIds: number[]): Map<number, { x: number; y: number; w: number; rot: number }> {
+  const map = new Map<number, { x: number; y: number; w: number; rot: number }>();
+  // Use 4 columns for masonry-like staggered packing, with random vertical jitter
+  const cols = Math.max(3, Math.floor(containerW / 260));
+  const colW = containerW / cols;
+  const colHeights = new Array(cols).fill(0);
+
+  // Shuffle ids deterministically for varied distribution
+  const shuffled = [...allIds].sort((a, b) => rng(a, 7) - rng(b, 7));
+
+  for (const id of shuffled) {
+    // Pick column with smallest current height (true masonry)
+    let minCol = 0;
+    for (let i = 1; i < cols; i++) if (colHeights[i] < colHeights[minCol]) minCol = i;
+
+    const w = CARD_WIDTH_RANGE[0] + rng(id, 11) * (CARD_WIDTH_RANGE[1] - CARD_WIDTH_RANGE[0]);
+    const cardH = 60 + rng(id, 13) * 80; // estimated height variation
+    const xJitter = (rng(id, 17) - 0.5) * 30;
+    const yJitter = (rng(id, 19) - 0.5) * 20;
+    const rot = (rng(id, 23) - 0.5) * 12; // ±6°
+
+    const x = minCol * colW + (colW - w) / 2 + xJitter;
+    const y = colHeights[minCol] + yJitter;
+
+    map.set(id, { x, y, w, rot });
+    colHeights[minCol] += cardH + 20 + rng(id, 29) * 40; // varied gaps
+  }
+
+  return map;
+}
+
+// Sorted layout — 6 category columns
+function computeSortedLayout(containerW: number): { perCategory: Map<TOKCategoryId, { x: number; w: number }>; cardsPerId: Map<number, { x: number; y: number; w: number }>; totalHeight: number } {
+  const cols = TOK_CATEGORIES.length;
+  const gap = 16;
+  const colW = (containerW - gap * (cols - 1)) / cols;
+  const headingOffset = 56; // space for category heading
+
+  const perCategory = new Map<TOKCategoryId, { x: number; w: number }>();
+  const cardsPerId = new Map<number, { x: number; y: number; w: number }>();
+
+  let maxHeight = 0;
+
+  TOK_CATEGORIES.forEach((cat, ci) => {
+    const x = ci * (colW + gap);
+    perCategory.set(cat.id, { x, w: colW });
+    let yOffset = headingOffset;
+    cat.promptIds.forEach((id) => {
+      const cardH = 90; // estimated, doesn't need to be exact since flow positions y by accumulation
+      cardsPerId.set(id, { x, y: yOffset, w: colW });
+      yOffset += cardH + 8;
+    });
+    if (yOffset > maxHeight) maxHeight = yOffset;
+  });
+
+  return { perCategory, cardsPerId, totalHeight: maxHeight + 24 };
+}
+
+function smoothstep(x: number) {
+  if (x <= 0) return 0;
+  if (x >= 1) return 1;
+  return x * x * (3 - 2 * x);
+}
+
+// Phase mapping over t (0..1):
+//  0.00–0.12 : hold messy
+//  0.12–0.30 : descriptions fade in
+//  0.30–0.50 : colorize, de-rotate
+//  0.45–0.85 : flight to columns
+//  0.85–1.00 : category headings fade in + filter pills
+function phaseValues(t: number) {
   return {
-    xPct: (a / 233280) * 0.92 + 0.04,   // 4..96%
-    yPct: (b / 233280) * 0.85 + 0.02,   // 2..87%
-    rot: ((r / 233280) - 0.5) * 10,     // ±5deg
+    desc:    smoothstep((t - 0.12) / 0.18),
+    color:   smoothstep((t - 0.30) / 0.20),
+    derot:   smoothstep((t - 0.30) / 0.25),
+    flight:  smoothstep((t - 0.45) / 0.40),
+    headings: smoothstep((t - 0.85) / 0.15),
   };
-};
-
-const TOUR_PHASES = {
-  messy: 0,
-  descriptions: 1,
-  colorize: 2,
-  organize: 3,
-  done: 4,
-};
+}
 
 export default function PromptPicker({ createAction }: { createAction: (formData: FormData) => Promise<void> }) {
-  const [progress, setProgress] = useState(0); // 0..4 continuous
+  const [t, setT] = useState(0); // 0..1
   const [done, setDone] = useState(false);
   const [skipped, setSkipped] = useState(false);
+  const [containerW, setContainerW] = useState(1200);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [activeCategory, setActiveCategory] = useState<TOKCategoryId | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
-  const startRef = useRef<number>(0);
+  const startRef = useRef(0);
 
-  function runTour(durationMs = 7500) {
+  // Track container width
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const ro = new ResizeObserver(([entry]) => {
+      setContainerW(entry.contentRect.width);
+    });
+    ro.observe(containerRef.current);
+    setContainerW(containerRef.current.getBoundingClientRect().width);
+    return () => ro.disconnect();
+  }, []);
+
+  const allIds = useMemo(() => Object.keys(TOK_PROMPTS).map(Number), []);
+  const messyLayout = useMemo(() => computeMessyLayout(containerW, allIds), [containerW, allIds]);
+  const sortedLayout = useMemo(() => computeSortedLayout(containerW), [containerW]);
+
+  function runTour() {
     cancel();
     setDone(false);
-    setProgress(0);
+    setT(0);
     startRef.current = performance.now();
     const tick = (now: number) => {
       const elapsed = now - startRef.current;
-      const t = Math.min(elapsed / durationMs, 1);
-      // Map t (0..1) → phase progress (0..4) with custom pacing
-      // Ease in, hold, ease out per phase to avoid jumps
-      const p = phaseFromT(t);
-      setProgress(p);
-      if (t < 1) rafRef.current = requestAnimationFrame(tick);
+      const v = Math.min(elapsed / TOUR_DURATION_MS, 1);
+      setT(v);
+      if (v < 1) rafRef.current = requestAnimationFrame(tick);
       else {
         setDone(true);
         sessionStorage.setItem(SEEN_KEY, "1");
@@ -62,7 +146,7 @@ export default function PromptPicker({ createAction }: { createAction: (formData
 
   function skipTour() {
     cancel();
-    setProgress(TOUR_PHASES.done);
+    setT(1);
     setDone(true);
     sessionStorage.setItem(SEEN_KEY, "1");
   }
@@ -70,7 +154,7 @@ export default function PromptPicker({ createAction }: { createAction: (formData
   useEffect(() => {
     if (sessionStorage.getItem(SEEN_KEY)) {
       setSkipped(true);
-      setProgress(TOUR_PHASES.done);
+      setT(1);
       setDone(true);
     } else {
       runTour();
@@ -78,6 +162,11 @@ export default function PromptPicker({ createAction }: { createAction: (formData
     return cancel;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const ph = phaseValues(t);
+
+  // Compute container height (interpolates between messy and sorted)
+  const containerH = (1 - ph.flight) * MESSY_HEIGHT + ph.flight * sortedLayout.totalHeight;
 
   return (
     <>
@@ -94,13 +183,144 @@ export default function PromptPicker({ createAction }: { createAction: (formData
         )}
       </div>
 
-      <LayoutGroup>
-        <PromptsCanvas
-          progress={progress}
-          done={done}
-          onExpand={done ? setExpandedId : () => {}}
-        />
-      </LayoutGroup>
+      {/* Filter pills — appear at end of tour */}
+      <motion.div
+        animate={{ opacity: ph.headings, y: ph.headings > 0 ? 0 : -8 }}
+        style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1.25rem", pointerEvents: ph.headings > 0.5 ? "auto" : "none", minHeight: "32px" }}
+      >
+        <button
+          onClick={() => setActiveCategory(null)}
+          className="tag"
+          style={{
+            cursor: "pointer",
+            background: activeCategory === null ? "var(--fg)" : "transparent",
+            color: activeCategory === null ? "var(--bg)" : "var(--fg)",
+            border: "2px solid var(--fg)",
+          }}
+        >
+          All ({allIds.length})
+        </button>
+        {TOK_CATEGORIES.map((cat) => (
+          <button
+            key={cat.id}
+            onClick={() => setActiveCategory(activeCategory === cat.id ? null : cat.id)}
+            className="tag"
+            style={{
+              cursor: "pointer",
+              background: activeCategory === cat.id ? cat.color : "transparent",
+              border: "2px solid var(--fg)",
+            }}
+          >
+            {cat.label} ({cat.promptIds.length})
+          </button>
+        ))}
+      </motion.div>
+
+      <div
+        ref={containerRef}
+        style={{ position: "relative", width: "100%", height: containerH, transition: "height 0.3s ease" }}
+      >
+        {/* Category headings — appear at the end of the tour */}
+        {TOK_CATEGORIES.map((cat) => {
+          const colInfo = sortedLayout.perCategory.get(cat.id)!;
+          const dimmed = activeCategory !== null && activeCategory !== cat.id;
+          return (
+            <motion.div
+              key={`h-${cat.id}`}
+              animate={{
+                opacity: ph.headings * (dimmed ? 0.25 : 1),
+                y: ph.headings > 0 ? 0 : -8,
+              }}
+              style={{
+                position: "absolute",
+                left: colInfo.x,
+                top: 0,
+                width: colInfo.w,
+                pointerEvents: "none",
+              }}
+            >
+              <h3
+                className="heading"
+                style={{
+                  fontSize: "12px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  paddingBottom: "0.4rem",
+                  borderBottom: `3px solid ${cat.color}`,
+                  marginBottom: 0,
+                }}
+              >
+                {cat.label}
+              </h3>
+            </motion.div>
+          );
+        })}
+
+        {/* Cards — single render, never unmount, animate from messy to sorted */}
+        {allIds.map((id) => {
+          const prompt = TOK_PROMPTS[id];
+          const cat = TOK_CATEGORIES.find((c) => c.promptIds.includes(id))!;
+          const messy = messyLayout.get(id)!;
+          const sorted = sortedLayout.cardsPerId.get(id)!;
+
+          const x = (1 - ph.flight) * messy.x + ph.flight * sorted.x;
+          const y = (1 - ph.flight) * messy.y + ph.flight * sorted.y;
+          const w = (1 - ph.flight) * messy.w + ph.flight * sorted.w;
+          const rot = messy.rot * (1 - ph.derot);
+          const bg = lerpColor("#ffffff", resolveColor(cat.color), ph.color);
+
+          const dimmed = done && activeCategory !== null && activeCategory !== cat.id;
+
+          return (
+            <motion.div
+              key={id}
+              layoutId={`prompt-${id}`}
+              onClick={() => done && setExpandedId(id)}
+              animate={{
+                x,
+                y,
+                width: w,
+                rotate: rot,
+                backgroundColor: bg,
+                opacity: dimmed ? 0.2 : 1,
+                scale: 1,
+              }}
+              whileHover={done ? { scale: 1.03, zIndex: 10, boxShadow: "6px 6px 0 0 var(--fg)" } : undefined}
+              transition={{ type: "tween", duration: 0, ease: "linear" }}
+              style={{
+                position: "absolute",
+                left: 0,
+                top: 0,
+                border: "2px solid var(--border)",
+                borderRadius: "var(--radius)",
+                padding: "0.85rem 1rem",
+                cursor: done ? "pointer" : "default",
+                transformOrigin: "center",
+                willChange: "transform, width, background-color",
+                userSelect: "none",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem" }}>
+                <span style={{ fontSize: "10px", fontWeight: 700, color: "rgba(0,0,0,0.4)", minWidth: "16px", paddingTop: "1px" }}>{id}</span>
+                <p style={{ fontWeight: 700, fontSize: "12px", lineHeight: 1.35 }}>{prompt.title}</p>
+              </div>
+              <div
+                style={{
+                  overflow: "hidden",
+                  height: ph.desc < 0.05 ? 0 : "auto",
+                  opacity: ph.desc,
+                  marginTop: ph.desc > 0.05 ? "0.4rem" : 0,
+                  transition: "height 0.3s ease, margin-top 0.3s ease",
+                }}
+              >
+                <p style={{ fontSize: "11px", color: "#444", lineHeight: 1.5, paddingLeft: "calc(16px + 0.5rem)" }}>
+                  {prompt.description.length > 100 ? prompt.description.slice(0, 100) + "…" : prompt.description}
+                </p>
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
 
       <AnimatePresence>
         {expandedId !== null && (
@@ -112,192 +332,6 @@ export default function PromptPicker({ createAction }: { createAction: (formData
         )}
       </AnimatePresence>
     </>
-  );
-}
-
-// Smooth pacing — 4 phases stretched across t=0..1 with overlap
-function phaseFromT(t: number): number {
-  // Phase 1 (descriptions): 0.10..0.30
-  // Phase 2 (colorize):     0.30..0.55
-  // Phase 3 (organize):     0.55..1.00
-  // Smooth ease (cubic) within each transition
-  const ease = (x: number) => x * x * (3 - 2 * x); // smoothstep
-  if (t < 0.10) return 0;
-  if (t < 0.30) return ease((t - 0.10) / 0.20) * 1;
-  if (t < 0.55) return 1 + ease((t - 0.30) / 0.25) * 1;
-  if (t < 1.00) return 2 + ease((t - 0.55) / 0.45) * 2;
-  return 4;
-}
-
-function PromptsCanvas({ progress, done, onExpand }: { progress: number; done: boolean; onExpand: (id: number) => void }) {
-  const allIds = Object.keys(TOK_PROMPTS).map(Number);
-  // Continuous 0..1 mixers per phase
-  const descT  = Math.min(Math.max(progress - 0, 0), 1);          // 0..1 over phase 1
-  const colorT = Math.min(Math.max(progress - 1, 0), 1);          // 0..1 over phase 2
-  const orgT   = Math.min(Math.max((progress - 2) / 2, 0), 1);    // 0..1 over phase 3 (which spans 2 units)
-
-  // While organizing (orgT < 1), use absolute scattered positioning blended toward grid.
-  // Once orgT === 1, switch to flow grid layout (LayoutGroup will animate the transition smoothly).
-  const flowing = orgT >= 1;
-
-  if (flowing) {
-    return <SortedFlow allIds={allIds} done={done} onExpand={onExpand} />;
-  }
-
-  return (
-    <div style={{ position: "relative", width: "100%", minHeight: "640px" }}>
-      {allIds.map((id) => {
-        const prompt = TOK_PROMPTS[id];
-        const cat = TOK_CATEGORIES.find((c) => c.promptIds.includes(id));
-        const { xPct, yPct, rot } = messyPos(id);
-
-        // Compute target position scattered across full width
-        const x = `${xPct * 100}%`;
-        const y = `${yPct * 640}px`;
-
-        // Color tween — white → category color
-        const bgColor = cat ? lerpColor("#ffffff", resolveColor(cat.color), colorT) : "#ffffff";
-        const currentRot = rot * (1 - colorT * 0.8); // de-rotate as colors come in
-
-        return (
-          <motion.div
-            layoutId={`prompt-${id}`}
-            key={id}
-            initial={false}
-            animate={{
-              left: x,
-              top: y,
-              rotate: currentRot,
-              backgroundColor: bgColor,
-            }}
-            transition={{ type: "spring", stiffness: 30, damping: 16, mass: 1.2 }}
-            style={{
-              position: "absolute",
-              width: "240px",
-              border: "2px solid var(--border)",
-              borderRadius: "var(--radius)",
-              padding: "0.85rem 1rem",
-              transformOrigin: "center",
-              willChange: "transform",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem" }}>
-              <span style={{ fontSize: "10px", fontWeight: 700, color: "rgba(0,0,0,0.4)", minWidth: "16px", paddingTop: "1px" }}>{id}</span>
-              <p style={{ fontWeight: 700, fontSize: "12px", lineHeight: 1.35 }}>{prompt.title}</p>
-            </div>
-            <motion.div
-              animate={{ opacity: descT, height: descT > 0.1 ? "auto" : 0 }}
-              transition={{ duration: 0.4 }}
-              style={{ overflow: "hidden", marginTop: descT > 0.1 ? "0.4rem" : 0 }}
-            >
-              <p style={{ fontSize: "11px", color: "#444", lineHeight: 1.5, paddingLeft: "calc(16px + 0.5rem)" }}>
-                {prompt.description.length > 100 ? prompt.description.slice(0, 100) + "…" : prompt.description}
-              </p>
-            </motion.div>
-          </motion.div>
-        );
-      })}
-    </div>
-  );
-}
-
-function SortedFlow({ allIds, done, onExpand }: { allIds: number[]; done: boolean; onExpand: (id: number) => void }) {
-  const [activeCategory, setActiveCategory] = useState<TOKCategoryId | null>(null);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.4 }}
-    >
-      {done && (
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 0.4 }}
-          style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1.5rem" }}
-        >
-          <button
-            onClick={() => setActiveCategory(null)}
-            className="tag"
-            style={{
-              cursor: "pointer",
-              background: activeCategory === null ? "var(--fg)" : "transparent",
-              color: activeCategory === null ? "var(--bg)" : "var(--fg)",
-              border: "2px solid var(--fg)",
-            }}
-          >
-            All ({allIds.length})
-          </button>
-          {TOK_CATEGORIES.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setActiveCategory(activeCategory === cat.id ? null : cat.id)}
-              className="tag"
-              style={{
-                cursor: "pointer",
-                background: activeCategory === cat.id ? cat.color : "transparent",
-                border: "2px solid var(--fg)",
-              }}
-            >
-              {cat.label} ({cat.promptIds.length})
-            </button>
-          ))}
-        </motion.div>
-      )}
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1.25rem" }}>
-        {TOK_CATEGORIES.filter((c) => activeCategory === null || c.id === activeCategory).map((cat) => (
-          <motion.section
-            key={cat.id}
-            layout
-          >
-            <h3
-              className="heading"
-              style={{
-                fontSize: "13px",
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
-                marginBottom: "0.75rem",
-                paddingBottom: "0.4rem",
-                borderBottom: `3px solid ${cat.color}`,
-              }}
-            >
-              {cat.label}
-            </h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              {cat.promptIds.map((id) => {
-                const prompt = TOK_PROMPTS[id];
-                return (
-                  <motion.div
-                    layoutId={`prompt-${id}`}
-                    key={id}
-                    onClick={() => onExpand(id)}
-                    whileHover={{ x: -3, y: -3, boxShadow: "6px 6px 0 0 var(--fg)" }}
-                    transition={{ type: "spring", stiffness: 200, damping: 22 }}
-                    style={{
-                      cursor: done ? "pointer" : "default",
-                      padding: "0.75rem 0.9rem",
-                      background: cat.color,
-                      border: "2px solid var(--border)",
-                      borderRadius: "var(--radius)",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", marginBottom: "0.3rem" }}>
-                      <span style={{ fontSize: "10px", fontWeight: 700, color: "rgba(0,0,0,0.5)", minWidth: "16px", paddingTop: "1px" }}>{id}</span>
-                      <p style={{ fontWeight: 700, fontSize: "12px", lineHeight: 1.35 }}>{prompt.title}</p>
-                    </div>
-                    <p style={{ fontSize: "11px", color: "#444", lineHeight: 1.5, paddingLeft: "calc(16px + 0.5rem)" }}>
-                      {prompt.description.length > 90 ? prompt.description.slice(0, 90) + "…" : prompt.description}
-                    </p>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </motion.section>
-        ))}
-      </div>
-    </motion.div>
   );
 }
 
@@ -335,9 +369,9 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
   return (
     <motion.div
       initial={{ opacity: 0 }}
-      animate={{ opacity: 1, backdropFilter: "blur(8px)" }}
-      exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
-      transition={{ duration: 0.3 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.25 }}
       onClick={onClose}
       style={{
         position: "fixed",
@@ -364,6 +398,7 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
           maxHeight: "85vh",
           overflowY: "auto",
           boxShadow: "8px 8px 0 0 var(--fg)",
+          position: "relative",
         }}
       >
         <button
@@ -408,36 +443,19 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
               <div style={{ background: "rgba(255,255,255,0.7)", border: "2px solid var(--border)", borderRadius: "var(--radius)", padding: "1rem 1.25rem", marginTop: "0.5rem" }}>
                 <p className="eyebrow" style={{ marginBottom: "0.5rem" }}>Ask AI</p>
                 <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.75rem" }}>
-                  <button
-                    onClick={() => askAI("What is this prompt really asking?")}
-                    disabled={aiLoading}
-                    className="tag"
-                    style={{ cursor: "pointer", background: "var(--bg)", border: "2px solid var(--fg)" }}
-                  >
+                  <button onClick={() => askAI("What is this prompt really asking?")} disabled={aiLoading} className="tag" style={{ cursor: "pointer", background: "var(--bg)", border: "2px solid var(--fg)" }}>
                     What's it asking?
                   </button>
-                  <button
-                    onClick={() => askAI("What kinds of objects would work well for this prompt? Give 3 example object types and why.")}
-                    disabled={aiLoading}
-                    className="tag"
-                    style={{ cursor: "pointer", background: "var(--bg)", border: "2px solid var(--fg)" }}
-                  >
+                  <button onClick={() => askAI("What kinds of objects would work well for this prompt? Give 3 example object types and why.")} disabled={aiLoading} className="tag" style={{ cursor: "pointer", background: "var(--bg)", border: "2px solid var(--fg)" }}>
                     Suggest objects
                   </button>
-                  <button
-                    onClick={() => askAI("What are the key knowledge questions inside this prompt I should think about?")}
-                    disabled={aiLoading}
-                    className="tag"
-                    style={{ cursor: "pointer", background: "var(--bg)", border: "2px solid var(--fg)" }}
-                  >
+                  <button onClick={() => askAI("What are the key knowledge questions inside this prompt I should think about?")} disabled={aiLoading} className="tag" style={{ cursor: "pointer", background: "var(--bg)", border: "2px solid var(--fg)" }}>
                     Key KQs
                   </button>
                 </div>
                 {aiLoading && <p style={{ fontSize: "12px", color: "#555" }}>Thinking…</p>}
                 {aiError && <p style={{ fontSize: "12px", color: "#c00" }}>{aiError}</p>}
-                {aiAnswer && (
-                  <p style={{ fontSize: "13px", color: "#222", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{aiAnswer}</p>
-                )}
+                {aiAnswer && <p style={{ fontSize: "13px", color: "#222", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{aiAnswer}</p>}
               </div>
             </motion.div>
           )}
