@@ -235,6 +235,17 @@ body {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* Inner bump on hover — intended for elements whose parent already
+   uses transform for layout animation. Applies inset translate via
+   child transform so it composes safely. */
+@utility hover-bump {
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  &:hover {
+    transform: translate(-4px, -4px);
+    box-shadow: 8px 8px 0 0 var(--fg);
+  }
+}
+
 /* Card with bump + diagonal offset shadow on hover */
 @utility card-bump {
   background: var(--surface);
