@@ -3,6 +3,24 @@ export interface TOKPrompt {
   description: string;
 }
 
+export type TOKCategoryId = "knowledge" | "reliability" | "ethics" | "communication" | "culture" | "change";
+
+export const TOK_CATEGORIES: { id: TOKCategoryId; label: string; color: string; promptIds: number[] }[] = [
+  { id: "knowledge",     label: "Knowledge & Justification",   color: "var(--yellow)", promptIds: [1, 4, 5, 19, 25, 32] },
+  { id: "reliability",   label: "Reliability, Bias & Certainty", color: "var(--mint)",  promptIds: [3, 8, 12, 13, 18, 28, 31] },
+  { id: "ethics",        label: "Ethics & Responsibility",      color: "var(--pink)",   promptIds: [7, 11, 16, 27, 29, 34, 35] },
+  { id: "communication", label: "Communication & Context",      color: "var(--sky)",    promptIds: [6, 10, 22, 23, 24] },
+  { id: "culture",       label: "Communities & Culture",        color: "#e9d5ff",        promptIds: [9, 14, 17, 21, 26] },
+  { id: "change",        label: "Change & Imagination",         color: "#fed7aa",        promptIds: [2, 15, 20, 30, 33] },
+];
+
+export function getCategoryForPrompt(promptId: number): TOKCategoryId | null {
+  for (const cat of TOK_CATEGORIES) {
+    if (cat.promptIds.includes(promptId)) return cat.id;
+  }
+  return null;
+}
+
 export const TOK_PROMPTS: Record<number, TOKPrompt> = {
   1: {
     title: "What counts as knowledge?",
