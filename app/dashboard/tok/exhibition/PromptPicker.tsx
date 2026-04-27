@@ -110,9 +110,9 @@ function smoothstep(x: number) {
 function phaseValues(t: number) {
   return {
     desc:    smoothstep((t - 0.05) / 0.27),
-    color:   smoothstep((t - 0.32) / 0.13),
+    color:   smoothstep((t - 0.32) / 0.16),
     derot:   smoothstep((t - 0.32) / 0.16),
-    equalize: smoothstep((t - 0.40) / 0.15),
+    equalize: smoothstep((t - 0.32) / 0.16),
     flight:  smoothstep((t - 0.65) / 0.27),
     headings: smoothstep((t - 0.92) / 0.08),
   };
@@ -236,7 +236,7 @@ export default function PromptPicker({ createAction }: { createAction: (formData
         animate={{ opacity: ph.headings, y: ph.headings > 0 ? 0 : -8 }}
         style={{
           display: "grid",
-          gridTemplateColumns: `auto repeat(${TOK_CATEGORIES.length}, 1fr)`,
+          gridTemplateColumns: `repeat(${TOK_CATEGORIES.length}, 1fr)`,
           gap: "0.6rem",
           marginBottom: "1.25rem",
           pointerEvents: ph.headings > 0.5 ? "auto" : "none",
@@ -244,24 +244,6 @@ export default function PromptPicker({ createAction }: { createAction: (formData
           alignItems: "stretch",
         }}
       >
-        <button
-          onClick={() => setActiveCategory(null)}
-          style={{
-            cursor: "pointer",
-            background: activeCategory === null ? "var(--fg)" : "transparent",
-            color: activeCategory === null ? "var(--bg)" : "var(--fg)",
-            border: "2px solid var(--fg)",
-            borderRadius: "var(--radius)",
-            padding: "0.5rem 0.9rem",
-            fontSize: "11px",
-            fontWeight: 700,
-            textTransform: "uppercase",
-            letterSpacing: "0.06em",
-            whiteSpace: "nowrap",
-          }}
-        >
-          All · {allIds.length}
-        </button>
         {TOK_CATEGORIES.map((cat) => {
           const active = activeCategory === cat.id;
           const dimmed = activeCategory !== null && !active;
