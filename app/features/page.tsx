@@ -49,7 +49,7 @@ export default function FeaturesPage() {
         <p className="eyebrow">What's inside</p>
         <h1 className="heading" style={{ fontSize: "40px" }}>Features</h1>
         <p style={{ color: "#555", maxWidth: "480px", lineHeight: "1.7" }}>
-          Every tool is built specifically for the IB Core — not a generic AI wrapper, but structured workflows that match how IB actually works.
+          Every tool is built specifically for the IB Core: not a generic AI wrapper, but structured workflows that match how IB actually works.
         </p>
       </div>
 

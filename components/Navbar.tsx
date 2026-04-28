@@ -28,7 +28,7 @@ export default async function Navbar() {
           gap: "1rem",
         }}
       >
-        {/* Logo — far left */}
+        {/* Logo: far left */}
         <Link
           href="/"
           className="heading"
@@ -36,7 +36,7 @@ export default async function Navbar() {
         ><mark className="highlight-yellow" style={{ marginRight: "-0.28em", paddingRight: "0.28em" }}>Core</mark>space
         </Link>
 
-        {/* Centre nav — truly centered */}
+        {/* Centre nav: truly centered */}
         <nav style={{ display: "flex", gap: "1.5rem", alignItems: "center" }}>
           <Link href="/features" className="back-link" style={{ fontSize: "12px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>
             Features
@@ -46,7 +46,7 @@ export default async function Navbar() {
           </Link>
         </nav>
 
-        {/* Right — far right */}
+        {/* Right: far right */}
         <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", justifySelf: "end" }}>
           {user ? (
             <>

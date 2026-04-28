@@ -46,7 +46,7 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
       formData.set("exhibition_id", exhibitionId);
       formData.set("object_id", object.id);
       formData.set("justification", data.text);
-      // We call saveJustification indirectly — patch via saveObject with just justification
+      // We call saveJustification indirectly: patch via saveObject with just justification
       // Actually we'll POST to a dedicated route pattern via fetch to keep client-clean
       await fetch("/api/tok/justification", {
         method: "POST",

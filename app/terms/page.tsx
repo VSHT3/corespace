@@ -17,7 +17,7 @@ export default function TermsPage() {
 
         <section>
           <h2 className="heading" style={{ fontSize: "16px", marginBottom: "0.5rem" }}>Your account</h2>
-          <p>You must be at least 13 years old to use this service. You are responsible for keeping your login credentials secure. One account per person — do not share accounts.</p>
+          <p>You must be at least 13 years old to use this service. You are responsible for keeping your login credentials secure. One account per person: do not share accounts.</p>
         </section>
 
         <div className="divider" />
@@ -37,7 +37,7 @@ export default function TermsPage() {
 
         <section>
           <h2 className="heading" style={{ fontSize: "16px", marginBottom: "0.5rem" }}>Payments & refunds</h2>
-          <p>Subscriptions are billed monthly. Payments are processed by <strong>Paddle</strong>, who acts as Merchant of Record — Paddle's terms and privacy policy also apply to your purchase. You can cancel at any time from your profile — cancellation takes effect at the end of the current billing period. We offer a refund within 7 days of initial purchase if you are not satisfied. Contact <a href="mailto:hello@corespace.app" style={{ color: "var(--fg)" }}>hello@corespace.app</a>.</p>
+          <p>Subscriptions are billed monthly. Payments are processed by <strong>Paddle</strong>, who acts as Merchant of Record: Paddle's terms and privacy policy also apply to your purchase. You can cancel at any time from your profile: cancellation takes effect at the end of the current billing period. We offer a refund within 7 days of initial purchase if you are not satisfied. Contact <a href="mailto:hello@corespace.app" style={{ color: "var(--fg)" }}>hello@corespace.app</a>.</p>
         </section>
 
         <div className="divider" />

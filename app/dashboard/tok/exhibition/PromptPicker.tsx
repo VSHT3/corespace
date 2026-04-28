@@ -3,12 +3,17 @@
 import { useEffect, useState, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { TOK_PROMPTS, TOK_CATEGORIES, type TOKCategoryId } from "@/lib/tok-prompts";
+import { TOK_PROMPTS, TOK_CATEGORIES, type TOKCategoryId, type TOKPrompt } from "@/lib/tok-prompts";
 
 const SEEN_KEY = "tok-prompt-tour-seen-v5";
 const TOUR_DURATION_MS = 11000;
 const CARD_WIDTH_RANGE: [number, number] = [200, 280];
 const SORTED_CARD_GAP = 14;
+const SORTED_CARD_HEIGHT = 166;
+const PREVIEW_TOP_PADDING = 13.6;
+const PREVIEW_BOTTOM_PADDING = 18;
+const PREVIEW_TITLE_DESCRIPTION_GAP = 6.4;
+const PREVIEW_DESCRIPTION_LINE_HEIGHT = 16.5;
 
 // Stable pseudo-random for each prompt
 function rng(id: number, salt: number) {
@@ -47,13 +52,11 @@ function computeMessyLayout(containerW: number, allIds: number[]): { positions: 
   return { positions: map, totalHeight: Math.max(...colHeights) + 80 };
 }
 
-// Sorted layout — 6 category columns. Uses measured heights when available.
-// fixedCardH: when provided, all cards use this height (equal-size mode).
+// Sorted layout: 6 category columns. Uses fixed preview card height.
 function computeSortedLayout(
   containerW: number,
   allIds: number[],
-  measured: Map<number, number> | null,
-  fixedCardH?: number
+  fixedCardH: number
 ): { perCategory: Map<TOKCategoryId, { x: number; w: number }>; cardsPerId: Map<number, { x: number; y: number; w: number }>; totalHeight: number } {
   const cols = TOK_CATEGORIES.length;
   const gap = 16;
@@ -65,30 +68,13 @@ function computeSortedLayout(
 
   let maxHeight = 0;
 
-  const charsPerLine = Math.max(24, Math.floor(colW / 5.8));
-  const estimateHeight = (id: number): number => {
-    if (fixedCardH) return fixedCardH;
-    const m = measured?.get(id);
-    if (m && m > 0) return m;
-    const prompt = TOK_PROMPTS[id];
-    const truncDesc = prompt.description.length > 80 ? prompt.description.slice(0, 80) + "…" : prompt.description;
-    const titleLines = Math.ceil(prompt.title.length / charsPerLine);
-    const descLines = Math.ceil(truncDesc.length / charsPerLine);
-    const titleH = titleLines * 17;
-    const descH = descLines * 17;
-    const padding = 28;
-    const innerGap = 6;
-    return titleH + descH + padding + innerGap + 4;
-  };
-
   TOK_CATEGORIES.forEach((cat, ci) => {
     const x = ci * (colW + gap);
     perCategory.set(cat.id, { x, w: colW });
     let yOffset = 0;
     cat.promptIds.filter((id) => visibleIds.has(id)).forEach((id) => {
-      const cardH = estimateHeight(id);
       cardsPerId.set(id, { x, y: yOffset, w: colW });
-      yOffset += cardH + SORTED_CARD_GAP;
+      yOffset += fixedCardH + SORTED_CARD_GAP;
     });
     if (yOffset > maxHeight) maxHeight = yOffset;
   });
@@ -102,7 +88,7 @@ function smoothstep(x: number) {
   return x * x * (3 - 2 * x);
 }
 
-// Stronger ease-in-out (smootherstep / quintic) — slow start + slow end, fast middle
+// Stronger ease-in-out (smootherstep / quintic): slow start + slow end, fast middle
 function easeInOut(x: number) {
   if (x <= 0) return 0;
   if (x >= 1) return 1;
@@ -112,7 +98,7 @@ function easeInOut(x: number) {
 function linear01(x: number) {
   return Math.max(0, Math.min(1, x));
 }
-// Aggressive springy easeInOut — quintic with steep middle, near-vertical acceleration
+// Aggressive springy easeInOut: quintic with steep middle, near-vertical acceleration
 function springyIO(x: number) {
   if (x <= 0) return 0;
   if (x >= 1) return 1;
@@ -122,7 +108,7 @@ function springyIO(x: number) {
     : 1 - Math.pow(-2 * x + 2, 5) / 2;
 }
 
-// Phase mapping over t (0..1) — over 11s total:
+// Phase mapping over t (0..1) over 11s total:
 //  0.00–0.18 : descriptions fade in (linear, fast)
 //  0.18–0.36 : colorize + de-rotate
 //  0.26–0.40 : equalize (springy resize)
@@ -149,7 +135,6 @@ export default function PromptPicker({ createAction }: { createAction: (formData
   const [hoveredCategory, setHoveredCategory] = useState<TOKCategoryId | null>(null);
   const [hoveredPromptId, setHoveredPromptId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [measuredHeights, setMeasuredHeights] = useState<Map<number, number> | null>(null);
   const [mounted, setMounted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
@@ -192,14 +177,7 @@ export default function PromptPicker({ createAction }: { createAction: (formData
   const messyLayoutFull = useMemo(() => computeMessyLayout(containerW, allIds), [containerW, allIds]);
   const messyLayout = messyLayoutFull.positions;
   const messyTotalHeight = messyLayoutFull.totalHeight;
-  const equalH = useMemo(() => {
-    if (!measuredHeights || measuredHeights.size === 0) return 95;
-    // 60th percentile — shorter cards, content can clip via overflow:hidden
-    const sorted = Array.from(measuredHeights.values()).sort((a, b) => a - b);
-    const idx = Math.floor(sorted.length * 0.60);
-    return sorted[idx] ?? sorted[sorted.length - 1];
-  }, [measuredHeights]);
-  const sortedLayout = useMemo(() => computeSortedLayout(containerW, allIds, measuredHeights, equalH > 0 ? equalH : undefined), [containerW, allIds, measuredHeights, equalH]);
+  const sortedLayout = useMemo(() => computeSortedLayout(containerW, allIds, SORTED_CARD_HEIGHT), [containerW, allIds]);
 
   const equalW = useMemo(() => {
     const sortedColW = sortedLayout.perCategory.values().next().value?.w ?? 220;
@@ -270,93 +248,82 @@ export default function PromptPicker({ createAction }: { createAction: (formData
   // Compute container height (interpolates between messy and sorted)
   const containerH = (1 - ph.flight) * messyTotalHeight + ph.flight * sortedLayout.totalHeight;
 
-  const measureColW = useMemo(() => {
-    const cols = TOK_CATEGORIES.length;
-    const gap = 16;
-    return (containerW - gap * (cols - 1)) / cols;
-  }, [containerW]);
   const effectiveCategory = hoveredCategory ?? activeCategory;
 
   return (
     <>
-      {/* Hidden measurement layer — real card content at real column width */}
-      <MeasurementLayer
-        ids={allIds}
-        colW={measureColW}
-        onMeasured={setMeasuredHeights}
-      />
-
-      {done && (
-        <div style={{ marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
-          <div style={{ position: "relative", width: "min(100%, 360px)" }}>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search prompts"
-              aria-label="Search prompts"
-              style={{
-                width: "100%",
-                border: "2px solid var(--border)",
-                borderRadius: "var(--radius)",
-                background: "var(--surface)",
-                color: "var(--fg)",
-                padding: "0.65rem 2.65rem 0.65rem 0.8rem",
-                fontSize: "14px",
-                fontWeight: 600,
-                outline: "none",
-              }}
-            />
-            {hasSearch && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery("")}
-                aria-label="Clear search"
-                style={{
-                  position: "absolute",
-                  right: "3px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  width: "36px",
-                  height: "36px",
-                  border: "none",
-                  background: "transparent",
-                  color: "var(--fg)",
-                  cursor: "pointer",
-                  fontSize: "18px",
-                  fontWeight: 800,
-                  lineHeight: 1,
-                }}
-              >
-                x
-              </button>
-            )}
-          </div>
-          {hasSearch && (
-            <span style={{ color: "#555", fontSize: "12px", fontWeight: 700 }}>
-              {matchCount} match{matchCount === 1 ? "" : "es"}
-            </span>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem", marginBottom: "1.25rem", minHeight: "44px", flexWrap: "wrap" }}>
+        <div style={{ color: "#555", maxWidth: "560px" }}>
+          <p style={{ margin: 0 }}>
+            Pick one of the 35 official IB prompts. Let the tour sort them by theme, then choose the prompt that best fits your objects.
+          </p>
+          {done && skipped && (
+            <button onClick={() => { setSkipped(false); setSearchQuery(""); runTour(); }} className="back-link" style={{ marginTop: "0.45rem", padding: 0, fontSize: "12px", background: "none", border: "none", cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>
+              Replay tour
+            </button>
           )}
         </div>
-      )}
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", marginBottom: "1.25rem", minHeight: "32px" }}>
-        <p style={{ color: "#555", maxWidth: "640px", margin: 0 }}>
-          Pick one of the 35 official IB prompts. Watch them organize themselves into themes — then click any prompt to start your exhibition.
-        </p>
         {!done && (
           <button onClick={skipTour} className="back-link" style={{ fontSize: "12px", background: "none", border: "none", cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700, flexShrink: 0 }}>
             Skip tour →
           </button>
         )}
-        {done && skipped && (
-          <button onClick={() => { setSkipped(false); setSearchQuery(""); runTour(); }} className="back-link" style={{ fontSize: "12px", background: "none", border: "none", cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700, flexShrink: 0 }}>
-            ↻ Replay tour
-          </button>
+        {done && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "0.75rem", flexWrap: "wrap", marginLeft: "auto" }}>
+            <div style={{ position: "relative", width: "min(100vw - 3rem, 360px)" }}>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search prompts"
+                aria-label="Search prompts"
+                style={{
+                  width: "100%",
+                  border: "2px solid var(--border)",
+                  borderRadius: "var(--radius)",
+                  background: "var(--surface)",
+                  color: "var(--fg)",
+                  padding: "0.65rem 2.65rem 0.65rem 0.8rem",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  outline: "none",
+                }}
+              />
+              {hasSearch && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  aria-label="Clear search"
+                  style={{
+                    position: "absolute",
+                    right: "3px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    width: "36px",
+                    height: "36px",
+                    border: "none",
+                    background: "transparent",
+                    color: "var(--fg)",
+                    cursor: "pointer",
+                    fontSize: "18px",
+                    fontWeight: 800,
+                    lineHeight: 1,
+                  }}
+                >
+                  x
+                </button>
+              )}
+            </div>
+            {hasSearch && (
+              <span style={{ color: "#555", fontSize: "12px", fontWeight: 700 }}>
+                {matchCount} match{matchCount === 1 ? "" : "es"}
+              </span>
+            )}
+          </div>
         )}
       </div>
 
-      {/* Category pills double as filter + heading — appear at end of tour */}
+      {/* Category pills double as filter + heading: appear at end of tour */}
       <motion.div
         animate={{ opacity: ph.headings, y: ph.headings > 0 ? 0 : -8 }}
         style={{
@@ -412,7 +379,7 @@ export default function PromptPicker({ createAction }: { createAction: (formData
         ref={containerRef}
         style={{ position: "relative", width: "100%", height: containerH, transition: "height 0.3s ease" }}
       >
-        {/* Cards — single render, never unmount, animate from messy to sorted */}
+        {/* Cards: single render, never unmount, animate from messy to sorted */}
         {allIds.map((id) => {
           const prompt = TOK_PROMPTS[id];
           const cat = TOK_CATEGORIES.find((c) => c.promptIds.includes(id))!;
@@ -458,51 +425,16 @@ export default function PromptPicker({ createAction }: { createAction: (formData
                 zIndex: searchMatch || hovered ? 2 : done ? 1 : 0,
               }}
             >
-              <motion.div
-                data-prompt-card
-                layoutId={`prompt-${id}`}
-                onMouseEnter={() => setHoveredPromptId(id)}
-                onMouseLeave={() => setHoveredPromptId(null)}
-                onClick={() => done && setExpandedId(id)}
-                animate={{
-                  backgroundColor: bg,
-                }}
-                whileHover={done ? { x: -4, y: -4, boxShadow: "8px 8px 0 0 var(--fg)" } : undefined}
-                transition={{
-                  backgroundColor: { type: "tween", duration: 0, ease: "linear" },
-                  x: { type: "spring", stiffness: 400, damping: 30 },
-                  y: { type: "spring", stiffness: 400, damping: 30 },
-                  boxShadow: { type: "spring", stiffness: 400, damping: 30 },
-                }}
-                style={{
-                  border: "2px solid var(--border)",
-                  borderRadius: "var(--radius)",
-                  padding: "0.85rem 1rem",
-                  cursor: done ? "pointer" : "default",
-                  userSelect: "none",
-                  width: "100%",
-                  minHeight: ph.equalize * equalH,
-                  height: done ? equalH : undefined,
-                  overflow: ph.equalize > 0 ? "hidden" : undefined,
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem" }}>
-                  <span style={{ fontSize: "10px", fontWeight: 700, color: "rgba(0,0,0,0.4)", minWidth: "16px", paddingTop: "1px" }}>{id}</span>
-                  <p style={{ fontWeight: 700, fontSize: "12px", lineHeight: 1.35 }}>{prompt.title}</p>
-                </div>
-                <div
-                  style={{
-                    overflow: "hidden",
-                    maxHeight: `${ph.desc * 200}px`,
-                    opacity: ph.desc,
-                    marginTop: `${ph.desc * 6.4}px`,
-                  }}
-                >
-                  <p style={{ fontSize: "11px", color: "#444", lineHeight: 1.5, paddingLeft: "calc(16px + 0.5rem)" }}>
-                    {prompt.description.length > 80 ? prompt.description.slice(0, 80) + "…" : prompt.description}
-                  </p>
-                </div>
-              </motion.div>
+              <PromptPreviewCard
+                id={id}
+                prompt={prompt}
+                bg={bg}
+                done={done}
+                phDesc={ph.desc}
+                phEqualize={ph.equalize}
+                onHover={setHoveredPromptId}
+                onOpen={() => setExpandedId(id)}
+              />
             </motion.div>
           );
         })}
@@ -521,64 +453,123 @@ export default function PromptPicker({ createAction }: { createAction: (formData
   );
 }
 
-function MeasurementLayer({ ids, colW, onMeasured }: { ids: number[]; colW: number; onMeasured: (m: Map<number, number>) => void }) {
-  const refs = useRef<Map<number, HTMLDivElement | null>>(new Map());
+function PromptPreviewCard({
+  id,
+  prompt,
+  bg,
+  done,
+  phDesc,
+  phEqualize,
+  onHover,
+  onOpen,
+}: {
+  id: number;
+  prompt: TOKPrompt;
+  bg: string;
+  done: boolean;
+  phDesc: number;
+  phEqualize: number;
+  onHover: (id: number | null) => void;
+  onOpen: () => void;
+}) {
+  const titleRef = useRef<HTMLDivElement>(null);
+  const [descriptionLines, setDescriptionLines] = useState(0);
 
   useEffect(() => {
-    if (colW <= 0) return;
-    // Wait a frame for layout, then measure
-    const id = requestAnimationFrame(() => {
-      const heights = new Map<number, number>();
-      refs.current.forEach((el, key) => {
-        if (el) heights.set(key, el.getBoundingClientRect().height);
-      });
-      if (heights.size > 0) onMeasured(heights);
-    });
-    return () => cancelAnimationFrame(id);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [colW]);
+    const el = titleRef.current;
+    if (!el) return;
+
+    const updateLineCount = () => {
+      const titleHeight = el.getBoundingClientRect().height;
+      const availableHeight =
+        SORTED_CARD_HEIGHT -
+        PREVIEW_TOP_PADDING -
+        PREVIEW_BOTTOM_PADDING -
+        PREVIEW_TITLE_DESCRIPTION_GAP -
+        titleHeight;
+
+      setDescriptionLines(Math.max(0, Math.floor(availableHeight / PREVIEW_DESCRIPTION_LINE_HEIGHT)));
+    };
+
+    updateLineCount();
+    const observer = new ResizeObserver(updateLineCount);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [prompt.title]);
+
+  const descriptionHeight = descriptionLines * PREVIEW_DESCRIPTION_LINE_HEIGHT;
 
   return (
-    <div
-      aria-hidden
+    <motion.div
+      data-prompt-card
+      layoutId={`prompt-${id}`}
+      onMouseEnter={() => onHover(id)}
+      onMouseLeave={() => onHover(null)}
+      onClick={() => done && onOpen()}
+      animate={{
+        backgroundColor: bg,
+      }}
+      whileHover={done ? { x: -4, y: -4, boxShadow: "8px 8px 0 0 var(--fg)" } : undefined}
+      transition={{
+        backgroundColor: { type: "tween", duration: 0, ease: "linear" },
+        x: { type: "spring", stiffness: 400, damping: 30 },
+        y: { type: "spring", stiffness: 400, damping: 30 },
+        boxShadow: { type: "spring", stiffness: 400, damping: 30 },
+      }}
       style={{
-        position: "fixed",
-        left: -99999,
-        top: 0,
-        width: colW,
-        pointerEvents: "none",
-        visibility: "hidden",
+        border: "2px solid var(--border)",
+        borderRadius: "var(--radius)",
+        padding: `${PREVIEW_TOP_PADDING}px 1rem ${PREVIEW_BOTTOM_PADDING}px`,
+        cursor: done ? "pointer" : "default",
+        userSelect: "none",
+        width: "100%",
+        minHeight: phEqualize * SORTED_CARD_HEIGHT,
+        height: done ? SORTED_CARD_HEIGHT : undefined,
+        overflow: phEqualize > 0 ? "hidden" : undefined,
+        display: "flex",
+        flexDirection: "column",
       }}
     >
-      {ids.map((id) => {
-        const prompt = TOK_PROMPTS[id];
-        const truncDesc = prompt.description.length > 80 ? prompt.description.slice(0, 80) + "…" : prompt.description;
-        return (
-          <div
-            key={id}
-            ref={(el) => { refs.current.set(id, el); }}
-            style={{
-              border: "2px solid var(--border)",
-              borderRadius: "var(--radius)",
-              padding: "0.85rem 1rem",
-              width: colW,
-              boxSizing: "border-box",
-              marginBottom: "8px",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem" }}>
-              <span style={{ fontSize: "10px", fontWeight: 700, minWidth: "16px", paddingTop: "1px" }}>{id}</span>
-              <p style={{ fontWeight: 700, fontSize: "12px", lineHeight: 1.35 }}>{prompt.title}</p>
-            </div>
-            <div style={{ marginTop: "6.4px" }}>
-              <p style={{ fontSize: "11px", lineHeight: 1.5, paddingLeft: "calc(16px + 0.5rem)" }}>
-                {truncDesc}
-              </p>
-            </div>
-          </div>
-        );
-      })}
-    </div>
+      <div ref={titleRef} style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", flexShrink: 0 }}>
+        <span style={{ fontSize: "10px", fontWeight: 700, color: "rgba(0,0,0,0.4)", minWidth: "16px", paddingTop: "1px" }}>{id}</span>
+        <p
+          style={{
+            fontWeight: 700,
+            fontSize: "12px",
+            lineHeight: 1.35,
+            overflowWrap: "anywhere",
+            margin: 0,
+          }}
+        >
+          {prompt.title}
+        </p>
+      </div>
+      <div
+        style={{
+          overflow: "hidden",
+          height: phDesc * descriptionHeight,
+          opacity: phDesc,
+          marginTop: descriptionLines > 0 ? `${phDesc * PREVIEW_TITLE_DESCRIPTION_GAP}px` : 0,
+          flexShrink: 0,
+        }}
+      >
+        <p
+          style={{
+            fontSize: "11px",
+            color: "#444",
+            lineHeight: `${PREVIEW_DESCRIPTION_LINE_HEIGHT}px`,
+            paddingLeft: "calc(16px + 0.5rem)",
+            margin: 0,
+            display: "-webkit-box",
+            WebkitLineClamp: descriptionLines,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+          }}
+        >
+          {prompt.description}
+        </p>
+      </div>
+    </motion.div>
   );
 }
 
@@ -614,7 +605,7 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          systemPrompt: "You are an IB Theory of Knowledge tutor. Help the student understand a TOK exhibition prompt — give a clear, concise (3-5 sentences) explanation focused on what the prompt is really asking, the key knowledge questions it raises, and what kinds of objects might work well.",
+          systemPrompt: "You are an IB Theory of Knowledge tutor. Help the student understand a TOK exhibition prompt. Give a clear, concise (3-5 sentences) explanation focused on what the prompt is really asking, the key knowledge questions it raises, and what kinds of objects might work well.",
           prompt: `Prompt ${id}: "${prompt.title}"\n\nDescription: ${prompt.description}\n\nStudent question: ${question}`,
         }),
       });
@@ -632,7 +623,7 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
 
   return createPortal(
     <>
-      {/* Backdrop layer — full-screen blur */}
+      {/* Backdrop layer: full-screen blur */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

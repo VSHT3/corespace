@@ -6,7 +6,7 @@ import CookieBanner from "@/components/CookieBanner";
 
 export const metadata: Metadata = {
   title: "Corespace",
-  description: "Tools for IB Diploma students — TOK, CAS, and EE",
+  description: "Tools for IB Diploma students: TOK, CAS, and EE",
 };
 
 export default function RootLayout({

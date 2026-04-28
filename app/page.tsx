@@ -15,7 +15,7 @@ export default function Home() {
 
         <p style={{ color: "#555", fontSize: "18px", lineHeight: "1.7", maxWidth: "36rem", margin: "0 auto" }}>
           AI-powered tools for Theory of Knowledge, CAS reflections, and Extended
-          Essays — built by an IB student, for IB students.
+          Essays: built by an IB student, for IB students.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">

@@ -151,7 +151,7 @@ body {
 @utility tag-mint   { background: var(--mint); }
 @utility tag-sky    { background: var(--sky); }
 
-/* Standard page wrapper — use on <main> for all inner pages */
+/* Standard page wrapper: use on <main> for all inner pages */
 @utility page-main {
   flex: 1 1 auto;
   max-width: 860px;
@@ -186,7 +186,7 @@ body {
   &:hover { color: var(--fg); }
 }
 
-/* Brush-stroke highlight — SVG brush asset, hand-drawn feel */
+/* Brush-stroke highlight: SVG brush asset, hand-drawn feel */
 @utility highlight-yellow {
   background-color: transparent !important;
   background-image: url("https://s2.svgbox.net/pen-brushes.svg?ic=brush-1&color=fde68a");
@@ -235,7 +235,7 @@ body {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Inner bump on hover — intended for elements whose parent already
+/* Inner bump on hover: intended for elements whose parent already
    uses transform for layout animation. Applies inset translate via
    child transform so it composes safely. */
 @utility hover-bump {

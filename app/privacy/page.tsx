@@ -10,7 +10,7 @@ export default function PrivacyPage() {
       <div style={{ color: "#333", fontSize: "14px", lineHeight: "1.8" }} className="space-y-6">
         <section>
           <h2 className="heading" style={{ fontSize: "16px", marginBottom: "0.5rem" }}>What we collect</h2>
-          <p>When you create an account we collect your email address and a hashed password. When you use the app we store the content you create (TOK exhibitions, objects, reflections). We do not collect names, phone numbers, or payment card details — Paddle acts as Merchant of Record and handles all payment processing; we never see your card.</p>
+          <p>When you create an account we collect your email address and a hashed password. When you use the app we store the content you create (TOK exhibitions, objects, reflections). We do not collect names, phone numbers, or payment card details: Paddle acts as Merchant of Record and handles all payment processing; we never see your card.</p>
         </section>
 
         <div className="divider" />
@@ -30,9 +30,9 @@ export default function PrivacyPage() {
         <section>
           <h2 className="heading" style={{ fontSize: "16px", marginBottom: "0.5rem" }}>Who we share it with</h2>
           <ul style={{ paddingLeft: "1.25rem", margin: 0 }}>
-            <li><strong>Supabase</strong> — hosts our database and authentication. EU data residency.</li>
-            <li><strong>Anthropic</strong> — processes your content to generate AI feedback. Content is not used to train models.</li>
-            <li><strong>Paddle</strong> — Merchant of Record; handles all payment processing and tax compliance. We share only what Paddle requires (email). Paddle issues invoices and remits VAT on our behalf.</li>
+            <li><strong>Supabase</strong>: hosts our database and authentication. EU data residency.</li>
+            <li><strong>Anthropic</strong>: processes your content to generate AI feedback. Content is not used to train models.</li>
+            <li><strong>Paddle</strong>: Merchant of Record; handles all payment processing and tax compliance. We share only what Paddle requires (email). Paddle issues invoices and remits VAT on our behalf.</li>
           </ul>
           <p style={{ marginTop: "0.75rem" }}>We do not sell your data. Ever.</p>
         </section>

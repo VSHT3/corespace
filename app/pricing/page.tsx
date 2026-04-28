@@ -9,7 +9,7 @@ const plans = [
     description: "Everything you need to get started.",
     features: [
       "TOK Exhibition helper (3 exhibitions)",
-      "AI feedback — 20 requests/month",
+      "AI feedback: 20 requests/month",
       "Basic object analysis",
     ],
     cta: "Get started",
@@ -24,7 +24,7 @@ const plans = [
     description: "Full access for one student.",
     features: [
       "Unlimited TOK exhibitions",
-      "AI feedback — unlimited",
+      "AI feedback: unlimited",
       "CAS tracker (when available)",
       "EE assistant (when available)",
       "Priority support",
@@ -165,7 +165,7 @@ export default function PricingPage() {
           marginTop: "2.5rem",
         }}
       >
-        Student plan renews monthly. Cancel from your profile anytime. Payments processed by Paddle — they handle VAT and invoicing.
+        Student plan renews monthly. Cancel from your profile anytime. Payments processed by Paddle: they handle VAT and invoicing.
       </p>
     </main>
   );
