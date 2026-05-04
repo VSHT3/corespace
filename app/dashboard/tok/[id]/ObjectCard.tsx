@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import type { TOKObject } from "@/types";
 
 interface Props {
@@ -17,11 +17,21 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
   const [justification, setJustification] = useState(object?.justification ?? "");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
+  const [saveError, setSaveError] = useState("");
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const slotLabel = ["First", "Second", "Third"][slot];
   const accentColors = ["var(--pink)", "var(--mint)", "var(--sky)"];
   const accent = accentColors[slot];
+
+  useEffect(() => {
+    setEditing(!object);
+    setJustification(object?.justification ?? "");
+    setConfirmingDelete(false);
+    setAiError("");
+    setSaveError("");
+  }, [object]);
 
   async function handleGenerateJustification() {
     if (!object) return;
@@ -32,9 +42,14 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          systemPrompt:
-            "You are an IB Theory of Knowledge expert. Write a clear, concise justification (3–4 sentences) for why a specific object is relevant to the given TOK exhibition prompt. Focus on knowledge questions, ways of knowing, and areas of knowledge. Write for a student submitting their TOK exhibition commentary.",
-          prompt: `TOK Prompt: "${prompt}"\n\nObject: "${object.title}" (type: ${object.object_type || "unspecified"})\nDescription: ${object.description || "(none provided)"}\n\nWrite the justification for this object.`,
+          intent: "object_justification",
+          userMessage: "Write the justification for this object.",
+          context: {
+            prompt,
+            objectTitle: object.title,
+            objectType: object.object_type ?? "",
+            objectDescription: object.description ?? "",
+          },
         }),
       });
       const data = await res.json();
@@ -62,13 +77,17 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
 
   async function handleSaveJustification() {
     if (!object) return;
+    setSaveError("");
     try {
-      await fetch("/api/tok/justification", {
+      const res = await fetch("/api/tok/justification", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ exhibitionId, objectId: object.id, justification }),
       });
-    } catch {}
+      if (!res.ok) throw new Error("Save failed");
+    } catch {
+      setSaveError("Failed to save. Check connection and try again.");
+    }
   }
 
   async function handleDelete() {
@@ -77,15 +96,17 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
   }
 
   return (
-    <div className="card" style={{ borderLeft: `4px solid ${accent}` }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+    <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+      <div style={{ height: "6px", background: accent }} />
+      <div style={{ padding: "1.25rem" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.75rem", marginBottom: "1rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0, flexWrap: "wrap" }}>
           <span className="tag" style={{ background: accent }}>{slotLabel} Object</span>
           {object && !editing && (
-            <span style={{ fontWeight: 700, fontSize: "15px" }}>{object.title}</span>
+            <span style={{ fontWeight: 700, fontSize: "15px", lineHeight: 1.35, overflowWrap: "anywhere" }}>{object.title}</span>
           )}
         </div>
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
           {object && (
             <>
               <button
@@ -95,14 +116,45 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
               >
                 {editing ? "Cancel" : "Edit"}
               </button>
-              <button
-                onClick={handleDelete}
-                disabled={isPending}
-                className="btn-ghost btn-ghost-hover"
-                style={{ fontSize: "11px", padding: "4px 10px", color: "#c00", borderColor: "#c00" }}
-              >
-                Remove
-              </button>
+              {!confirmingDelete ? (
+                <button
+                  onClick={() => setConfirmingDelete(true)}
+                  disabled={isPending}
+                  className="btn-ghost btn-ghost-hover"
+                  style={{ fontSize: "11px", padding: "4px 10px", color: "#c00", borderColor: "#c00" }}
+                >
+                  Remove
+                </button>
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+                  <span style={{ color: "#555", fontSize: "12px", fontWeight: 700 }}>Remove this object?</span>
+                  <button
+                    onClick={handleDelete}
+                    disabled={isPending}
+                    className="btn-ghost btn-ghost-hover"
+                    style={{ fontSize: "11px", padding: "4px 10px", color: "#c00", borderColor: "#c00" }}
+                  >
+                    {isPending ? "Removing..." : "Yes, remove"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmingDelete(false)}
+                    className="back-link"
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      padding: "4px 0",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.06em",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -159,7 +211,7 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
             />
           </div>
           <button type="submit" className="btn-primary btn-primary-hover">
-            {object ? "Update Object" : "Add Object"}
+            Save Object
           </button>
         </form>
       )}
@@ -174,7 +226,7 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
 
           <hr className="divider" style={{ margin: "1rem 0" }} />
 
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.75rem", marginBottom: "0.75rem", flexWrap: "wrap" }}>
             <p style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
               Justification
             </p>
@@ -189,23 +241,53 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
           </div>
 
           {aiError && (
-            <p style={{ color: "#c00", fontSize: "13px", marginBottom: "0.5rem" }}>{aiError}</p>
+            <p className="tag tag-pink" style={{ display: "block", fontWeight: 400, textTransform: "none", letterSpacing: 0, fontSize: "12px", padding: "6px 10px", marginBottom: "0.5rem" }}>
+              {aiError}
+            </p>
           )}
 
-          <textarea
-            rows={5}
-            value={justification}
-            onChange={(e) => setJustification(e.target.value)}
-            onBlur={handleSaveJustification}
-            placeholder="Write your justification here, or generate one with AI above."
-            className="field-input"
-            style={{ resize: "vertical" }}
-          />
-          <p style={{ fontSize: "11px", color: "#aaa", marginTop: "4px" }}>
-            Auto-saved on blur. Edit freely after generating.
-          </p>
+          {aiLoading ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px", padding: "2px 0" }}>
+              {[80, 95, 70, 88, 60].map((w, i) => (
+                <div
+                  key={i}
+                  style={{
+                    height: "13px",
+                    width: `${w}%`,
+                    background: "var(--border)",
+                    borderRadius: "2px",
+                    animation: "pulse 1.4s ease-in-out infinite",
+                    animationDelay: `${i * 0.1}s`,
+                  }}
+                />
+              ))}
+            </div>
+          ) : (
+            <textarea
+              rows={5}
+              value={justification}
+              onChange={(e) => setJustification(e.target.value)}
+              onBlur={handleSaveJustification}
+              placeholder="Write your justification here, or generate one with AI above."
+              className="field-input"
+              style={{ resize: "vertical" }}
+            />
+          )}
+
+          {saveError && (
+            <p className="tag tag-pink" style={{ display: "block", fontWeight: 400, textTransform: "none", letterSpacing: 0, fontSize: "12px", padding: "6px 10px", marginTop: "4px" }}>
+              {saveError}
+            </p>
+          )}
+
+          {!aiLoading && !saveError && (
+            <p style={{ fontSize: "11px", color: "#aaa", marginTop: "4px" }}>
+              Auto-saved on blur. Edit freely after generating.
+            </p>
+          )}
         </div>
       )}
+      </div>
     </div>
   );
 }

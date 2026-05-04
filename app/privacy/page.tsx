@@ -31,7 +31,7 @@ export default function PrivacyPage() {
           <h2 className="heading" style={{ fontSize: "16px", marginBottom: "0.5rem" }}>Who we share it with</h2>
           <ul style={{ paddingLeft: "1.25rem", margin: 0 }}>
             <li><strong>Supabase</strong>: hosts our database and authentication. EU data residency.</li>
-            <li><strong>Anthropic</strong>: processes your content to generate AI feedback. Content is not used to train models.</li>
+            <li><strong>Google Gemini</strong>: processes your content to generate AI feedback. Content is not used to train models.</li>
             <li><strong>Paddle</strong>: Merchant of Record; handles all payment processing and tax compliance. We share only what Paddle requires (email). Paddle issues invoices and remits VAT on our behalf.</li>
           </ul>
           <p style={{ marginTop: "0.75rem" }}>We do not sell your data. Ever.</p>

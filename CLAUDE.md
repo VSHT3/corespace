@@ -62,7 +62,13 @@ browser → proxy.ts (auth gate) → app/ route → Supabase / AI API
 
 ### AI calls: server-only
 
-All Anthropic calls go through `app/api/ai/route.ts` (POST). Client components call this endpoint — never import `lib/anthropic.ts` on client. Endpoint accepts `{ prompt, systemPrompt? }`, returns `{ text }`. Model: `claude-haiku-3-5-20251001`, max_tokens 1000.
+All Gemini calls go through `app/api/ai/route.ts` (POST). Client components call this endpoint — never import `lib/gemini.ts` on client. Endpoint accepts `{ intent, userMessage, context? }`, returns `{ text }`. Model: `gemini-2.5-flash`, maxOutputTokens 1000.
+
+**Intents:**
+- `prompt_explainer` — chat AI in prompt picker. Context: `promptId`, `promptTitle`, `promptDescription`.
+- `object_justification` — justification generator in workspace. Context: `prompt`, `objectTitle`, `objectType`, `objectDescription`.
+
+System prompts built server-side only. Reference docs in `lib/ai-docs/` loaded at module init and prepended to every system prompt — never sent from client. To update AI knowledge, edit those `.md` files.
 
 Justification saves go through `app/api/tok/justification/route.ts` (POST) — verifies ownership before writing.
 
@@ -142,17 +148,45 @@ Paddle handles VAT, invoicing, tax compliance. Paddle is merchant of record, not
 - Object builder (3 slots per exhibition)
 - AI justification per object
 - Exhibition workspace at `/dashboard/tok/[id]`
+- Prompt difficulty ratings (1–5) on all 35 prompts
+- Prompt picker AI chat panel (two-panel layout, session-persistent history, markdown rendering)
+- Server-side system prompt architecture with `lib/ai-docs/` reference docs
+- AI route refactored to intent-based (`prompt_explainer`, `object_justification`)
 
 ### P1 — Auth gaps
-1. **Email confirmation** — enable in Supabase Auth, add `/auth/confirm` callback route
-2. **Password reset** — `/forgot-password` → `resetPasswordForEmail`, `/auth/reset` callback
+1. **Email confirmation** — `/auth/confirm` route built. Enable "Confirm email" in Supabase Auth dashboard + set redirect URLs. ✓ code done, manual Supabase config needed.
+2. **Password reset** — `/forgot-password` + `/auth/reset` + `/auth/reset/complete` all built. ✓ code done.
+3. **Google OAuth** — not yet wired. Needs Google Cloud OAuth credentials + Supabase provider config + login page buttons.
 
 ### P2 — Payments
-3. **Paddle checkout** — wire upgrade button on `/profile` to `Paddle.Checkout.open()`
-4. **Paddle webhook** — verify signature → update `profiles.plan`
-5. **Usage gates** — free tier: max 3 exhibitions, 20 AI calls/month (enforce server-side)
+4. **Paddle checkout** — wire upgrade button on `/profile` to `Paddle.Checkout.open()`
+5. **Paddle webhook** — verify signature → update `profiles.plan`
+6. **Usage gates** — free tier: max 3 exhibitions, 20 AI calls/month (enforce server-side). Needs `profiles` table migration.
 
 ### P3 — Polish
-6. **Loading/error states** — AI calls need spinner + error display
 7. **Exhibition PDF export** — printable summary for coordinator
 8. **CAS tracker** — stub → real feature
+9. **Custom SMTP** — configure before launch (Resend recommended). Supabase built-in = 3/hr rate limit.
+
+___
+
+## Plan
+1. ✓ Gemini live calls — working, graceful error handling done.
+2. ✓ Auth completeness — email confirm + password reset routes built. Manual Supabase config needed.
+3. Usage gates — build `profiles` table migration, enforce free tier limits server-side.
+4. ✓ TOK workspace polish — loading states, save states, delete confirmations done.
+5. Google OAuth — add login buttons + wire Supabase provider.
+6. Custom SMTP — configure Resend before launch.
+7. Export/share — PDF exhibition export.
+8. Payments — Paddle checkout + webhook after usage gates exist.
+9. Deploy — Vercel env vars, production smoke test.
+
+## graphify
+
+This project has a graphify knowledge graph at graphify-out/.
+
+Rules:
+- Before answering architecture or codebase questions, read graphify-out/GRAPH_REPORT.md for god nodes and community structure
+- If graphify-out/wiki/index.md exists, navigate it instead of reading raw files
+- For cross-module "how does X relate to Y" questions, prefer `graphify query "<question>"`, `graphify path "<A>" "<B>"`, or `graphify explain "<concept>"` over grep — these traverse the graph's EXTRACTED + INFERRED edges instead of scanning files
+- After modifying code files in this session, run `graphify update .` to keep the graph current (AST-only, no API cost)

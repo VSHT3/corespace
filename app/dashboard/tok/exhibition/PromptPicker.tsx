@@ -3,7 +3,13 @@
 import { useEffect, useState, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import ReactMarkdown from "react-markdown";
 import { TOK_PROMPTS, TOK_CATEGORIES, type TOKCategoryId, type TOKPrompt } from "@/lib/tok-prompts";
+
+// Session-persistent chat history keyed by prompt ID
+type ChatMessage = { role: "user" | "ai"; text: string; id: number };
+const sessionChat = new Map<number, ChatMessage[]>();
+let msgIdCounter = 0;
 
 const SEEN_KEY = "tok-prompt-tour-seen-v5";
 const TOUR_DURATION_MS = 11000;
@@ -539,10 +545,14 @@ function PromptPreviewCard({
             lineHeight: 1.35,
             overflowWrap: "anywhere",
             margin: 0,
+            flex: 1,
           }}
         >
           {prompt.title}
         </p>
+        <span style={{ opacity: phDesc, flexShrink: 0, paddingTop: "1px" }}>
+          <DifficultyDots level={prompt.difficulty} size={6} gap={2} />
+        </span>
       </div>
       <div
         style={{
@@ -573,47 +583,89 @@ function PromptPreviewCard({
   );
 }
 
+const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
+const EASE_IN = [0.7, 0, 0.84, 0] as const;
+
+const CHIPS = [
+  { label: "What's it really asking?", question: "What is this prompt really asking? Be specific about the core knowledge question." },
+  { label: "Suggest 3 objects", question: "What kinds of objects would work well for this prompt? Give 3 concrete example objects and a one-sentence reason for each." },
+  { label: "Key knowledge questions", question: "What are the key knowledge questions inside this prompt I should think about for my exhibition?" },
+];
+
 function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () => void; createAction: (formData: FormData) => Promise<void> }) {
   const prompt = TOK_PROMPTS[id];
   const cat = TOK_CATEGORIES.find((c) => c.promptIds.includes(id));
-  const [aiOpen, setAiOpen] = useState(false);
-  const [aiAnswer, setAiAnswer] = useState("");
+
+  const [chatOpen, setChatOpen] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => sessionChat.get(id) ?? []);
+  const [input, setInput] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // ESC to close
+  // Sync messages to session store
+  useEffect(() => {
+    sessionChat.set(id, messages);
+  }, [id, messages]);
+
+  // Scroll to bottom on new message
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, aiLoading]);
+
+  // Focus input when chat opens
+  useEffect(() => {
+    if (chatOpen) {
+      setTimeout(() => inputRef.current?.focus(), 380);
+    }
+  }, [chatOpen]);
+
+  // ESC: close chat first, then card
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        if (chatOpen) setChatOpen(false);
+        else onClose();
+      }
     };
     window.addEventListener("keydown", handler);
-    // Lock body scroll
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", handler);
       document.body.style.overflow = prevOverflow;
     };
-  }, [onClose]);
+  }, [onClose, chatOpen]);
 
-  async function askAI(question: string) {
-    setAiLoading(true);
+  async function sendMessage(question: string) {
+    if (!question.trim() || aiLoading) return;
     setAiError("");
-    setAiAnswer("");
+    const userMsg: ChatMessage = { role: "user", text: question.trim(), id: ++msgIdCounter };
+    setMessages((prev) => [...prev, userMsg]);
+    setInput("");
+    setAiLoading(true);
+
     try {
       const res = await fetch("/api/ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          systemPrompt: "You are an IB Theory of Knowledge tutor. Help the student understand a TOK exhibition prompt. Give a clear, concise (3-5 sentences) explanation focused on what the prompt is really asking, the key knowledge questions it raises, and what kinds of objects might work well.",
-          prompt: `Prompt ${id}: "${prompt.title}"\n\nDescription: ${prompt.description}\n\nStudent question: ${question}`,
+          intent: "prompt_explainer",
+          userMessage: question.trim(),
+          context: {
+            promptId: String(id),
+            promptTitle: prompt.title,
+            promptDescription: prompt.description,
+          },
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "AI request failed");
-      setAiAnswer(data.text);
+      const aiMsg: ChatMessage = { role: "ai", text: data.text, id: ++msgIdCounter };
+      setMessages((prev) => [...prev, aiMsg]);
     } catch (e: unknown) {
-      setAiError(e instanceof Error ? e.message : "Unknown error");
+      setAiError(e instanceof Error ? e.message : "Request failed. Try again.");
     } finally {
       setAiLoading(false);
     }
@@ -621,121 +673,354 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
 
   if (typeof document === "undefined") return null;
 
+  const catColor = cat?.color ?? "var(--surface)";
+
   return createPortal(
     <>
-      {/* Backdrop layer: full-screen blur */}
+      {/* Backdrop */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.25 }}
-        onClick={onClose}
+        transition={{ duration: 0.22 }}
+        onClick={() => { if (chatOpen) setChatOpen(false); else onClose(); }}
         style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 199,
-          background: "rgba(0,0,0,0.35)",
-          backdropFilter: "blur(10px)",
-          WebkitBackdropFilter: "blur(10px)",
+          position: "fixed", inset: 0, zIndex: 199,
+          background: "rgba(0,0,0,0.4)",
+          backdropFilter: "blur(8px)",
+          WebkitBackdropFilter: "blur(8px)",
         }}
       />
-      {/* Modal positioning layer */}
+
+      {/* Outer positioning shell */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.25 }}
-        onClick={onClose}
+        transition={{ duration: 0.22 }}
+        onClick={() => { if (chatOpen) setChatOpen(false); else onClose(); }}
         style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 200,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          position: "fixed", inset: 0, zIndex: 200,
+          display: "flex", alignItems: "center", justifyContent: "center",
           padding: "2rem",
           pointerEvents: "auto",
         }}
       >
-      <motion.div
-        layoutId={`prompt-${id}`}
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          background: cat?.color ?? "var(--surface)",
-          border: "2px solid var(--border)",
-          borderRadius: "var(--radius)",
-          padding: "2rem 2.25rem",
-          width: "100%",
-          maxWidth: "640px",
-          maxHeight: "85vh",
-          overflowY: "auto",
-          boxShadow: "8px 8px 0 0 var(--fg)",
-          position: "relative",
-        }}
-      >
-        <button
-          onClick={onClose}
-          style={{ position: "absolute", top: "1rem", right: "1rem", background: "none", border: "none", cursor: "pointer", fontSize: "20px", fontWeight: 700, color: "var(--fg)" }}
-          aria-label="Close"
+        {/* Two-panel container */}
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            display: "flex",
+            gap: "12px",
+            width: "100%",
+            maxWidth: chatOpen ? "1060px" : "640px",
+            alignItems: "stretch",
+            transition: `max-width 380ms cubic-bezier(${EASE_OUT_EXPO.join(",")})`,
+          }}
         >
-          ×
-        </button>
-
-        <p className="eyebrow" style={{ marginBottom: "0.4rem" }}>Prompt {id} · {cat?.label}</p>
-        <h2 className="heading" style={{ fontSize: "22px", marginBottom: "1rem", lineHeight: 1.25 }}>{prompt.title}</h2>
-        <p style={{ fontSize: "14px", color: "#333", lineHeight: 1.7, marginBottom: "1.5rem" }}>
-          {prompt.description}
-        </p>
-
-        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginBottom: aiOpen ? "1.25rem" : 0 }}>
-          <form action={createAction}>
-            <input type="hidden" name="prompt_id" value={id} />
-            <input type="hidden" name="title" value="My TOK Exhibition" />
-            <button type="submit" className="btn-primary btn-primary-hover">
-              Select this prompt →
-            </button>
-          </form>
-          <button
-            onClick={() => setAiOpen((v) => !v)}
-            className="btn-ghost btn-ghost-hover"
+          {/* Prompt card */}
+          <motion.div
+            layoutId={`prompt-${id}`}
+            style={{
+              background: catColor,
+              border: "2px solid var(--border)",
+              borderRadius: "var(--radius)",
+              padding: "2rem 2.25rem",
+              boxShadow: "8px 8px 0 0 var(--fg)",
+              position: "relative",
+              overflowY: "auto",
+              maxHeight: "85vh",
+              flex: chatOpen ? "0 0 52%" : "1 1 100%",
+              minWidth: 0,
+              transition: `flex 380ms cubic-bezier(${EASE_OUT_EXPO.join(",")})`,
+            }}
           >
-            {aiOpen ? "Hide AI" : "Ask AI about this"}
-          </button>
-        </div>
-
-        <AnimatePresence>
-          {aiOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3 }}
-              style={{ overflow: "hidden" }}
+            <button
+              onClick={onClose}
+              style={{ position: "absolute", top: "1rem", right: "1rem", background: "none", border: "none", cursor: "pointer", fontSize: "20px", fontWeight: 700, color: "var(--fg)", lineHeight: 1 }}
+              aria-label="Close"
             >
-              <div style={{ background: "rgba(255,255,255,0.7)", border: "2px solid var(--border)", borderRadius: "var(--radius)", padding: "1rem 1.25rem", marginTop: "0.5rem" }}>
-                <p className="eyebrow" style={{ marginBottom: "0.5rem" }}>Ask AI</p>
-                <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.75rem" }}>
-                  <button onClick={() => askAI("What is this prompt really asking?")} disabled={aiLoading} className="tag" style={{ cursor: "pointer", background: "var(--bg)", border: "2px solid var(--fg)" }}>
-                    What's it asking?
-                  </button>
-                  <button onClick={() => askAI("What kinds of objects would work well for this prompt? Give 3 example object types and why.")} disabled={aiLoading} className="tag" style={{ cursor: "pointer", background: "var(--bg)", border: "2px solid var(--fg)" }}>
-                    Suggest objects
-                  </button>
-                  <button onClick={() => askAI("What are the key knowledge questions inside this prompt I should think about?")} disabled={aiLoading} className="tag" style={{ cursor: "pointer", background: "var(--bg)", border: "2px solid var(--fg)" }}>
-                    Key KQs
+              ×
+            </button>
+
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", marginBottom: "0.4rem", flexWrap: "wrap", paddingRight: "1.5rem" }}>
+              <p className="eyebrow" style={{ margin: 0 }}>Prompt {id} · {cat?.label}</p>
+              <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <DifficultyDots level={prompt.difficulty} size={10} gap={4} />
+                <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--fg)", opacity: 0.6 }}>
+                  {DIFFICULTY_LABELS[prompt.difficulty - 1]}
+                </span>
+              </span>
+            </div>
+
+            <h2 className="heading" style={{ fontSize: "22px", marginBottom: "1rem", lineHeight: 1.25 }}>{prompt.title}</h2>
+            <p style={{ fontSize: "14px", color: "#333", lineHeight: 1.7, marginBottom: "1.5rem" }}>
+              {prompt.description}
+            </p>
+
+            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+              <form action={createAction}>
+                <input type="hidden" name="prompt_id" value={id} />
+                <input type="hidden" name="title" value="My TOK Exhibition" />
+                <button type="submit" className="btn-primary btn-primary-hover">
+                  Select this prompt →
+                </button>
+              </form>
+              <button
+                onClick={() => setChatOpen((v) => !v)}
+                className="btn-ghost btn-ghost-hover"
+                style={{ position: "relative" }}
+              >
+                {chatOpen ? "Hide AI" : "Ask AI"}
+                {!chatOpen && messages.length > 0 && (
+                  <span style={{
+                    position: "absolute", top: "-4px", right: "-4px",
+                    width: "8px", height: "8px", borderRadius: "50%",
+                    background: "var(--fg)", border: "2px solid " + catColor,
+                  }} />
+                )}
+              </button>
+            </div>
+          </motion.div>
+
+          {/* Chat panel */}
+          <AnimatePresence>
+            {chatOpen && (
+              <motion.div
+                key="chat-panel"
+                initial={{ opacity: 0, x: 32, width: 0 }}
+                animate={{ opacity: 1, x: 0, width: "48%" }}
+                exit={{ opacity: 0, x: 24, width: 0 }}
+                transition={{
+                  opacity: { duration: 0.28, ease: EASE_OUT_EXPO },
+                  x: { duration: 0.34, ease: EASE_OUT_EXPO },
+                  width: { duration: 0.38, ease: EASE_OUT_EXPO },
+                }}
+                style={{
+                  background: "var(--surface)",
+                  border: "2px solid var(--border)",
+                  borderRadius: "var(--radius)",
+                  boxShadow: "8px 8px 0 0 var(--fg)",
+                  display: "flex",
+                  flexDirection: "column",
+                  maxHeight: "85vh",
+                  minWidth: 0,
+                  overflow: "hidden",
+                  flexShrink: 0,
+                }}
+              >
+                {/* Chat header */}
+                <div style={{
+                  padding: "0.875rem 1.125rem 0.75rem",
+                  borderBottom: "2px solid var(--border)",
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  flexShrink: 0,
+                }}>
+                  <p className="eyebrow" style={{ margin: 0 }}>Ask AI</p>
+                  <button
+                    onClick={() => setChatOpen(false)}
+                    style={{ background: "none", border: "none", cursor: "pointer", fontSize: "18px", fontWeight: 700, color: "var(--fg)", lineHeight: 1, padding: "2px 4px" }}
+                    aria-label="Close chat"
+                  >
+                    ×
                   </button>
                 </div>
-                {aiLoading && <p style={{ fontSize: "12px", color: "#555" }}>Thinking…</p>}
-                {aiError && <p style={{ fontSize: "12px", color: "#c00" }}>{aiError}</p>}
-                {aiAnswer && <p style={{ fontSize: "13px", color: "#222", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{aiAnswer}</p>}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+
+                {/* Messages */}
+                <div style={{ flex: 1, overflowY: "auto", padding: "1rem 1.125rem", display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {messages.length === 0 && !aiLoading && (
+                    <p style={{ fontSize: "13px", color: "#999", textAlign: "center", marginTop: "1.5rem", lineHeight: 1.5 }}>
+                      Ask anything about this prompt.
+                    </p>
+                  )}
+
+                  {messages.map((msg) => (
+                    <motion.div
+                      key={msg.id}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.22, ease: EASE_OUT_EXPO }}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: msg.role === "user" ? "flex-end" : "flex-start",
+                      }}
+                    >
+                      {msg.role === "ai" && (
+                        <span style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#999", marginBottom: "3px", paddingLeft: "2px" }}>AI</span>
+                      )}
+                      <div style={{
+                        maxWidth: "88%",
+                        padding: "8px 11px",
+                        borderRadius: "var(--radius)",
+                        border: "2px solid var(--border)",
+                        background: msg.role === "user" ? "var(--fg)" : catColor,
+                        color: msg.role === "user" ? "var(--bg)" : "var(--fg)",
+                        fontSize: "13px",
+                        lineHeight: 1.55,
+                      }}>
+                        {msg.role === "user" ? (
+                          msg.text
+                        ) : (
+                          <ReactMarkdown
+                            components={{
+                              p: ({ children }) => <p style={{ margin: "0 0 0.5em", lineHeight: 1.55 }}>{children}</p>,
+                              strong: ({ children }) => <strong style={{ fontWeight: 700 }}>{children}</strong>,
+                              em: ({ children }) => <em style={{ fontStyle: "italic" }}>{children}</em>,
+                              ul: ({ children }) => <ul style={{ margin: "0.25em 0 0.5em", paddingLeft: "1.25em" }}>{children}</ul>,
+                              ol: ({ children }) => <ol style={{ margin: "0.25em 0 0.5em", paddingLeft: "1.25em" }}>{children}</ol>,
+                              li: ({ children }) => <li style={{ marginBottom: "0.2em" }}>{children}</li>,
+                              code: ({ children }) => <code style={{ fontFamily: "monospace", fontSize: "12px", background: "rgba(0,0,0,0.08)", padding: "1px 4px", borderRadius: "2px" }}>{children}</code>,
+                            }}
+                          >
+                            {msg.text}
+                          </ReactMarkdown>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+
+                  {aiLoading && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.18, ease: EASE_OUT_EXPO }}
+                      style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}
+                    >
+                      <span style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#999", marginBottom: "3px", paddingLeft: "2px" }}>AI</span>
+                      <div style={{
+                        padding: "10px 12px",
+                        border: "2px solid var(--border)",
+                        borderRadius: "var(--radius)",
+                        background: catColor,
+                        display: "flex", gap: "5px", alignItems: "center",
+                      }}>
+                        {[0, 1, 2].map((i) => (
+                          <span key={i} style={{
+                            width: "6px", height: "6px", borderRadius: "50%",
+                            background: "var(--fg)", opacity: 0.5,
+                            animation: "pulse 1.2s ease-in-out infinite",
+                            animationDelay: `${i * 0.18}s`,
+                          }} />
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {aiError && (
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+                      <div style={{
+                        padding: "7px 10px",
+                        border: "2px solid var(--border)",
+                        borderRadius: "var(--radius)",
+                        background: "var(--pink)",
+                        fontSize: "12px", color: "var(--fg)", lineHeight: 1.4,
+                        display: "flex", gap: "8px", alignItems: "center",
+                      }}>
+                        <span>{aiError}</span>
+                        <button
+                          onClick={() => {
+                            const last = messages.findLast?.((m) => m.role === "user");
+                            if (last) sendMessage(last.text);
+                          }}
+                          style={{ background: "none", border: "none", cursor: "pointer", fontWeight: 700, fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.06em", padding: 0, textDecoration: "underline" }}
+                        >
+                          Retry
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div ref={messagesEndRef} />
+                </div>
+
+                {/* Chips */}
+                {messages.length === 0 && (
+                  <div style={{ padding: "0 1.125rem 0.75rem", display: "flex", gap: "6px", flexWrap: "wrap", flexShrink: 0 }}>
+                    {CHIPS.map((chip) => (
+                      <button
+                        key={chip.label}
+                        onClick={() => sendMessage(chip.question)}
+                        disabled={aiLoading}
+                        className="tag"
+                        style={{
+                          cursor: aiLoading ? "not-allowed" : "pointer",
+                          background: "var(--bg)",
+                          border: "2px solid var(--fg)",
+                          opacity: aiLoading ? 0.5 : 1,
+                          fontSize: "11px",
+                          transition: "opacity 0.15s",
+                        }}
+                      >
+                        {chip.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Input */}
+                <form
+                  onSubmit={(e) => { e.preventDefault(); sendMessage(input); }}
+                  style={{
+                    padding: "0.75rem 1.125rem",
+                    borderTop: "2px solid var(--border)",
+                    display: "flex", gap: "8px",
+                    flexShrink: 0,
+                  }}
+                >
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="Ask about this prompt…"
+                    disabled={aiLoading}
+                    className="field-input"
+                    style={{ flex: 1, fontSize: "13px", padding: "7px 10px" }}
+                  />
+                  <button
+                    type="submit"
+                    disabled={aiLoading || !input.trim()}
+                    className="btn-primary btn-primary-hover"
+                    style={{ padding: "7px 14px", fontSize: "12px", opacity: aiLoading || !input.trim() ? 0.45 : 1, transition: "opacity 0.15s", flexShrink: 0 }}
+                  >
+                    Send
+                  </button>
+                </form>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </motion.div>
-    </motion.div>
     </>,
     document.body
+  );
+}
+
+// ── Difficulty dots ─────────────────────────────────────────────
+const DIFFICULTY_LABELS = ["Accessible", "Straightforward", "Moderate", "Challenging", "Advanced"] as const;
+
+function DifficultyDots({ level, size = 7, gap = 3 }: { level: 1 | 2 | 3 | 4 | 5; size?: number; gap?: number }) {
+  return (
+    <span
+      title={`Difficulty: ${level}/5 — ${DIFFICULTY_LABELS[level - 1]}`}
+      style={{ display: "inline-flex", alignItems: "center", gap, flexShrink: 0 }}
+      aria-label={`Difficulty ${level} of 5`}
+    >
+      {[1, 2, 3, 4, 5].map((i) => (
+        <span
+          key={i}
+          style={{
+            width: size,
+            height: size,
+            borderRadius: "50%",
+            background: i <= level ? "var(--fg)" : "rgba(0,0,0,0.15)",
+            display: "inline-block",
+            flexShrink: 0,
+          }}
+        />
+      ))}
+    </span>
   );
 }
 

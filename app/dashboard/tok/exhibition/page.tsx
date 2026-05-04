@@ -5,6 +5,7 @@ import { TOK_PROMPTS } from "@/lib/tok-prompts";
 import { createExhibition, deleteExhibition } from "../actions";
 import type { TOKExhibition } from "@/types";
 import PromptPicker from "./PromptPicker";
+import ConfirmSubmitButton from "@/components/ConfirmSubmitButton";
 
 export default async function ExhibitionEntryPage() {
   const supabase = await createClient();
@@ -47,9 +48,12 @@ export default async function ExhibitionEntryPage() {
                 Open Exhibition →
               </Link>
               <form action={deleteExhibition.bind(null, exhibition.id)}>
-                <button type="submit" className="btn-ghost btn-ghost-hover" style={{ color: "#c00", borderColor: "#c00" }}>
-                  Delete & start over
-                </button>
+                <ConfirmSubmitButton
+                  label="Delete & start over"
+                  confirmLabel="Yes, delete"
+                  message="Delete this exhibition?"
+                  style={{ color: "#c00", borderColor: "#c00" }}
+                />
               </form>
             </div>
           </div>

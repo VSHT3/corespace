@@ -35,30 +35,87 @@ export default async function ExhibitionPage({ params }: { params: Promise<{ id:
   const slots = [0, 1, 2];
 
   return (
-    <main className="page-main">
-      <div className="mb-6">
-        <Link href="/dashboard/tok/exhibition" className="back-link">← TOK Exhibition</Link>
-      </div>
-
-      <div className="mb-8 space-y-2">
-        <p className="eyebrow">Exhibition</p>
-        <h1 className="heading" style={{ fontSize: "30px" }}>{ex.title}</h1>
-        <div className="card" style={{ padding: "1rem 1.25rem", background: "var(--yellow)", marginTop: "0.75rem" }}>
-          <p style={{ fontSize: "12px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#666", marginBottom: "4px" }}>
-            Prompt {ex.prompt_id}
-          </p>
-          <p style={{ fontWeight: 600, lineHeight: 1.5, marginBottom: promptObj?.description ? "0.5rem" : 0 }}>{prompt}</p>
-          {promptObj?.description && (
-            <p style={{ fontSize: "12px", color: "#555", lineHeight: 1.6 }}>{promptObj.description}</p>
-          )}
+    <main
+      className="page-main"
+      style={{
+        width: "100%",
+        maxWidth: "1800px",
+        padding: "1.5rem 1.5rem 4rem",
+      }}
+    >
+      <section
+        aria-labelledby="tok-prompt-heading"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "minmax(180px, 1fr) minmax(420px, 980px) minmax(180px, 1fr)",
+          alignItems: "start",
+          gap: "1.25rem",
+          marginBottom: "1.5rem",
+        }}
+      >
+        <div>
+          <Link href="/dashboard/tok/exhibition" className="back-link">← TOK Exhibition</Link>
+          <p className="eyebrow" style={{ marginTop: "0.65rem", marginBottom: "0.25rem" }}>Exhibition</p>
+          <h1 className="heading" style={{ fontSize: "22px", maxWidth: "360px" }}>{ex.title}</h1>
         </div>
+
+        <div
+          style={{
+            justifySelf: "center",
+            textAlign: "center",
+            padding: "0.35rem 0.75rem 0.6rem",
+            borderBottom: "6px solid var(--yellow)",
+            filter: "drop-shadow(5px 5px 0 var(--surface))",
+          }}
+        >
+          <h2
+            id="tok-prompt-heading"
+            className="heading"
+            style={{
+              fontSize: "clamp(24px, 3.4vw, 48px)",
+              lineHeight: 1.1,
+              letterSpacing: "-0.03em",
+              margin: 0,
+            }}
+          >
+            {prompt}
+          </h2>
+        </div>
+
+        <span className="tag tag-yellow" style={{ justifySelf: "end", marginTop: "0.25rem" }}>
+          Prompt {ex.prompt_id}
+        </span>
+      </section>
+
+      {promptObj?.description && (
+        <aside
+          style={{
+            maxWidth: "860px",
+            margin: "0 auto 3rem",
+            background: "var(--yellow)",
+            border: "2px solid var(--border)",
+            borderRadius: "var(--radius)",
+            padding: "1rem 1.25rem",
+            boxShadow: "4px 4px 0 0 var(--fg)",
+          }}
+        >
+          <p style={{ color: "#555", lineHeight: 1.7, margin: 0 }}>{promptObj.description}</p>
+        </aside>
+      )}
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "1rem",
+          marginBottom: "1rem",
+        }}
+      >
+        <p className="eyebrow">Three Objects</p>
       </div>
 
-      <hr className="divider mb-8" />
-
-      <p className="eyebrow mb-6">Your Three Objects</p>
-
-      <div style={{ display: "grid", gap: "1.5rem" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "1rem", alignItems: "start" }}>
         {slots.map((slot) => {
           const obj = objs.find((o) => o.position === slot) ?? null;
           return (

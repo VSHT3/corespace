@@ -1,17 +1,26 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase-client";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [confirmationSent, setConfirmationSent] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get("error") === "confirmation_failed") {
+      setError("Confirmation link invalid or expired. Try signing up again.");
+    }
+  }, [searchParams]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -28,10 +37,33 @@ export default function LoginPage() {
 
     if (error) {
       setError(error.message);
+    } else if (mode === "signup") {
+      setConfirmationSent(true);
     } else {
       router.push("/dashboard");
       router.refresh();
     }
+  }
+
+  if (confirmationSent) {
+    return (
+      <main className="flex flex-1 items-center justify-center px-6 py-24">
+        <div className="w-full space-y-4 text-center" style={{ maxWidth: "360px" }}>
+          <p className="eyebrow">Check your inbox</p>
+          <h1 className="heading" style={{ fontSize: "28px" }}>Confirm your email</h1>
+          <p style={{ fontSize: "14px", color: "#555" }}>
+            Sent confirmation link to <strong>{email}</strong>. Click it to activate your account.
+          </p>
+          <button
+            onClick={() => { setConfirmationSent(false); setMode("login"); }}
+            className="btn-ghost btn-ghost-hover"
+            style={{ padding: "8px 16px", fontSize: "13px" }}
+          >
+            Back to sign in
+          </button>
+        </div>
+      </main>
+    );
   }
 
   return (
@@ -85,15 +117,22 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="text-center" style={{ fontSize: "13px", color: "#888" }}>
-          {mode === "login" ? "No account?" : "Already have one?"}{" "}
-          <button
-            onClick={() => setMode(mode === "login" ? "signup" : "login")}
-            style={{ color: "var(--fg)", textDecoration: "underline", background: "none", border: "none", cursor: "pointer", fontSize: "13px" }}
-          >
-            {mode === "login" ? "Sign up" : "Sign in"}
-          </button>
-        </p>
+        <div className="space-y-2 text-center">
+          <p style={{ fontSize: "13px", color: "#888" }}>
+            {mode === "login" ? "No account?" : "Already have one?"}{" "}
+            <button
+              onClick={() => setMode(mode === "login" ? "signup" : "login")}
+              style={{ color: "var(--fg)", textDecoration: "underline", background: "none", border: "none", cursor: "pointer", fontSize: "13px" }}
+            >
+              {mode === "login" ? "Sign up" : "Sign in"}
+            </button>
+          </p>
+          {mode === "login" && (
+            <p style={{ fontSize: "13px" }}>
+              <Link href="/forgot-password" className="back-link">Forgot password?</Link>
+            </p>
+          )}
+        </div>
       </div>
     </main>
   );
