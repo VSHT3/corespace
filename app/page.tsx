@@ -125,12 +125,14 @@ export default function Home() {
               {[
                 "All 35 official IB prompts with AI chat",
                 "3 objects per exhibition, IB-typed",
-                "AI justification generator",
+                "AI justification generator (rubric-trained)",
+                "AI object suitability check — know before you commit",
                 "Knowledge question generator",
-                "AI scoring: score/10 + actionable tip",
-                "Word count targets (95–150 / object)",
-                "Print-ready export",
-                "Duplicate & reorder exhibitions",
+                "AI scoring: score/10 with strength, weakness, tip",
+                "AI justification improver",
+                "Live word count synced across workspace",
+                "Submission checklist — 8 auto-tracked items",
+                "Print-ready export + JSON backup",
               ].map((item) => (
                 <p key={item} style={{ fontSize: "13px", color: "#444", margin: 0, display: "flex", alignItems: "flex-start", gap: "6px" }}>
                   <span style={{ color: "#16a34a", fontWeight: 700, flexShrink: 0 }}>✓</span>
