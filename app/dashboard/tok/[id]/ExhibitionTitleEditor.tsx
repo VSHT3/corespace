@@ -39,6 +39,7 @@ export default function ExhibitionTitleEditor({ exhibitionId, initialTitle }: Pr
           if (e.key === "Escape") { setTitle(initialTitle); setEditing(false); }
         }}
         autoFocus
+        maxLength={80}
         disabled={saving}
         className="field-input heading"
         style={{

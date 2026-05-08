@@ -51,6 +51,16 @@ export async function saveObject(formData: FormData) {
       .update({ title, description, object_type: objectType })
       .eq("id", objectId);
   } else {
+    // Guard: max 3 objects per exhibition
+    const { count } = await supabase
+      .from("tok_objects")
+      .select("id", { count: "exact", head: true })
+      .eq("exhibition_id", exhibitionId);
+
+    if ((count ?? 0) >= 3) {
+      return; // silently reject extra inserts
+    }
+
     await supabase
       .from("tok_objects")
       .insert({ exhibition_id: exhibitionId, title, description, object_type: objectType, position });
