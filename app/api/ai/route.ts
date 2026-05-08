@@ -16,8 +16,10 @@ function loadDoc(filename: string): string {
 
 const DOC_TOK_OVERVIEW = loadDoc("tok-overview.md");
 const DOC_EXHIBITION_GUIDE = loadDoc("tok-exhibition-guide.md");
+const DOC_JUSTIFICATION_EXAMPLES = loadDoc("justification-examples.md");
 
 const BASE_CONTEXT = `${DOC_TOK_OVERVIEW}\n\n---\n\n${DOC_EXHIBITION_GUIDE}`;
+const JUSTIFICATION_CONTEXT = `${BASE_CONTEXT}\n\n---\n\n${DOC_JUSTIFICATION_EXAMPLES}`;
 
 function buildSystemPrompt(intent: AIIntent, context: Record<string, string> = {}): string {
   switch (intent) {
@@ -42,7 +44,7 @@ How to engage:
 - Never produce text the student should copy verbatim into their submission`;
 
     case "object_justification":
-      return `${BASE_CONTEXT}
+      return `${JUSTIFICATION_CONTEXT}
 
 ---
 
@@ -82,7 +84,7 @@ Format as:
 Make the three objects varied — different types, different angles on the prompt. Be specific: not "a newspaper article" but "The New York Times front page from 9/12/2001". Not "a photograph" but "Dorothea Lange's Migrant Mother, 1936".`;
 
     case "justification_chat":
-      return `${BASE_CONTEXT}
+      return `${JUSTIFICATION_CONTEXT}
 
 ---
 
@@ -125,7 +127,7 @@ Assess this object and respond with EXACTLY this JSON structure and nothing else
 Score rubric: 9-10 = examiner-ready, strong knowledge question + clear prompt link; 7-8 = good, minor gaps; 5-6 = adequate but generic; 3-4 = weak connection or vague; 1-2 = off-prompt or no justification.`;
 
     case "justification_improve":
-      return `${BASE_CONTEXT}
+      return `${JUSTIFICATION_CONTEXT}
 
 ---
 
