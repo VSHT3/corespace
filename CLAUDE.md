@@ -184,13 +184,28 @@ ___
 ## Recently completed (May 2026)
 - Multi-exhibition list with progress indicators
 - AI object scoring intent (score/10 + strength/weakness/tip)
+- AI knowledge question generator (3 IB-style KQs with rationale)
 - Inline exhibition title editing
 - CAS/EE stub pages with feature lists
-- Dashboard stats (exhibitions / objects / justified)
+- Dashboard stats + "Continue where you left off" card
 - Copy-to-clipboard on justifications
-- 404 page, /api/health endpoint
-- SEO metadata (og/twitter), difficulty filter in prompt picker
+- 404 page, /api/health endpoint, sitemap.ts, robots.ts
+- SEO: og:image via /api/og (ImageResponse edge), JSON-LD structured data, twitter:card large
+- Difficulty filter + Surprise me button in prompt picker
+- / keyboard shortcut focuses prompt search
+- Account deletion flow on profile (DeleteAccountButton + deleteAccount server action, requires SUPABASE_SERVICE_ROLE_KEY)
+- Exhibition duplication (duplicateExhibition action)
+- In-memory rate limiter on AI route (20 req/min per IP)
+- Public /tok-prompts reference page (all 35 prompts, SEO-friendly)
+- /contact page
 - AI docs expanded: KQs, WOKs, AOKs, Core Theme deep dive, CAS, EE guides
+- WordCountSummary, RubricPanel, ObjectIdeasButton components in exhibition workspace
+- Print CSS (@media print), PrintButton component
+
+## New env vars (added May 2026)
+| Variable | Purpose |
+|---|---|
+| `SUPABASE_SERVICE_ROLE_KEY` | Required for account deletion (admin.deleteUser). Server-only, never expose to client. |
 
 ## Deployment (Vercel)
 
@@ -205,6 +220,7 @@ ___
 | `PADDLE_WEBHOOK_SECRET` | Paddle webhook settings (server-only) |
 | `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` | Paddle dashboard |
 | `NEXT_PUBLIC_PADDLE_STUDENT_PRICE_ID` | Paddle product catalog |
+| `SUPABASE_SERVICE_ROLE_KEY` | Account deletion (server-only, never expose to client) |
 
 ### Pre-deploy checklist
 
