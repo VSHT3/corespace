@@ -143,6 +143,19 @@ export default function PromptPicker({ createAction }: { createAction: (formData
   const [searchQuery, setSearchQuery] = useState("");
   const [difficultyFilter, setDifficultyFilter] = useState<"all" | "easy" | "medium" | "hard">("all");
   const [mounted, setMounted] = useState(false);
+
+  function surpriseMe() {
+    const pool = allIds.filter((id) => {
+      const level = TOK_PROMPTS[id].difficulty;
+      if (difficultyFilter === "easy") return level <= 2;
+      if (difficultyFilter === "medium") return level === 3;
+      if (difficultyFilter === "hard") return level >= 4;
+      return true;
+    });
+    if (pool.length === 0) return;
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    setExpandedId(pick);
+  }
   const containerRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
   const startRef = useRef(0);
@@ -289,6 +302,14 @@ export default function PromptPicker({ createAction }: { createAction: (formData
         )}
         {done && (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "0.75rem", flexWrap: "wrap", marginLeft: "auto" }}>
+            <button
+              onClick={surpriseMe}
+              className="btn-ghost btn-ghost-hover"
+              style={{ fontSize: "11px", padding: "4px 10px", flexShrink: 0 }}
+              title="Open a random prompt"
+            >
+              Surprise me
+            </button>
             {/* Difficulty filter */}
             <div style={{ display: "flex", gap: "4px" }}>
               {(["all", "easy", "medium", "hard"] as const).map((level) => (

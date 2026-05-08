@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Terms of Service",
+  description: "Terms and conditions for using Corespace.",
+};
+
 export default function TermsPage() {
   return (
     <main className="page-main" style={{ maxWidth: "680px" }}>
