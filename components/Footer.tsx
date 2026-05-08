@@ -2,6 +2,7 @@ import Link from "next/link";
 
 const NAV_LINKS = [
   { label: "Features", href: "/features" },
+  { label: "TOK Prompts", href: "/tok-prompts" },
   { label: "Pricing", href: "/pricing" },
   { label: "Privacy", href: "/privacy" },
   { label: "Terms", href: "/terms" },
