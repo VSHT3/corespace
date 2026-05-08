@@ -83,12 +83,17 @@ export default async function ProfilePage() {
 
         <div className="divider" />
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem" }}>
           <div>
             <p className="eyebrow" style={{ marginBottom: "0.25rem" }}>Actions</p>
             <p style={{ fontSize: "13px", color: "#888" }}>Manage your account</p>
           </div>
-          <LogoutButton />
+          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+            <Link href="/forgot-password" className="btn-ghost btn-ghost-hover" style={{ fontSize: "11px", padding: "5px 12px" }}>
+              Change password
+            </Link>
+            <LogoutButton />
+          </div>
         </div>
 
         <div className="divider" />
