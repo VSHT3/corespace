@@ -6,6 +6,9 @@ import { saveObject, deleteObject, swapObjectPositions } from "../actions";
 import ObjectCard from "./ObjectCard";
 import ExhibitionTitleEditor from "./ExhibitionTitleEditor";
 import PrintButton from "./PrintButton";
+import WordCountSummary from "./WordCountSummary";
+import RubricPanel from "./RubricPanel";
+import ObjectIdeasButton from "./ObjectIdeasButton";
 import type { TOKExhibition, TOKObject } from "@/types";
 
 export default async function ExhibitionPage({ params }: { params: Promise<{ id: string }> }) {
@@ -108,6 +111,9 @@ export default async function ExhibitionPage({ params }: { params: Promise<{ id:
         </aside>
       )}
 
+      <ObjectIdeasButton prompt={prompt} promptId={ex.prompt_id} />
+      <RubricPanel />
+
       <div
         style={{
           display: "flex",
@@ -151,6 +157,7 @@ export default async function ExhibitionPage({ params }: { params: Promise<{ id:
               <> · {objs.filter(o => o.justification?.trim()).length}/3 justified</>
             )}
           </span>
+          <WordCountSummary initialJustifications={objs.map(o => o.justification)} />
         </div>
       </div>
 

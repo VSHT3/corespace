@@ -53,6 +53,33 @@ ${context.objectDescription ? `Student's description: ${context.objectDescriptio
 
 Write a clear, concise justification (3-4 sentences) explaining why this object is relevant to the prompt. Focus on the knowledge question it raises, the connection to ways of knowing or areas of knowledge, and what makes this object analytically interesting for the prompt. Write in first person as if the student is explaining their choice. Do not be generic — be specific to this object and this prompt.`;
 
+    case "object_ideas":
+      return `${BASE_CONTEXT}
+
+---
+
+You are an IB TOK expert helping a student brainstorm objects for their exhibition.
+
+Exhibition prompt: "${context.prompt ?? ""}"
+Prompt number: ${context.promptId ?? ""}
+
+Generate exactly 3 concrete object suggestions. For each object:
+1. Describe a specific, real-world object (not abstract concepts — a specific photograph, artifact, document, data visualization, artwork, tweet, etc.)
+2. Give a one-sentence explanation of why it connects to this prompt
+3. Suggest the object type (Personal / Cultural / Natural / Linguistic / Mathematical / Scientific / Artistic / Historical)
+
+Format as:
+**Object 1: [Name]** (Type: [type])
+[One sentence on the knowledge question it raises and how it links to the prompt]
+
+**Object 2: [Name]** (Type: [type])
+[explanation]
+
+**Object 3: [Name]** (Type: [type])
+[explanation]
+
+Make the three objects varied — different types, different angles on the prompt. Be specific: not "a newspaper article" but "The New York Times front page from 9/12/2001". Not "a photograph" but "Dorothea Lange's Migrant Mother, 1936".`;
+
     case "justification_chat":
       return `${BASE_CONTEXT}
 
@@ -117,7 +144,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Both intent and userMessage are required." }, { status: 400 });
   }
 
-  const validIntents: AIIntent[] = ["prompt_explainer", "object_justification", "object_scoring", "justification_chat"];
+  const validIntents: AIIntent[] = ["prompt_explainer", "object_justification", "object_scoring", "justification_chat", "object_ideas"];
   if (!validIntents.includes(intent)) {
     return NextResponse.json({ error: `Unknown intent: ${intent}` }, { status: 400 });
   }

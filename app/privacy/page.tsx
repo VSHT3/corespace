@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy",
+  description: "How Corespace collects, uses, and protects your data.",
+};
+
 export default function PrivacyPage() {
   return (
     <main className="page-main" style={{ maxWidth: "680px" }}>
