@@ -213,7 +213,7 @@ export default async function ExhibitionPage({ params }: { params: Promise<{ id:
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "1rem", alignItems: "start" }}>
+      <div className="objects-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "1rem", alignItems: "start" }}>
         {slots.map((slot) => {
           const obj = objs.find((o) => o.position === slot) ?? null;
           return (
