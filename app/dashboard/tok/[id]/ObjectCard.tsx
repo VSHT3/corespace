@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import ReactMarkdown from "react-markdown";
 import type { TOKObject } from "@/types";
 
 interface Props {
@@ -31,6 +32,9 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
   const [chatLoading, setChatLoading] = useState(false);
   const [chatError, setChatError] = useState("");
   const [descValue, setDescValue] = useState(object?.description ?? "");
+  const [kqLoading, setKqLoading] = useState(false);
+  const [kqResult, setKqResult] = useState("");
+  const [kqError, setKqError] = useState("");
 
   const DESC_MAX = 500;
 
@@ -145,6 +149,36 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
       setChatError(e instanceof Error ? e.message : "Chat failed");
     } finally {
       setChatLoading(false);
+    }
+  }
+
+  async function handleKnowledgeQuestion() {
+    if (!object) return;
+    setKqLoading(true);
+    setKqError("");
+    setKqResult("");
+    try {
+      const res = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          intent: "knowledge_question",
+          userMessage: "Generate knowledge questions for this object.",
+          context: {
+            prompt,
+            objectTitle: object.title,
+            objectType: object.object_type ?? "",
+            objectDescription: object.description ?? "",
+          },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed");
+      setKqResult(data.text);
+    } catch (e: unknown) {
+      setKqError(e instanceof Error ? e.message : "Failed to generate");
+    } finally {
+      setKqLoading(false);
     }
   }
 
@@ -478,6 +512,52 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
           {!scoreResult && !scoreLoading && !scoreError && (
             <p style={{ fontSize: "11px", color: "#aaa" }}>
               {justification.trim() ? "Get AI feedback on object quality and justification strength." : "Write a justification first to enable scoring."}
+            </p>
+          )}
+
+          {/* Knowledge Questions */}
+          <hr className="divider" style={{ margin: "1rem 0" }} />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem", flexWrap: "wrap", gap: "0.5rem" }}>
+            <p style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              Knowledge Questions
+            </p>
+            <button
+              onClick={handleKnowledgeQuestion}
+              disabled={kqLoading}
+              className="btn-ghost btn-ghost-hover"
+              style={{ fontSize: "11px", padding: "4px 10px" }}
+            >
+              {kqLoading ? "Generating…" : kqResult ? "Regenerate" : "Generate KQs"}
+            </button>
+          </div>
+          {kqError && (
+            <p className="tag tag-pink" style={{ display: "block", fontWeight: 400, textTransform: "none", letterSpacing: 0, fontSize: "12px", padding: "6px 10px", marginBottom: "0.5rem" }}>
+              {kqError}
+            </p>
+          )}
+          {kqLoading && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              {[70, 90, 60].map((w, i) => (
+                <div key={i} style={{ height: "12px", width: `${w}%`, background: "var(--border)", borderRadius: "2px", animation: "pulse 1.4s ease-in-out infinite", animationDelay: `${i * 0.12}s` }} />
+              ))}
+            </div>
+          )}
+          {kqResult && !kqLoading && (
+            <div style={{ background: "var(--bg)", border: "2px solid var(--border)", borderRadius: "var(--radius)", padding: "0.875rem 1rem", fontSize: "12px", lineHeight: 1.6 }}>
+              <ReactMarkdown
+                components={{
+                  p: ({ children }) => <p style={{ margin: "0 0 0.4em" }}>{children}</p>,
+                  strong: ({ children }) => <strong style={{ fontWeight: 700 }}>{children}</strong>,
+                  em: ({ children }) => <em style={{ fontStyle: "italic", color: "#555" }}>{children}</em>,
+                }}
+              >
+                {kqResult}
+              </ReactMarkdown>
+            </div>
+          )}
+          {!kqResult && !kqLoading && !kqError && (
+            <p style={{ fontSize: "11px", color: "#aaa" }}>
+              Generate IB-style knowledge questions that could anchor your justification.
             </p>
           )}
 

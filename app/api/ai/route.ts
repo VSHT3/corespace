@@ -123,6 +123,34 @@ Assess this object and respond with EXACTLY this JSON structure and nothing else
 
 Score rubric: 9-10 = examiner-ready, strong knowledge question + clear prompt link; 7-8 = good, minor gaps; 5-6 = adequate but generic; 3-4 = weak connection or vague; 1-2 = off-prompt or no justification.`;
 
+    case "knowledge_question":
+      return `${BASE_CONTEXT}
+
+---
+
+You are an IB TOK examiner helping a student formulate a precise knowledge question for their exhibition object.
+
+Exhibition prompt: "${context.prompt ?? ""}"
+Object: "${context.objectTitle ?? ""}" (type: ${context.objectType || "unspecified"})
+${context.objectDescription ? `Description: ${context.objectDescription}` : ""}
+
+Generate exactly 3 candidate knowledge questions for this object. Each must:
+1. Begin with "To what extent…", "How do we know…", "What role does…", "Is…", or another genuine KQ opener
+2. Be open-ended (no yes/no answer), contestable, and directly tied to this specific object
+3. Connect clearly to the exhibition prompt
+
+Format:
+**KQ 1:** [question]
+*Why it works:* [one sentence]
+
+**KQ 2:** [question]
+*Why it works:* [one sentence]
+
+**KQ 3:** [question]
+*Why it works:* [one sentence]
+
+Then add one sentence: "Best fit for justification: KQ [n] — [brief reason]."`;
+
     default:
       return BASE_CONTEXT;
   }
@@ -144,7 +172,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Both intent and userMessage are required." }, { status: 400 });
   }
 
-  const validIntents: AIIntent[] = ["prompt_explainer", "object_justification", "object_scoring", "justification_chat", "object_ideas"];
+  const validIntents: AIIntent[] = ["prompt_explainer", "object_justification", "object_scoring", "justification_chat", "object_ideas", "knowledge_question"];
   if (!validIntents.includes(intent)) {
     return NextResponse.json({ error: `Unknown intent: ${intent}` }, { status: 400 });
   }

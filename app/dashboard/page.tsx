@@ -42,10 +42,12 @@ export default async function DashboardPage() {
 
   const { data: exhibitions } = await supabase
     .from("tok_exhibitions")
-    .select("id")
-    .eq("user_id", user.id);
+    .select("id, title, prompt_id, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
 
   const exhibitionIds = (exhibitions ?? []).map((e: { id: string }) => e.id);
+  const latestExhibition = exhibitions?.[0] ?? null;
 
   let objectCount = 0;
   let justifiedCount = 0;
@@ -97,6 +99,26 @@ export default async function DashboardPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {latestExhibition && (
+        <div style={{ marginBottom: "2.5rem" }}>
+          <p className="eyebrow" style={{ marginBottom: "0.75rem" }}>Continue where you left off</p>
+          <Link
+            href={`/dashboard/tok/${latestExhibition.id}`}
+            className="card-bump"
+            style={{ display: "block", textDecoration: "none", color: "inherit", padding: 0, overflow: "hidden" }}
+          >
+            <div style={{ height: "4px", background: "var(--yellow)" }} />
+            <div style={{ padding: "1rem 1.25rem 1.25rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
+              <div>
+                <span className="eyebrow" style={{ display: "block", marginBottom: "2px" }}>TOK Exhibition · Prompt {latestExhibition.prompt_id}</span>
+                <span className="heading" style={{ fontSize: "18px" }}>{latestExhibition.title}</span>
+              </div>
+              <span style={{ fontSize: "12px", fontWeight: 700, color: "#888", whiteSpace: "nowrap" }}>Open →</span>
+            </div>
+          </Link>
         </div>
       )}
 
