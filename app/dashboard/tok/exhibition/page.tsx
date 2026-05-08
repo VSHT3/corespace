@@ -94,20 +94,30 @@ export default async function ExhibitionEntryPage({ searchParams }: { searchPara
                   </p>
                   <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
                     {[0, 1, 2].map((slot) => {
-                      const obj = ex.tok_objects?.find((_, i) => i === slot);
+                      const obj = ex.tok_objects?.find((o) => (o as unknown as { position: number }).position === slot)
+                        ?? (ex.tok_objects?.[slot]);
+                      const hasObj = !!obj;
+                      const hasJustification = !!(obj as unknown as { justification: string | null } | undefined)?.justification?.trim();
                       return (
                         <div
                           key={slot}
+                          title={hasObj ? (hasJustification ? `Object ${slot + 1}: justified` : `Object ${slot + 1}: no justification`) : `Object ${slot + 1}: empty`}
                           style={{
                             width: "24px",
                             height: "8px",
                             borderRadius: "2px",
                             border: "2px solid var(--border)",
-                            background: slot < objectCount
-                              ? (slot < justifiedCount ? accentColors[slot] : "var(--surface)")
+                            background: hasObj
+                              ? (hasJustification ? accentColors[slot] : "var(--surface)")
                               : "transparent",
+                            position: "relative",
+                            overflow: "hidden",
                           }}
-                        />
+                        >
+                          {hasObj && !hasJustification && (
+                            <div style={{ position: "absolute", inset: 0, background: accentColors[slot], opacity: 0.3 }} />
+                          )}
+                        </div>
                       );
                     })}
                     <span style={{ fontSize: "11px", color: "#888" }}>
