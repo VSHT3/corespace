@@ -174,12 +174,53 @@ ___
 1. ✓ Gemini live calls — working, graceful error handling done.
 2. ✓ Auth completeness — email confirm + password reset routes built. Manual Supabase config needed.
 3. Usage gates — build `profiles` table migration, enforce free tier limits server-side.
-4. ✓ TOK workspace polish — loading states, save states, delete confirmations done.
+4. ✓ TOK workspace polish — loading states, save states, delete confirmations, word count, AI scoring done.
 5. Google OAuth — add login buttons + wire Supabase provider.
 6. Custom SMTP — configure Resend before launch.
-7. Export/share — PDF exhibition export.
+7. Export/share — @media print CSS done. PDF export via browser Cmd+P works.
 8. Payments — Paddle checkout + webhook after usage gates exist.
-9. Deploy — Vercel env vars, production smoke test.
+9. Deploy — see Deployment section above.
+
+## Recently completed (May 2026)
+- Multi-exhibition list with progress indicators
+- AI object scoring intent (score/10 + strength/weakness/tip)
+- Inline exhibition title editing
+- CAS/EE stub pages with feature lists
+- Dashboard stats (exhibitions / objects / justified)
+- Copy-to-clipboard on justifications
+- 404 page, /api/health endpoint
+- SEO metadata (og/twitter), difficulty filter in prompt picker
+- AI docs expanded: KQs, WOKs, AOKs, Core Theme deep dive, CAS, EE guides
+
+## Deployment (Vercel)
+
+### Required environment variables
+
+| Variable | Where to get |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project settings → API |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase project settings → API |
+| `GEMINI_API_KEY` | Google AI Studio |
+| `PADDLE_API_KEY` | Paddle dashboard (server-only) |
+| `PADDLE_WEBHOOK_SECRET` | Paddle webhook settings (server-only) |
+| `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` | Paddle dashboard |
+| `NEXT_PUBLIC_PADDLE_STUDENT_PRICE_ID` | Paddle product catalog |
+
+### Pre-deploy checklist
+
+1. `npm run build` — must pass with zero TS errors
+2. Supabase: enable "Confirm email" + set redirect URL to `https://yourdomain.com/auth/confirm`
+3. Supabase: add production domain to allowed redirect URLs
+4. Supabase: add `SITE_URL` in Auth settings
+5. Paddle: add production webhook endpoint `https://yourdomain.com/api/webhooks/paddle`
+6. Run Supabase migrations 001 + 002 on production project
+7. Smoke test: register → confirm email → create exhibition → generate justification
+
+### Post-deploy
+
+- Verify `/api/health` returns `{"status":"ok"}`
+- Test auth flow end-to-end (sign up, confirm, sign in, sign out)
+- Test TOK exhibition creation and AI call
 
 ## graphify
 

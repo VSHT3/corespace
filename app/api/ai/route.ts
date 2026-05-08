@@ -53,6 +53,27 @@ ${context.objectDescription ? `Student's description: ${context.objectDescriptio
 
 Write a clear, concise justification (3-4 sentences) explaining why this object is relevant to the prompt. Focus on the knowledge question it raises, the connection to ways of knowing or areas of knowledge, and what makes this object analytically interesting for the prompt. Write in first person as if the student is explaining their choice. Do not be generic — be specific to this object and this prompt.`;
 
+    case "justification_chat":
+      return `${BASE_CONTEXT}
+
+---
+
+You are a TOK examiner helping a student improve their exhibition object justification.
+
+Exhibition prompt: "${context.prompt ?? ""}"
+Object: "${context.objectTitle ?? ""}" (type: ${context.objectType || "unspecified"})
+${context.objectDescription ? `Description: ${context.objectDescription}` : ""}
+${context.justification ? `Current justification:\n${context.justification}` : "No justification yet."}
+
+Your role:
+- Help the student strengthen their justification through dialogue
+- Give specific, actionable suggestions — not generic advice
+- When asked to rewrite or improve, provide the improved text
+- If they ask "is this good?", give an honest assessment with specific reasons
+- Keep responses focused and concise
+- Never write their work for them without them asking — prefer prompting them to think
+- Refer to their specific object and prompt, never be generic`;
+
     case "object_scoring":
       return `${BASE_CONTEXT}
 
@@ -96,7 +117,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Both intent and userMessage are required." }, { status: 400 });
   }
 
-  const validIntents: AIIntent[] = ["prompt_explainer", "object_justification", "object_scoring"];
+  const validIntents: AIIntent[] = ["prompt_explainer", "object_justification", "object_scoring", "justification_chat"];
   if (!validIntents.includes(intent)) {
     return NextResponse.json({ error: `Unknown intent: ${intent}` }, { status: 400 });
   }

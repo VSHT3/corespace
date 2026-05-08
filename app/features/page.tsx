@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Features",
+  description: "TOK Exhibition helper, CAS tracker, and Extended Essay assistant — every IB Core component covered.",
+};
 
 const features = [
   {

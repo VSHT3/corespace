@@ -1,5 +1,7 @@
 "use client";
 
+// Note: metadata must be exported from a server component — login page is client.
+// Title set via layout template: "Sign in · Corespace"
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";

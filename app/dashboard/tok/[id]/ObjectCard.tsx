@@ -25,6 +25,11 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
   const [scoreError, setScoreError] = useState("");
   const [scoreResult, setScoreResult] = useState<{ score: number; strength: string; weakness: string; tip: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<{ role: "user" | "ai"; text: string }[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatError, setChatError] = useState("");
 
   const wordCount = justification.trim() ? justification.trim().split(/\s+/).length : 0;
   const wordCountColor = wordCount === 0 ? "#aaa" : wordCount < 95 ? "#888" : wordCount <= 150 ? "#16a34a" : "#dc2626";
@@ -104,6 +109,39 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
   async function handleDelete() {
     if (!object) return;
     startTransition(() => deleteObject(exhibitionId, object.id));
+  }
+
+  async function handleChatSend(message: string) {
+    if (!message.trim() || chatLoading || !object) return;
+    setChatError("");
+    const userMsg = { role: "user" as const, text: message.trim() };
+    setChatMessages((prev) => [...prev, userMsg]);
+    setChatInput("");
+    setChatLoading(true);
+    try {
+      const res = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          intent: "justification_chat",
+          userMessage: message.trim(),
+          context: {
+            prompt,
+            objectTitle: object.title,
+            objectType: object.object_type ?? "",
+            objectDescription: object.description ?? "",
+            justification,
+          },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Chat failed");
+      setChatMessages((prev) => [...prev, { role: "ai", text: data.text }]);
+    } catch (e: unknown) {
+      setChatError(e instanceof Error ? e.message : "Chat failed");
+    } finally {
+      setChatLoading(false);
+    }
   }
 
   async function handleScore() {
@@ -426,6 +464,90 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
           {!scoreResult && !scoreLoading && !scoreError && (
             <p style={{ fontSize: "11px", color: "#aaa" }}>
               {justification.trim() ? "Get AI feedback on object quality and justification strength." : "Write a justification first to enable scoring."}
+            </p>
+          )}
+
+          {/* Justification Chat */}
+          <hr className="divider" style={{ margin: "1rem 0" }} />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem", flexWrap: "wrap", gap: "0.5rem" }}>
+            <p style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              Refine with AI
+            </p>
+            <button
+              onClick={() => setChatOpen((v) => !v)}
+              className="btn-ghost btn-ghost-hover"
+              style={{ fontSize: "11px", padding: "4px 10px", position: "relative" }}
+            >
+              {chatOpen ? "Close chat" : "Open chat"}
+              {!chatOpen && chatMessages.length > 0 && (
+                <span style={{ position: "absolute", top: "-3px", right: "-3px", width: "7px", height: "7px", borderRadius: "50%", background: "var(--fg)" }} />
+              )}
+            </button>
+          </div>
+
+          {chatOpen && (
+            <div style={{ border: "2px solid var(--border)", borderRadius: "var(--radius)", overflow: "hidden" }}>
+              <div style={{ maxHeight: "200px", overflowY: "auto", padding: "0.75rem", display: "flex", flexDirection: "column", gap: "8px", background: "var(--bg)" }}>
+                {chatMessages.length === 0 && !chatLoading && (
+                  <p style={{ fontSize: "12px", color: "#aaa", textAlign: "center", margin: "0.5rem 0" }}>
+                    Ask AI to improve, explain, or critique your justification.
+                  </p>
+                )}
+                {chatMessages.map((msg, i) => (
+                  <div key={i} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start" }}>
+                    <div style={{
+                      maxWidth: "90%",
+                      padding: "6px 10px",
+                      borderRadius: "var(--radius)",
+                      border: "2px solid var(--border)",
+                      background: msg.role === "user" ? "var(--fg)" : accent,
+                      color: msg.role === "user" ? "var(--bg)" : "var(--fg)",
+                      fontSize: "12px",
+                      lineHeight: 1.5,
+                      whiteSpace: "pre-wrap",
+                    }}>
+                      {msg.text}
+                    </div>
+                  </div>
+                ))}
+                {chatLoading && (
+                  <div style={{ display: "flex", gap: "4px", padding: "4px 2px" }}>
+                    {[0, 1, 2].map((i) => (
+                      <span key={i} style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--fg)", opacity: 0.4, display: "inline-block", animation: "pulse 1.2s ease-in-out infinite", animationDelay: `${i * 0.18}s` }} />
+                    ))}
+                  </div>
+                )}
+                {chatError && (
+                  <p className="tag tag-pink" style={{ display: "block", fontWeight: 400, textTransform: "none", letterSpacing: 0, fontSize: "11px", padding: "4px 8px" }}>{chatError}</p>
+                )}
+              </div>
+              <form
+                onSubmit={(e) => { e.preventDefault(); handleChatSend(chatInput); }}
+                style={{ display: "flex", borderTop: "2px solid var(--border)", background: "var(--surface)" }}
+              >
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  placeholder="Ask about your justification…"
+                  disabled={chatLoading}
+                  style={{ flex: 1, border: "none", outline: "none", padding: "8px 10px", fontSize: "12px", background: "transparent", fontFamily: "inherit" }}
+                />
+                <button
+                  type="submit"
+                  disabled={chatLoading || !chatInput.trim()}
+                  className="btn-primary btn-primary-hover"
+                  style={{ fontSize: "11px", padding: "6px 12px", borderRadius: 0, borderLeft: "2px solid var(--border)", opacity: chatLoading || !chatInput.trim() ? 0.4 : 1 }}
+                >
+                  Send
+                </button>
+              </form>
+            </div>
+          )}
+
+          {!chatOpen && (
+            <p style={{ fontSize: "11px", color: "#aaa" }}>
+              Chat with AI to refine your justification, ask for improvements, or get specific feedback.
             </p>
           )}
         </div>

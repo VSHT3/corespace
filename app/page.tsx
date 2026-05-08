@@ -1,4 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Corespace — IB Core made manageable",
+  description:
+    "AI-powered tools for IB Diploma students. TOK Exhibition helper, CAS tracker, and Extended Essay assistant — built by an IB student, for IB students.",
+};
 
 export default function Home() {
   return (

@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Pricing",
+  description: "Free plan for casual use. €4/month Student plan for unlimited TOK, CAS, and EE access. No hidden fees.",
+};
 
 const plans = [
   {
