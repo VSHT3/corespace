@@ -7,9 +7,33 @@ export const metadata: Metadata = {
     "AI-powered tools for IB Diploma students. TOK Exhibition helper, CAS tracker, and Extended Essay assistant — built by an IB student, for IB students.",
 };
 
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "Corespace",
+  applicationCategory: "EducationalApplication",
+  operatingSystem: "Web",
+  description: "AI-powered tools for IB Diploma students. TOK Exhibition helper, CAS tracker, and Extended Essay assistant.",
+  url: "https://corespace.app",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+    description: "Free tier available",
+  },
+  audience: {
+    "@type": "EducationalAudience",
+    educationalRole: "student",
+  },
+};
+
 export default function Home() {
   return (
     <main className="flex flex-col flex-1 items-center justify-center px-6 py-24" style={{ animation: "fadeUp 0.28s ease both" }}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div className="max-w-2xl w-full text-center space-y-8">
         <div className="space-y-3">
           <p className="eyebrow">Corespace</p>

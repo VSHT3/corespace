@@ -20,12 +20,14 @@ export const metadata: Metadata = {
     description:
       "AI-powered tools for IB Diploma students. TOK Exhibition helper, CAS tracker, and Extended Essay assistant.",
     locale: "en_US",
+    images: [{ url: "https://corespace.app/api/og", width: 1200, height: 630, alt: "Corespace" }],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "Corespace — IB Core made manageable",
     description:
       "AI-powered tools for IB Diploma students. Pick a TOK prompt, build your exhibition, get AI justifications.",
+    images: ["https://corespace.app/api/og"],
   },
   robots: {
     index: true,

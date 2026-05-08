@@ -5,7 +5,7 @@ const NAV_LINKS = [
   { label: "Pricing", href: "/pricing" },
   { label: "Privacy", href: "/privacy" },
   { label: "Terms", href: "/terms" },
-  { label: "Contact", href: "mailto:hello@corespace.app" },
+  { label: "Contact", href: "/contact" },
 ];
 
 export default function Footer() {
