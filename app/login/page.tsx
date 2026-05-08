@@ -19,6 +19,13 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [confirmationSent, setConfirmationSent] = useState(false);
 
+  const pwStrength = mode === "signup" && password.length > 0
+    ? password.length < 8 ? "weak"
+    : password.length < 12 && !/[^a-zA-Z0-9]/.test(password) ? "fair"
+    : "strong"
+    : null;
+  const pwStrengthColor = pwStrength === "weak" ? "#dc2626" : pwStrength === "fair" ? "#b45309" : "#16a34a";
+
   useEffect(() => {
     if (searchParams.get("error") === "confirmation_failed") {
       setError("Confirmation link invalid or expired. Try signing up again.");
@@ -112,6 +119,17 @@ export default function LoginPage() {
               placeholder="••••••••"
             />
           </div>
+
+          {pwStrength && (
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div style={{ flex: 1, height: "3px", borderRadius: "2px", background: "#eee", overflow: "hidden" }}>
+                <div style={{ height: "100%", width: pwStrength === "weak" ? "33%" : pwStrength === "fair" ? "66%" : "100%", background: pwStrengthColor, transition: "width 0.2s, background 0.2s" }} />
+              </div>
+              <span style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", color: pwStrengthColor, letterSpacing: "0.04em", minWidth: "36px" }}>
+                {pwStrength}
+              </span>
+            </div>
+          )}
 
           {error && (
             <p className="tag tag-pink" style={{ display: "block", fontWeight: 400, textTransform: "none", letterSpacing: 0, fontSize: "13px", padding: "8px 12px" }}>
