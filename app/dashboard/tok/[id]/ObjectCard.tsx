@@ -30,6 +30,9 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
   const [chatError, setChatError] = useState("");
+  const [descValue, setDescValue] = useState(object?.description ?? "");
+
+  const DESC_MAX = 500;
 
   const wordCount = justification.trim() ? justification.trim().split(/\s+/).length : 0;
   const wordCountColor = wordCount === 0 ? "#aaa" : wordCount < 95 ? "#888" : wordCount <= 150 ? "#16a34a" : "#dc2626";
@@ -41,6 +44,7 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
   useEffect(() => {
     setEditing(!object);
     setJustification(object?.justification ?? "");
+    setDescValue(object?.description ?? "");
     setConfirmingDelete(false);
     setAiError("");
     setSaveError("");
@@ -261,6 +265,7 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
               name="title"
               type="text"
               required
+              maxLength={100}
               defaultValue={object?.title ?? ""}
               placeholder="e.g. Einstein's notebook"
               className="field-input"
@@ -289,13 +294,22 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
             </select>
           </div>
           <div>
-            <label style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: "4px" }}>
-              Description
-            </label>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+              <label style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                Description
+              </label>
+              {descValue.length > DESC_MAX * 0.8 && (
+                <span style={{ fontSize: "10px", color: descValue.length >= DESC_MAX ? "#dc2626" : "#888" }}>
+                  {descValue.length}/{DESC_MAX}
+                </span>
+              )}
+            </div>
             <textarea
               name="description"
               rows={3}
-              defaultValue={object?.description ?? ""}
+              maxLength={DESC_MAX}
+              value={descValue}
+              onChange={(e) => setDescValue(e.target.value)}
               placeholder="What is this object? Why does it relate to your prompt?"
               className="field-input"
               style={{ resize: "vertical" }}

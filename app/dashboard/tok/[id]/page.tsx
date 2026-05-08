@@ -5,6 +5,7 @@ import { TOK_PROMPTS } from "@/lib/tok-prompts";
 import { saveObject, deleteObject, swapObjectPositions } from "../actions";
 import ObjectCard from "./ObjectCard";
 import ExhibitionTitleEditor from "./ExhibitionTitleEditor";
+import PrintButton from "./PrintButton";
 import type { TOKExhibition, TOKObject } from "@/types";
 
 export default async function ExhibitionPage({ params }: { params: Promise<{ id: string }> }) {
@@ -85,9 +86,10 @@ export default async function ExhibitionPage({ params }: { params: Promise<{ id:
           </h2>
         </div>
 
-        <span className="tag tag-yellow" style={{ justifySelf: "end", marginTop: "0.25rem" }}>
-          Prompt {ex.prompt_id}
-        </span>
+        <div style={{ justifySelf: "end", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.5rem" }}>
+          <span className="tag tag-yellow">Prompt {ex.prompt_id}</span>
+          <PrintButton />
+        </div>
       </section>
 
       {promptObj?.description && (

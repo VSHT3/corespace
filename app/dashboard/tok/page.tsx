@@ -7,6 +7,17 @@ export default async function TOKPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  const { data: exhibitions } = await supabase
+    .from("tok_exhibitions")
+    .select("id, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  const exhibitionCount = exhibitions?.length ?? 0;
+  const lastActivity = exhibitions?.[0]?.created_at
+    ? new Date(exhibitions[0].created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+    : null;
+
   const modules = [
     {
       id: "exhibition",
@@ -35,7 +46,15 @@ export default async function TOKPage() {
       <div className="mb-10 space-y-2">
         <p className="eyebrow">Theory of Knowledge</p>
         <h1 className="heading" style={{ fontSize: "36px" }}>TOK</h1>
-        <p style={{ color: "#555" }}>Choose which TOK component to work on.</p>
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+          <p style={{ color: "#555" }}>Choose which TOK component to work on.</p>
+          {exhibitionCount > 0 && (
+            <span style={{ fontSize: "12px", color: "#888" }}>
+              {exhibitionCount} exhibition{exhibitionCount !== 1 ? "s" : ""}
+              {lastActivity && ` · Last: ${lastActivity}`}
+            </span>
+          )}
+        </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1rem" }}>
