@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase-server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
@@ -11,6 +12,21 @@ import RubricPanel from "./RubricPanel";
 import ObjectIdeasButton from "./ObjectIdeasButton";
 import SubmissionChecklist from "./SubmissionChecklist";
 import type { TOKExhibition, TOKObject } from "@/types";
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = await createClient();
+  const { data: exhibition } = await supabase
+    .from("tok_exhibitions")
+    .select("title, prompt_id")
+    .eq("id", id)
+    .single();
+  if (!exhibition) return { title: "Exhibition" };
+  return {
+    title: `${exhibition.title} · Prompt ${exhibition.prompt_id}`,
+    robots: { index: false },
+  };
+}
 
 export default async function ExhibitionPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
