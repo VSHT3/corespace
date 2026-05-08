@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Too many requests. Please wait a minute before trying again." }, { status: 429 });
   }
 
-  const { intent, userMessage, context } = body;
+  const { intent, userMessage, context, history } = body;
 
   if (!intent || !userMessage) {
     return NextResponse.json({ error: "Both intent and userMessage are required." }, { status: 400 });
@@ -218,10 +218,19 @@ export async function POST(request: NextRequest) {
 
   const systemPrompt = buildSystemPrompt(intent, context ?? {});
 
+  // Build contents array: prior history turns + current user message
+  const contents = [
+    ...(history ?? []).map((turn) => ({
+      role: turn.role,
+      parts: [{ text: turn.text }],
+    })),
+    { role: "user" as const, parts: [{ text: userMessage }] },
+  ];
+
   try {
     const response = await gemini.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: userMessage,
+      contents,
       config: {
         systemInstruction: systemPrompt,
         maxOutputTokens: intent === "object_scoring" ? 400 : 1000,

@@ -720,6 +720,7 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
     if (!question.trim() || aiLoading) return;
     setAiError("");
     const userMsg: ChatMessage = { role: "user", text: question.trim(), id: ++msgIdCounter };
+    const currentHistory = messages.map((m) => ({ role: m.role === "user" ? "user" as const : "model" as const, text: m.text }));
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setAiLoading(true);
@@ -731,6 +732,7 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
         body: JSON.stringify({
           intent: "prompt_explainer",
           userMessage: question.trim(),
+          history: currentHistory,
           context: {
             promptId: String(id),
             promptTitle: prompt.title,

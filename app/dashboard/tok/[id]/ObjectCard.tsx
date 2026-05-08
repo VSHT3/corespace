@@ -124,6 +124,7 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
     if (!message.trim() || chatLoading || !object) return;
     setChatError("");
     const userMsg = { role: "user" as const, text: message.trim() };
+    const currentHistory = chatMessages.map((m) => ({ role: m.role === "user" ? "user" as const : "model" as const, text: m.text }));
     setChatMessages((prev) => [...prev, userMsg]);
     setChatInput("");
     setChatLoading(true);
@@ -134,6 +135,7 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
         body: JSON.stringify({
           intent: "justification_chat",
           userMessage: message.trim(),
+          history: currentHistory,
           context: {
             prompt,
             objectTitle: object.title,

@@ -20,10 +20,16 @@ export interface TOKObject {
 
 export type AIIntent = "prompt_explainer" | "object_justification" | "object_scoring" | "justification_chat" | "object_ideas" | "knowledge_question" | "justification_improve";
 
+export interface ChatTurn {
+  role: "user" | "model";
+  text: string;
+}
+
 export interface AIRequestBody {
   intent: AIIntent;
   userMessage: string;
   context?: Record<string, string>;
+  history?: ChatTurn[];
 }
 
 export interface AIResponseBody {
