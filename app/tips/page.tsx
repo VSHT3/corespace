@@ -45,6 +45,16 @@ const sections = [
       { h: "Not saving for supervisor review", body: "Your supervisor must sign off on your exhibition before submission. Share your draft early — they can flag whether your object choices and justifications are on track before you invest too much time." },
     ],
   },
+  {
+    title: "Understanding assessment and moderation",
+    accent: "#e9d5ff",
+    tips: [
+      { h: "Your teacher marks first, then IB moderates", body: "The TOK exhibition is internally assessed — your teacher gives a mark out of 10. IB then selects a sample from each school and externally moderates. The moderator can adjust marks up or down if they disagree with the teacher's assessment." },
+      { h: "Moderation looks for consistency, not perfection", body: "Moderators check whether your teacher's marks align with IB standards across the school's cohort. A single strong exhibition can be marked down if the rest of the school's marks were all inflated — so internal standardisation matters." },
+      { h: "The rubric uses holistic judgement", body: "Unlike the EE or some IA reports, the TOK exhibition is assessed holistically against a single rubric from 0–10. There are no separate criteria being added up. The examiner makes one holistic judgement about whether your exhibition is Excellent, Good, Satisfactory, Basic, or Rudimentary." },
+      { h: "Academic honesty: AI assistance must be disclosed", body: "IB's academic honesty policy requires students to disclose AI assistance. AI-generated justifications submitted verbatim without acknowledgement are a potential violation. Use AI output as a starting draft and rewrite substantially in your own voice — then disclose AI use to your supervisor." },
+    ],
+  },
 ];
 
 export default function TipsPage() {
