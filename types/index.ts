@@ -18,7 +18,7 @@ export interface TOKObject {
   created_at: string;
 }
 
-export type AIIntent = "prompt_explainer" | "object_justification";
+export type AIIntent = "prompt_explainer" | "object_justification" | "object_scoring";
 
 export interface AIRequestBody {
   intent: AIIntent;

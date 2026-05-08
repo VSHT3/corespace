@@ -18,8 +18,15 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
   const [saveError, setSaveError] = useState("");
+  const [savedOk, setSavedOk] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [scoreLoading, setScoreLoading] = useState(false);
+  const [scoreError, setScoreError] = useState("");
+  const [scoreResult, setScoreResult] = useState<{ score: number; strength: string; weakness: string; tip: string } | null>(null);
+
+  const wordCount = justification.trim() ? justification.trim().split(/\s+/).length : 0;
+  const wordCountColor = wordCount === 0 ? "#aaa" : wordCount < 95 ? "#888" : wordCount <= 150 ? "#16a34a" : "#dc2626";
 
   const slotLabel = ["First", "Second", "Third"][slot];
   const accentColors = ["var(--pink)", "var(--mint)", "var(--sky)"];
@@ -78,6 +85,7 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
   async function handleSaveJustification() {
     if (!object) return;
     setSaveError("");
+    setSavedOk(false);
     try {
       const res = await fetch("/api/tok/justification", {
         method: "POST",
@@ -85,6 +93,8 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
         body: JSON.stringify({ exhibitionId, objectId: object.id, justification }),
       });
       if (!res.ok) throw new Error("Save failed");
+      setSavedOk(true);
+      setTimeout(() => setSavedOk(false), 2000);
     } catch {
       setSaveError("Failed to save. Check connection and try again.");
     }
@@ -93,6 +103,38 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
   async function handleDelete() {
     if (!object) return;
     startTransition(() => deleteObject(exhibitionId, object.id));
+  }
+
+  async function handleScore() {
+    if (!object) return;
+    setScoreLoading(true);
+    setScoreError("");
+    setScoreResult(null);
+    try {
+      const res = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          intent: "object_scoring",
+          userMessage: "Score this object and justification.",
+          context: {
+            prompt,
+            objectTitle: object.title,
+            objectType: object.object_type ?? "",
+            objectDescription: object.description ?? "",
+            justification: justification,
+          },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Scoring failed");
+      const parsed = JSON.parse(data.text);
+      setScoreResult(parsed);
+    } catch (e: unknown) {
+      setScoreError(e instanceof Error ? e.message : "Scoring failed");
+    } finally {
+      setScoreLoading(false);
+    }
   }
 
   return (
@@ -280,9 +322,84 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
             </p>
           )}
 
-          {!aiLoading && !saveError && (
-            <p style={{ fontSize: "11px", color: "#aaa", marginTop: "4px" }}>
-              Auto-saved on blur. Edit freely after generating.
+          {!aiLoading && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "4px" }}>
+              <p style={{ fontSize: "11px", color: "#aaa" }}>
+                {savedOk ? "✓ Saved" : "Auto-saved on blur."}
+              </p>
+              <p style={{ fontSize: "11px", color: wordCountColor, fontWeight: wordCount >= 95 && wordCount <= 150 ? 700 : 400 }}>
+                {wordCount} {wordCount === 1 ? "word" : "words"}
+                {wordCount > 0 && wordCount < 95 && <span style={{ color: "#aaa" }}> (aim for 95–150)</span>}
+                {wordCount > 150 && <span style={{ color: "#aaa" }}> (over 150)</span>}
+                {wordCount >= 95 && wordCount <= 150 && <span style={{ color: "#16a34a" }}> ✓</span>}
+              </p>
+            </div>
+          )}
+
+          {/* AI Scoring */}
+          <hr className="divider" style={{ margin: "1rem 0" }} />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem", flexWrap: "wrap", gap: "0.5rem" }}>
+            <p style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              AI Score
+            </p>
+            <button
+              onClick={handleScore}
+              disabled={scoreLoading || !justification.trim()}
+              className="btn-ghost btn-ghost-hover"
+              style={{ fontSize: "11px", padding: "4px 10px" }}
+            >
+              {scoreLoading ? "Scoring…" : scoreResult ? "Re-score" : "Score with AI"}
+            </button>
+          </div>
+
+          {scoreError && (
+            <p className="tag tag-pink" style={{ display: "block", fontWeight: 400, textTransform: "none", letterSpacing: 0, fontSize: "12px", padding: "6px 10px", marginBottom: "0.5rem" }}>
+              {scoreError}
+            </p>
+          )}
+
+          {scoreLoading && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              {[60, 80, 50].map((w, i) => (
+                <div key={i} style={{ height: "12px", width: `${w}%`, background: "var(--border)", borderRadius: "2px", animation: "pulse 1.4s ease-in-out infinite", animationDelay: `${i * 0.12}s` }} />
+              ))}
+            </div>
+          )}
+
+          {scoreResult && !scoreLoading && (
+            <div style={{ background: "var(--bg)", border: "2px solid var(--border)", borderRadius: "var(--radius)", padding: "1rem", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                <span
+                  className="heading"
+                  style={{
+                    fontSize: "28px",
+                    color: scoreResult.score >= 8 ? "#16a34a" : scoreResult.score >= 5 ? "#b45309" : "#dc2626",
+                  }}
+                >
+                  {scoreResult.score}/10
+                </span>
+                <span
+                  className="tag"
+                  style={{
+                    background: scoreResult.score >= 8 ? "var(--mint)" : scoreResult.score >= 5 ? "var(--yellow)" : "var(--pink)",
+                  }}
+                >
+                  {scoreResult.score >= 8 ? "Strong" : scoreResult.score >= 5 ? "Developing" : "Needs work"}
+                </span>
+              </div>
+              <div style={{ fontSize: "12px", color: "#444", lineHeight: 1.6 }}>
+                <p style={{ marginBottom: "0.4rem" }}><strong>✓ </strong>{scoreResult.strength}</p>
+                <p style={{ marginBottom: "0.4rem" }}><strong>△ </strong>{scoreResult.weakness}</p>
+                <p style={{ background: "var(--yellow)", border: "1px solid var(--border)", borderRadius: "2px", padding: "4px 8px", marginTop: "0.25rem" }}>
+                  <strong>Tip: </strong>{scoreResult.tip}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {!scoreResult && !scoreLoading && !scoreError && (
+            <p style={{ fontSize: "11px", color: "#aaa" }}>
+              {justification.trim() ? "Get AI feedback on object quality and justification strength." : "Write a justification first to enable scoring."}
             </p>
           )}
         </div>

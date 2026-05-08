@@ -20,11 +20,24 @@ export default function Home() {
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link href="/login" className="btn-primary btn-primary-hover" style={{ padding: "10px 24px" }}>
-            Get Started
+            Get Started Free
           </Link>
           <a href="#features" className="btn-ghost btn-ghost-hover" style={{ padding: "10px 24px" }}>
-            Learn More
+            See Features
           </a>
+        </div>
+
+        <div style={{ display: "flex", gap: "1.5rem", justifyContent: "center", flexWrap: "wrap", marginTop: "0.5rem" }}>
+          {[
+            { val: "35", label: "official prompts" },
+            { val: "AI", label: "justification help" },
+            { val: "Free", label: "to start" },
+          ].map((stat) => (
+            <div key={stat.label} style={{ textAlign: "center" }}>
+              <span style={{ fontWeight: 700, fontSize: "15px", display: "block", letterSpacing: "-0.02em" }}>{stat.val}</span>
+              <span style={{ fontSize: "11px", color: "#888", textTransform: "uppercase", letterSpacing: "0.06em" }}>{stat.label}</span>
+            </div>
+          ))}
         </div>
       </div>
 

@@ -29,6 +29,8 @@ export async function deleteExhibition(id: string) {
 
   await supabase.from("tok_exhibitions").delete().eq("id", id).eq("user_id", user.id);
   revalidatePath("/dashboard/tok");
+  revalidatePath("/dashboard/tok/exhibition");
+  redirect("/dashboard/tok/exhibition");
 }
 
 export async function saveObject(formData: FormData) {

@@ -113,6 +113,40 @@ export default async function ExhibitionPage({ params }: { params: Promise<{ id:
         }}
       >
         <p className="eyebrow">Three Objects</p>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <div style={{ display: "flex", gap: "6px" }}>
+            {slots.map((slot) => {
+              const obj = objs.find((o) => o.position === slot);
+              const accentColors = ["var(--pink)", "var(--mint)", "var(--sky)"];
+              const hasJustification = !!(obj?.justification?.trim());
+              return (
+                <div
+                  key={slot}
+                  title={obj ? `Object ${slot + 1}: ${obj.title}${hasJustification ? " (justified)" : " (no justification)"}` : `Object ${slot + 1}: empty`}
+                  style={{
+                    width: "32px",
+                    height: "10px",
+                    borderRadius: "2px",
+                    border: "2px solid var(--border)",
+                    background: obj ? (hasJustification ? accentColors[slot] : "var(--surface)") : "transparent",
+                    position: "relative",
+                    overflow: "hidden",
+                  }}
+                >
+                  {obj && !hasJustification && (
+                    <div style={{ position: "absolute", inset: 0, background: accentColors[slot], opacity: 0.35 }} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <span style={{ fontSize: "11px", color: "#888", fontWeight: 700 }}>
+            {objs.length}/3 objects
+            {objs.filter(o => o.justification?.trim()).length > 0 && (
+              <> · {objs.filter(o => o.justification?.trim()).length}/3 justified</>
+            )}
+          </span>
+        </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "1rem", alignItems: "start" }}>

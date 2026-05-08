@@ -53,6 +53,28 @@ ${context.objectDescription ? `Student's description: ${context.objectDescriptio
 
 Write a clear, concise justification (3-4 sentences) explaining why this object is relevant to the prompt. Focus on the knowledge question it raises, the connection to ways of knowing or areas of knowledge, and what makes this object analytically interesting for the prompt. Write in first person as if the student is explaining their choice. Do not be generic — be specific to this object and this prompt.`;
 
+    case "object_scoring":
+      return `${BASE_CONTEXT}
+
+---
+
+You are an IB Theory of Knowledge examiner assessing a student's exhibition object and justification.
+
+Exhibition prompt: "${context.prompt ?? ""}"
+Object: "${context.objectTitle ?? ""}" (type: ${context.objectType || "unspecified"})
+${context.objectDescription ? `Description: ${context.objectDescription}` : ""}
+${context.justification ? `Justification: ${context.justification}` : "No justification written yet."}
+
+Assess this object and respond with EXACTLY this JSON structure and nothing else:
+{
+  "score": <number 1-10>,
+  "strength": "<one sentence: what this object does well>",
+  "weakness": "<one sentence: the biggest gap or weakness>",
+  "tip": "<one concrete sentence the student can act on to improve>"
+}
+
+Score rubric: 9-10 = examiner-ready, strong knowledge question + clear prompt link; 7-8 = good, minor gaps; 5-6 = adequate but generic; 3-4 = weak connection or vague; 1-2 = off-prompt or no justification.`;
+
     default:
       return BASE_CONTEXT;
   }

@@ -7,73 +7,130 @@ import type { TOKExhibition } from "@/types";
 import PromptPicker from "./PromptPicker";
 import ConfirmSubmitButton from "@/components/ConfirmSubmitButton";
 
-export default async function ExhibitionEntryPage() {
+export default async function ExhibitionEntryPage({ searchParams }: { searchParams: Promise<{ new?: string }> }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: existing } = await supabase
+  const { new: showNew } = await searchParams;
+
+  const { data: exhibitions } = await supabase
     .from("tok_exhibitions")
-    .select("*")
+    .select("*, tok_objects(id, justification)")
     .eq("user_id", user.id)
-    .limit(1)
-    .single();
+    .order("created_at", { ascending: false });
 
-  const exhibition = existing as TOKExhibition | null;
+  const list = (exhibitions ?? []) as (TOKExhibition & { tok_objects: { id: string; justification: string | null }[] })[];
 
-  if (exhibition) {
-    const prompt = TOK_PROMPTS[exhibition.prompt_id];
+  if (list.length === 0 || showNew === "1") {
     return (
-      <main className="page-main">
-        <div className="mb-6">
+      <main className="page-main" style={{ maxWidth: "1400px" }}>
+        <div className="mb-6" style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
           <Link href="/dashboard/tok" className="back-link">← TOK</Link>
+          {list.length > 0 && (
+            <Link href="/dashboard/tok/exhibition" className="back-link" style={{ marginLeft: "auto" }}>
+              ← Back to my exhibitions
+            </Link>
+          )}
         </div>
 
-        <div className="mb-10 space-y-2">
+        <div className="mb-4 space-y-2">
           <p className="eyebrow">TOK Exhibition</p>
-          <h1 className="heading" style={{ fontSize: "32px" }}>Your Exhibition</h1>
-          <p style={{ color: "#555" }}>You can only have one exhibition. Continue working on it below.</p>
+          <h1 className="heading" style={{ fontSize: "32px" }}>Choose your prompt</h1>
+          {list.length > 0 && (
+            <p style={{ color: "#555" }}>Creating new exhibition. You already have {list.length}.</p>
+          )}
         </div>
 
-        <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-          <div style={{ height: "6px", background: "var(--yellow)" }} />
-          <div style={{ padding: "1.5rem" }}>
-            <p style={{ fontWeight: 700, fontSize: "16px", marginBottom: "4px" }}>{exhibition.title}</p>
-            <p style={{ fontSize: "13px", color: "#555", marginBottom: "1.25rem" }}>
-              <span className="tag tag-yellow" style={{ marginRight: "8px" }}>Prompt {exhibition.prompt_id}</span>
-              {prompt?.title ?? `Prompt ${exhibition.prompt_id}`}
-            </p>
-            <div style={{ display: "flex", gap: "8px" }}>
-              <Link href={`/dashboard/tok/${exhibition.id}`} className="btn-primary btn-primary-hover">
-                Open Exhibition →
-              </Link>
-              <form action={deleteExhibition.bind(null, exhibition.id)}>
-                <ConfirmSubmitButton
-                  label="Delete & start over"
-                  confirmLabel="Yes, delete"
-                  message="Delete this exhibition?"
-                  style={{ color: "#c00", borderColor: "#c00" }}
-                />
-              </form>
-            </div>
-          </div>
-        </div>
+        <PromptPicker createAction={createExhibition} />
       </main>
     );
   }
 
   return (
-    <main className="page-main" style={{ maxWidth: "1400px" }}>
+    <main className="page-main">
       <div className="mb-6">
         <Link href="/dashboard/tok" className="back-link">← TOK</Link>
       </div>
 
-      <div className="mb-4 space-y-2">
-        <p className="eyebrow">TOK Exhibition</p>
-        <h1 className="heading" style={{ fontSize: "32px" }}>Choose your prompt</h1>
+      <div className="mb-8" style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
+        <div className="space-y-1">
+          <p className="eyebrow">TOK Exhibition</p>
+          <h1 className="heading" style={{ fontSize: "32px" }}>My Exhibitions</h1>
+          <p style={{ color: "#555" }}>{list.length} exhibition{list.length !== 1 ? "s" : ""}</p>
+        </div>
+        <Link
+          href="/dashboard/tok/exhibition?new=1"
+          className="btn-primary btn-primary-hover"
+          style={{ padding: "8px 18px" }}
+        >
+          + New Exhibition
+        </Link>
       </div>
 
-      <PromptPicker createAction={createExhibition} />
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+        {list.map((ex) => {
+          const prompt = TOK_PROMPTS[ex.prompt_id];
+          const objectCount = ex.tok_objects?.length ?? 0;
+          const justifiedCount = ex.tok_objects?.filter(o => o.justification?.trim()).length ?? 0;
+          const isComplete = objectCount === 3 && justifiedCount === 3;
+          const accentColors = ["var(--pink)", "var(--mint)", "var(--sky)"];
+
+          return (
+            <div key={ex.id} className="card" style={{ padding: 0, overflow: "hidden" }}>
+              <div style={{ height: "5px", background: "var(--yellow)" }} />
+              <div style={{ padding: "1.25rem 1.5rem", display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "4px", flexWrap: "wrap" }}>
+                    <span style={{ fontWeight: 700, fontSize: "15px" }}>{ex.title}</span>
+                    <span className="tag tag-yellow">Prompt {ex.prompt_id}</span>
+                    {isComplete && <span className="tag tag-mint">Complete</span>}
+                  </div>
+                  <p style={{ fontSize: "13px", color: "#555", marginBottom: "0.5rem", lineHeight: 1.4 }}>
+                    {prompt?.title ?? `Prompt ${ex.prompt_id}`}
+                  </p>
+                  <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                    {[0, 1, 2].map((slot) => {
+                      const obj = ex.tok_objects?.find((_, i) => i === slot);
+                      return (
+                        <div
+                          key={slot}
+                          style={{
+                            width: "24px",
+                            height: "8px",
+                            borderRadius: "2px",
+                            border: "2px solid var(--border)",
+                            background: slot < objectCount
+                              ? (slot < justifiedCount ? accentColors[slot] : "var(--surface)")
+                              : "transparent",
+                          }}
+                        />
+                      );
+                    })}
+                    <span style={{ fontSize: "11px", color: "#888" }}>
+                      {objectCount}/3 objects · {justifiedCount}/3 justified
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: "8px", alignItems: "center", flexShrink: 0 }}>
+                  <Link href={`/dashboard/tok/${ex.id}`} className="btn-primary btn-primary-hover" style={{ padding: "6px 14px" }}>
+                    Open →
+                  </Link>
+                  <form action={deleteExhibition.bind(null, ex.id)}>
+                    <ConfirmSubmitButton
+                      label="Delete"
+                      confirmLabel="Yes, delete"
+                      message="Delete this exhibition?"
+                      style={{ color: "#c00", borderColor: "#c00", fontSize: "11px", padding: "6px 12px" }}
+                    />
+                  </form>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </main>
   );
 }
