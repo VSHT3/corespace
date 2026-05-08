@@ -601,6 +601,7 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
   const [input, setInput] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
+  const [titleValue, setTitleValue] = useState("My TOK Exhibition");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -758,14 +759,30 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
               {prompt.description}
             </p>
 
-            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-              <form action={createAction}>
-                <input type="hidden" name="prompt_id" value={id} />
-                <input type="hidden" name="title" value="My TOK Exhibition" />
+            <form action={createAction} style={{ display: "flex", flexDirection: "column", gap: "0.6rem", marginBottom: "0.75rem" }}>
+              <input type="hidden" name="prompt_id" value={id} />
+              <div>
+                <label style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: "4px", color: "#666" }}>
+                  Exhibition name
+                </label>
+                <input
+                  name="title"
+                  type="text"
+                  value={titleValue}
+                  onChange={(e) => setTitleValue(e.target.value)}
+                  placeholder="My TOK Exhibition"
+                  className="field-input"
+                  style={{ fontSize: "13px", padding: "6px 10px" }}
+                  required
+                />
+              </div>
+              <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
                 <button type="submit" className="btn-primary btn-primary-hover">
                   Select this prompt →
                 </button>
-              </form>
+              </div>
+            </form>
+            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
               <button
                 onClick={() => setChatOpen((v) => !v)}
                 className="btn-ghost btn-ghost-hover"

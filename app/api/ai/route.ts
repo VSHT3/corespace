@@ -80,18 +80,33 @@ Score rubric: 9-10 = examiner-ready, strong knowledge question + clear prompt li
   }
 }
 
+const MAX_MESSAGE_LENGTH = 4000;
+
 export async function POST(request: NextRequest) {
   let body: AIRequestBody;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
 
   const { intent, userMessage, context } = body;
 
   if (!intent || !userMessage) {
-    return NextResponse.json({ error: "intent and userMessage required" }, { status: 400 });
+    return NextResponse.json({ error: "Both intent and userMessage are required." }, { status: 400 });
+  }
+
+  const validIntents: AIIntent[] = ["prompt_explainer", "object_justification", "object_scoring"];
+  if (!validIntents.includes(intent)) {
+    return NextResponse.json({ error: `Unknown intent: ${intent}` }, { status: 400 });
+  }
+
+  if (typeof userMessage !== "string" || userMessage.trim().length === 0) {
+    return NextResponse.json({ error: "userMessage must be a non-empty string." }, { status: 400 });
+  }
+
+  if (userMessage.length > MAX_MESSAGE_LENGTH) {
+    return NextResponse.json({ error: "Message too long. Max 4000 characters." }, { status: 413 });
   }
 
   const systemPrompt = buildSystemPrompt(intent, context ?? {});
@@ -102,17 +117,21 @@ export async function POST(request: NextRequest) {
       contents: userMessage,
       config: {
         systemInstruction: systemPrompt,
-        maxOutputTokens: 1000,
+        maxOutputTokens: intent === "object_scoring" ? 400 : 1000,
       },
     });
 
-    return NextResponse.json<AIResponseBody>({ text: response.text ?? "" });
+    const text = response.text ?? "";
+    return NextResponse.json<AIResponseBody>({ text });
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : "AI request failed";
-    const isQuota = msg.includes("429") || msg.toLowerCase().includes("quota");
-    return NextResponse.json(
-      { error: isQuota ? "AI quota exceeded. Try again later." : "AI request failed. Please try again." },
-      { status: isQuota ? 429 : 500 }
-    );
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes("429") || msg.toLowerCase().includes("quota") || msg.toLowerCase().includes("rate")) {
+      return NextResponse.json({ error: "AI rate limit reached. Please wait a moment and try again." }, { status: 429 });
+    }
+    if (msg.toLowerCase().includes("safety") || msg.toLowerCase().includes("blocked")) {
+      return NextResponse.json({ error: "Request blocked by content safety filter. Please rephrase." }, { status: 400 });
+    }
+    console.error("[AI route error]", msg);
+    return NextResponse.json({ error: "AI request failed. Please try again." }, { status: 500 });
   }
 }

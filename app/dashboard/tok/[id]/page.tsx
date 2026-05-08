@@ -34,6 +34,8 @@ export default async function ExhibitionPage({ params }: { params: Promise<{ id:
   const prompt = promptObj?.title ?? `Prompt ${ex.prompt_id}`;
 
   const slots = [0, 1, 2];
+  const justifiedCount = objs.filter(o => o.justification?.trim()).length;
+  const isComplete = objs.length === 3 && justifiedCount === 3;
 
   return (
     <main
@@ -149,6 +151,39 @@ export default async function ExhibitionPage({ params }: { params: Promise<{ id:
           </span>
         </div>
       </div>
+
+      {isComplete && (
+        <div
+          style={{
+            maxWidth: "860px",
+            margin: "0 auto 2rem",
+            background: "var(--mint)",
+            border: "2px solid var(--border)",
+            borderRadius: "var(--radius)",
+            padding: "1.25rem 1.5rem",
+            boxShadow: "4px 4px 0 0 var(--fg)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "1rem",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <p style={{ fontWeight: 700, fontSize: "16px", marginBottom: "4px" }}>
+              Exhibition complete!
+            </p>
+            <p style={{ fontSize: "13px", color: "#555", margin: 0 }}>
+              All 3 objects written and justified. Review each justification, then print or share with your supervisor.
+            </p>
+          </div>
+          <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+            <Link href="/dashboard/tok/exhibition" className="btn-ghost btn-ghost-hover" style={{ padding: "6px 14px", fontSize: "12px" }}>
+              All exhibitions
+            </Link>
+          </div>
+        </div>
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "1rem", alignItems: "start" }}>
         {slots.map((slot) => {

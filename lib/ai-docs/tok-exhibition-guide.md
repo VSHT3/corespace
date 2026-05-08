@@ -90,4 +90,64 @@ Out of **10 marks**, single holistic rubric. Marked by TOK teacher, externally m
 
 ---
 
+## Knowledge Questions (KQs) in Justifications
+
+A knowledge question is an open, contestable question about knowledge itself — not about facts of the world.
+
+**Format**: "To what extent does [WOK/AOK] [verb] [knowledge concept]?"
+
+Good examples:
+- "To what extent is personal experience a reliable source of knowledge?"
+- "How do cultural perspectives shape what we consider evidence?"
+- "Can mathematical knowledge exist independently of human minds?"
+- "What role does language play in limiting or expanding what we can know?"
+
+Bad (not KQs):
+- "Is climate change real?" (empirical question, not about knowledge)
+- "Why is art important?" (value question)
+- "What is the history of X?" (factual question)
+
+Each object justification should identify at least one KQ that the object raises or exemplifies.
+
+---
+
+## Ways of Knowing (WOKs)
+
+IB recognises these WOKs (not all must appear in an exhibition):
+- **Language** — how words shape and constrain what we can express and know
+- **Sense perception** — direct sensory experience as a source of knowledge
+- **Emotion** — feelings as evidence or distortion in knowing
+- **Reason** — logic and inference as pathways to knowledge
+- **Imagination** — the role of creativity and hypothesis in knowing
+- **Faith** — knowledge claims based on belief without empirical justification
+- **Intuition** — immediate, non-inferential knowing
+- **Memory** — reconstructive nature of recalled knowledge
+
+In justifications: don't just *name* a WOK. Explain *how* the specific object reveals something about the WOK's role in knowledge.
+
+---
+
+## Areas of Knowledge (AOKs)
+
+- Natural Sciences
+- Human Sciences
+- Arts
+- History
+- Mathematics
+- Ethics
+- Indigenous Knowledge Systems
+- Religious Knowledge Systems
+
+Three objects ideally span multiple AOKs to show breadth of how the prompt applies across knowledge domains.
+
+---
+
+## Word Count Guidance
+
+- ~950 words total for all three justifications (IB limit)
+- ~300 words per object
+- Quality over quantity: examiner stops reading at the limit
+
+---
+
 *Based on IB TOK Subject Guide (2022 syllabus). Exhibition IA prompts fixed for duration of this syllabus specification.*
