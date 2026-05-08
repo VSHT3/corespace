@@ -55,7 +55,31 @@ export default function PrivacyPage() {
 
         <section>
           <h2 className="heading" style={{ fontSize: "16px", marginBottom: "0.5rem" }}>Your rights (GDPR)</h2>
-          <p>You have the right to access, correct, export, or delete your data at any time. Email us at <a href="mailto:privacy@corespace.app" style={{ color: "var(--fg)" }}>privacy@corespace.app</a> and we will respond within 30 days.</p>
+          <p style={{ marginBottom: "0.75rem" }}>You have the right to access, correct, export, or delete your data at any time. Email us at <a href="mailto:privacy@corespace.app" style={{ color: "var(--fg)" }}>privacy@corespace.app</a> and we will respond within 30 days.</p>
+          <div style={{ border: "2px solid var(--border)", borderRadius: "var(--radius)", overflow: "hidden" }}>
+            {[
+              { right: "Access", what: "Get a copy of all data we hold about you" },
+              { right: "Rectification", what: "Correct inaccurate personal data" },
+              { right: "Erasure", what: "Delete your account and all associated data" },
+              { right: "Portability", what: "Export your content (available via JSON export in-app)" },
+              { right: "Restriction", what: "Restrict processing while a complaint is pending" },
+              { right: "Object", what: "Object to processing for legitimate interests" },
+            ].map((row, i) => (
+              <div key={row.right} style={{ display: "flex", gap: "1rem", padding: "8px 12px", background: i % 2 === 0 ? "var(--bg)" : "var(--surface)", borderTop: i > 0 ? "1px solid var(--border)" : undefined }}>
+                <span style={{ fontWeight: 700, minWidth: "110px", fontSize: "13px" }}>{row.right}</span>
+                <span style={{ fontSize: "13px", color: "#555" }}>{row.what}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <div className="divider" />
+
+        <div className="divider" />
+
+        <section>
+          <h2 className="heading" style={{ fontSize: "16px", marginBottom: "0.5rem" }}>Children&apos;s privacy</h2>
+          <p>Corespace is designed for secondary school students aged 13 and above. We do not knowingly collect personal information from children under 13. If you believe a child under 13 has registered, contact us at <a href="mailto:privacy@corespace.app" style={{ color: "var(--fg)" }}>privacy@corespace.app</a> and we will delete the account promptly.</p>
         </section>
 
         <div className="divider" />
