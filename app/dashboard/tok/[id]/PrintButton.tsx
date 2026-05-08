@@ -5,16 +5,16 @@ interface Props {
 }
 
 export default function PrintButton({ exhibitionId }: Props) {
-  async function handleExportJson() {
-    const res = await fetch(`/api/tok/export?id=${exhibitionId}`);
+  async function downloadFrom(url: string, filename: string) {
+    const res = await fetch(url);
     if (!res.ok) return;
     const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
+    const objectUrl = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
-    a.download = `tok-exhibition.json`;
+    a.href = objectUrl;
+    a.download = filename;
     a.click();
-    URL.revokeObjectURL(url);
+    URL.revokeObjectURL(objectUrl);
   }
 
   return (
@@ -27,7 +27,15 @@ export default function PrintButton({ exhibitionId }: Props) {
         Print
       </button>
       <button
-        onClick={handleExportJson}
+        onClick={() => downloadFrom(`/api/tok/export-text?id=${exhibitionId}`, "tok-exhibition.txt")}
+        className="btn-ghost btn-ghost-hover"
+        style={{ fontSize: "11px", padding: "4px 10px" }}
+        title="Download as plain text (paste into Word/Docs)"
+      >
+        Export TXT
+      </button>
+      <button
+        onClick={() => downloadFrom(`/api/tok/export?id=${exhibitionId}`, "tok-exhibition.json")}
         className="btn-ghost btn-ghost-hover"
         style={{ fontSize: "11px", padding: "4px 10px" }}
         title="Download exhibition as JSON"
