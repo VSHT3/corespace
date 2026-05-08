@@ -95,3 +95,27 @@ export async function deleteObject(exhibitionId: string, objectId: string) {
   await supabase.from("tok_objects").delete().eq("id", objectId);
   revalidatePath(`/dashboard/tok/${exhibitionId}`);
 }
+
+export async function swapObjectPositions(exhibitionId: string, posA: number, posB: number) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { data: objects } = await supabase
+    .from("tok_objects")
+    .select("id, position")
+    .eq("exhibition_id", exhibitionId)
+    .in("position", [posA, posB]);
+
+  if (!objects || objects.length < 2) return;
+
+  const objA = objects.find((o: { id: string; position: number }) => o.position === posA);
+  const objB = objects.find((o: { id: string; position: number }) => o.position === posB);
+
+  if (!objA || !objB) return;
+
+  await supabase.from("tok_objects").update({ position: posB }).eq("id", objA.id);
+  await supabase.from("tok_objects").update({ position: posA }).eq("id", objB.id);
+
+  revalidatePath(`/dashboard/tok/${exhibitionId}`);
+}

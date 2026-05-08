@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase-server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { TOK_PROMPTS } from "@/lib/tok-prompts";
-import { saveObject, deleteObject } from "../actions";
+import { saveObject, deleteObject, swapObjectPositions } from "../actions";
 import ObjectCard from "./ObjectCard";
 import ExhibitionTitleEditor from "./ExhibitionTitleEditor";
 import type { TOKExhibition, TOKObject } from "@/types";
@@ -182,6 +182,25 @@ export default async function ExhibitionPage({ params }: { params: Promise<{ id:
               All exhibitions
             </Link>
           </div>
+        </div>
+      )}
+
+      {objs.length >= 2 && (
+        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "0.75rem" }}>
+          <span style={{ fontSize: "11px", color: "#aaa", display: "flex", alignItems: "center", marginRight: "4px" }}>Reorder:</span>
+          {[[0,1],[1,2],[0,2]].map(([a,b]) => {
+            const hasA = objs.some(o => o.position === a);
+            const hasB = objs.some(o => o.position === b);
+            if (!hasA || !hasB) return null;
+            const labels = ["1st","2nd","3rd"];
+            return (
+              <form key={`${a}-${b}`} action={swapObjectPositions.bind(null, id, a, b)}>
+                <button type="submit" className="btn-ghost btn-ghost-hover" style={{ fontSize: "10px", padding: "3px 8px" }}>
+                  Swap {labels[a]} ↔ {labels[b]}
+                </button>
+              </form>
+            );
+          })}
         </div>
       )}
 
