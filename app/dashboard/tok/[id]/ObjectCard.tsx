@@ -5,6 +5,14 @@ import ReactMarkdown from "react-markdown";
 import type { TOKObject } from "@/types";
 import { useToast } from "@/lib/toast";
 
+interface ScoreEntry {
+  ts: string;
+  score: number;
+  strength: string;
+  weakness: string;
+  tip: string;
+}
+
 interface Props {
   slot: number;
   exhibitionId: string;
@@ -12,9 +20,10 @@ interface Props {
   prompt: string;
   saveObject: (formData: FormData) => Promise<void>;
   deleteObject: (exhibitionId: string, objectId: string) => Promise<void>;
+  initialScores?: ScoreEntry[];
 }
 
-export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObject, deleteObject }: Props) {
+export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObject, deleteObject, initialScores }: Props) {
   const { showToast } = useToast();
   const [editing, setEditing] = useState(!object);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -43,6 +52,7 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
   const [checkLoading, setCheckLoading] = useState(false);
   const [checkResult, setCheckResult] = useState<{ verdict: "strong" | "acceptable" | "weak"; issue: string | null; promptLink: string; tip: string } | null>(null);
   const [checkError, setCheckError] = useState("");
+  const [scoreHistory, setScoreHistory] = useState<ScoreEntry[]>(() => Array.isArray(initialScores) ? initialScores : []);
 
   const DESC_MAX = 500;
 
@@ -308,6 +318,22 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
       if (!res.ok) throw new Error(data.error ?? "Scoring failed");
       const parsed = JSON.parse(data.text);
       setScoreResult(parsed);
+
+      // Persist score to DB (fire-and-forget)
+      fetch("/api/tok/scores", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          objectId: object.id,
+          score: parsed.score,
+          strength: parsed.strength,
+          weakness: parsed.weakness,
+          tip: parsed.tip,
+        }),
+      }).then(() => {
+        const entry: ScoreEntry = { ts: new Date().toISOString(), score: parsed.score, strength: parsed.strength, weakness: parsed.weakness, tip: parsed.tip };
+        setScoreHistory((prev) => [...prev, entry].slice(-10));
+      }).catch(() => { /* best-effort */ });
     } catch (e: unknown) {
       setScoreError(e instanceof Error ? e.message : "Scoring failed");
     } finally {
@@ -666,6 +692,39 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
             <p style={{ fontSize: "11px", color: "#aaa" }}>
               {justification.trim() ? "Get AI feedback on object quality and justification strength." : "Write a justification first to enable scoring."}
             </p>
+          )}
+
+          {/* Score history */}
+          {scoreHistory.length > 1 && (
+            <div style={{ marginTop: "0.75rem" }}>
+              <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#aaa", marginBottom: "6px" }}>Score history</p>
+              <div style={{ display: "flex", alignItems: "flex-end", gap: "4px" }}>
+                {scoreHistory.map((entry, i) => (
+                  <div
+                    key={i}
+                    title={`${new Date(entry.ts).toLocaleDateString("en-GB", { day: "numeric", month: "short" })} — ${entry.score}/10`}
+                    style={{
+                      width: "16px",
+                      height: `${entry.score * 3.2}px`,
+                      background: entry.score >= 8 ? "var(--mint)" : entry.score >= 5 ? "var(--yellow)" : "var(--pink)",
+                      border: "1.5px solid var(--border)",
+                      borderRadius: "2px",
+                      position: "relative",
+                      flexShrink: 0,
+                    }}
+                  />
+                ))}
+                <span style={{ fontSize: "10px", color: "#aaa", marginLeft: "4px" }}>
+                  {scoreHistory.length > 1 && (() => {
+                    const first = scoreHistory[0].score;
+                    const last = scoreHistory[scoreHistory.length - 1].score;
+                    const diff = last - first;
+                    if (diff === 0) return "no change";
+                    return diff > 0 ? `+${diff} since first` : `${diff} since first`;
+                  })()}
+                </span>
+              </div>
+            </div>
           )}
 
           {/* Knowledge Questions */}

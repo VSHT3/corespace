@@ -247,6 +247,7 @@ export default async function ExhibitionPage({ params }: { params: Promise<{ id:
               prompt={prompt}
               saveObject={saveObject}
               deleteObject={deleteObject}
+              initialScores={Array.isArray(obj?.scores) ? obj.scores : []}
             />
           );
         })}
