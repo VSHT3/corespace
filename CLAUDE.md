@@ -62,11 +62,21 @@ browser → proxy.ts (auth gate) → app/ route → Supabase / AI API
 
 ### AI calls: server-only
 
-All Gemini calls go through `app/api/ai/route.ts` (POST). Client components call this endpoint — never import `lib/gemini.ts` on client. Endpoint accepts `{ intent, userMessage, context? }`, returns `{ text }`. Model: `gemini-2.5-flash`, maxOutputTokens 1000.
+All Gemini calls go through `app/api/ai/route.ts` (POST). Client components call this endpoint — never import `lib/gemini.ts` on client. Endpoint accepts `{ intent, userMessage, context?, history? }`, returns `{ text }`. Model: `gemini-2.5-flash`.
 
 **Intents:**
-- `prompt_explainer` — chat AI in prompt picker. Context: `promptId`, `promptTitle`, `promptDescription`.
-- `object_justification` — justification generator in workspace. Context: `prompt`, `objectTitle`, `objectType`, `objectDescription`.
+- `prompt_explainer` — chat AI in prompt picker. Context: `promptId`, `promptTitle`, `promptDescription`. Supports `history` for multi-turn.
+- `object_justification` — justification generator. Context: `prompt`, `objectTitle`, `objectType`, `objectDescription`.
+- `object_check` — IB suitability pre-flight. Returns JSON `{verdict, issue, promptLink, tip}`.
+- `object_scoring` — score/10 + feedback. Returns JSON `{score, strength, weakness, tip}`.
+- `knowledge_question` — 3 IB-style KQs with rationale. maxOutputTokens 1200.
+- `object_ideas` — 3 concrete object suggestions. maxOutputTokens 1200.
+- `justification_improve` — rewrite justification to be stronger.
+- `justification_chat` — multi-turn refinement chat. Supports `history`.
+
+Justification-related intents (`object_justification`, `justification_improve`, `justification_chat`) receive the full `JUSTIFICATION_CONTEXT` which includes `lib/ai-docs/justification-examples.md` with annotated strong/weak examples and phrase banks.
+
+Rate limiting: `lib/rate-limit.ts` — 20 req/min per IP (in-memory Map, resets on server restart).
 
 System prompts built server-side only. Reference docs in `lib/ai-docs/` loaded at module init and prepended to every system prompt — never sent from client. To update AI knowledge, edit those `.md` files.
 
@@ -115,9 +125,18 @@ Migrations to run:
 `app/dashboard/tok/actions.ts` — `"use server"` functions for all DB mutations:
 - `createExhibition(formData)` — inserts exhibition, redirects to workspace
 - `deleteExhibition(id)`
-- `saveObject(formData)` — upserts tok_object (insert if no object_id, update if present)
-- `saveJustification(exhibitionId, objectId, justification)`
+- `saveObject(formData)` — upserts tok_object; max 3 objects per exhibition enforced
 - `deleteObject(exhibitionId, objectId)`
+- `duplicateExhibition(id)` — copies exhibition + all objects with "(copy)" suffix
+- `swapObjectPositions(exhibitionId, posA, posB)` — swaps two objects' positions
+- `updateExhibitionTitle(id, title)` — updates exhibition title
+
+Justification saves use a dedicated route `app/api/tok/justification/route.ts` (POST) for client components. Also calls `revalidatePath` after write.
+
+### Global utilities
+- `lib/toast.tsx` — `ToastProvider` + `useToast()` hook. Wrapped in layout. Non-blocking bottom-right toasts (success/error/info). 3s auto-dismiss.
+- `lib/rate-limit.ts` — in-memory per-IP rate limiter for AI route.
+- `components/ScrollToTop.tsx` — listens to `usePathname`, scrolls window to top on each route change.
 
 ### Payments — Paddle (Merchant of Record)
 
@@ -185,22 +204,35 @@ ___
 - Multi-exhibition list with progress indicators
 - AI object scoring intent (score/10 + strength/weakness/tip)
 - AI knowledge question generator (3 IB-style KQs with rationale)
+- AI object_check intent — IB suitability pre-flight (verdict/issue/promptLink/tip)
+- AI justification_improve intent — rewrite to be stronger keeping student ideas
+- AI justification_chat with multi-turn history support
+- AI object_ideas intent (3 concrete suggestions)
+- `lib/ai-docs/justification-examples.md` — annotated strong/weak examples + phrase banks
 - Inline exhibition title editing
+- Debounced 2s auto-save for justification textarea (silent, no toast)
 - CAS/EE stub pages with feature lists
-- Dashboard stats + "Continue where you left off" card
+- Dashboard stats (4-col: exhibitions, objects, justified ratio, words written) + "Continue" card with per-exhibition progress bars
 - Copy-to-clipboard on justifications
 - 404 page, /api/health endpoint, sitemap.ts, robots.ts
 - SEO: og:image via /api/og (ImageResponse edge), JSON-LD structured data, twitter:card large
-- Difficulty filter + Surprise me button in prompt picker
-- / keyboard shortcut focuses prompt search
+- Category filter wired into matchingPromptIds in PromptPicker
+- Keyboard shortcuts: / (search), r (random), Esc (clear all filters) in prompt picker
+- Keyboard hints bar in prompt picker
 - Account deletion flow on profile (DeleteAccountButton + deleteAccount server action, requires SUPABASE_SERVICE_ROLE_KEY)
 - Exhibition duplication (duplicateExhibition action)
 - In-memory rate limiter on AI route (20 req/min per IP)
 - Public /tok-prompts reference page (all 35 prompts, SEO-friendly)
-- /contact page
-- AI docs expanded: KQs, WOKs, AOKs, Core Theme deep dive, CAS, EE guides
-- WordCountSummary, RubricPanel, ObjectIdeasButton components in exhibition workspace
-- Print CSS (@media print), PrintButton component
+- /contact, /about, /tips pages
+- GDPR rights table + children's privacy section in privacy policy
+- Toast notification system (lib/toast.tsx, ToastProvider in layout)
+- ScrollToTop component — scrolls to top on every route change
+- Live word count sync via custom DOM event (ObjectCard → WordCountSummary + SubmissionChecklist)
+- SubmissionChecklist — auto-checked items use live state, manual checkboxes for soft items
+- Plain text export (/api/tok/export-text) + JSON export (/api/tok/export) on workspace
+- Print-ready workspace export via browser Cmd+P
+- Dynamic metadata (title = exhibition name + prompt) on workspace page with noindex
+- maxOutputTokens tuned per intent (400 for JSON, 1200 for multi-item, 1000 default)
 
 ## New env vars (added May 2026)
 | Variable | Purpose |
