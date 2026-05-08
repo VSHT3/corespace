@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import ReactMarkdown from "react-markdown";
 import type { TOKObject } from "@/types";
+import { useToast } from "@/lib/toast";
 
 interface Props {
   slot: number;
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObject, deleteObject }: Props) {
+  const { showToast } = useToast();
   const [editing, setEditing] = useState(!object);
   const [justification, setJustification] = useState(object?.justification ?? "");
   const [aiLoading, setAiLoading] = useState(false);
@@ -77,19 +79,12 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "AI request failed");
       setJustification(data.text);
-
-      // Save justification via server action
-      const formData = new FormData();
-      formData.set("exhibition_id", exhibitionId);
-      formData.set("object_id", object.id);
-      formData.set("justification", data.text);
-      // We call saveJustification indirectly: patch via saveObject with just justification
-      // Actually we'll POST to a dedicated route pattern via fetch to keep client-clean
       await fetch("/api/tok/justification", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ exhibitionId, objectId: object.id, justification: data.text }),
       });
+      showToast("Justification generated and saved");
     } catch (e: unknown) {
       setAiError(e instanceof Error ? e.message : "Unknown error");
     } finally {
@@ -110,8 +105,10 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
       if (!res.ok) throw new Error("Save failed");
       setSavedOk(true);
       setTimeout(() => setSavedOk(false), 2000);
+      showToast("Justification saved");
     } catch {
       setSaveError("Failed to save. Check connection and try again.");
+      showToast("Save failed — check connection", "error");
     }
   }
 
@@ -215,6 +212,7 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
       });
       setSavedOk(true);
       setTimeout(() => setSavedOk(false), 2000);
+      showToast("Justification improved and saved");
     } catch (e: unknown) {
       setAiError(e instanceof Error ? e.message : "Improve failed");
     } finally {
@@ -416,6 +414,7 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
                     navigator.clipboard.writeText(justification);
                     setCopied(true);
                     setTimeout(() => setCopied(false), 1800);
+                    showToast("Justification copied to clipboard", "info");
                   }}
                   className="btn-ghost btn-ghost-hover"
                   style={{ fontSize: "11px", padding: "4px 10px" }}

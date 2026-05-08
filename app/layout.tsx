@@ -3,6 +3,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CookieBanner from "@/components/CookieBanner";
+import { ToastProvider } from "@/lib/toast";
 
 export const metadata: Metadata = {
   title: {
@@ -43,10 +44,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Navbar />
-        {children}
-        <Footer />
-        <CookieBanner />
+        <ToastProvider>
+          <Navbar />
+          {children}
+          <Footer />
+          <CookieBanner />
+        </ToastProvider>
       </body>
     </html>
   );
