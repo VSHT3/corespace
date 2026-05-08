@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase-server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import LogoutButton from "@/components/LogoutButton";
+import DeleteAccountButton from "./DeleteAccountButton";
 
 export default async function ProfilePage() {
   const supabase = await createClient();
@@ -88,6 +89,13 @@ export default async function ProfilePage() {
             <p style={{ fontSize: "13px", color: "#888" }}>Manage your account</p>
           </div>
           <LogoutButton />
+        </div>
+
+        <div className="divider" />
+
+        <div>
+          <p className="eyebrow" style={{ marginBottom: "0.5rem" }}>Danger zone</p>
+          <DeleteAccountButton />
         </div>
       </div>
     </main>

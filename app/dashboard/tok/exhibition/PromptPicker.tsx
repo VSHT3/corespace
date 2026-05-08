@@ -157,10 +157,28 @@ export default function PromptPicker({ createAction }: { createAction: (formData
     setExpandedId(pick);
   }
   const containerRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
   const rafRef = useRef<number | null>(null);
   const startRef = useRef(0);
 
   useEffect(() => { setMounted(true); }, []);
+
+  // '/' shortcut focuses search when tour is done
+  useEffect(() => {
+    if (!done) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "/" && document.activeElement?.tagName !== "INPUT" && document.activeElement?.tagName !== "TEXTAREA") {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+      if (e.key === "Escape" && document.activeElement === searchRef.current) {
+        setSearchQuery("");
+        searchRef.current?.blur();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [done]);
 
   // Track container width
   useEffect(() => {
@@ -336,10 +354,11 @@ export default function PromptPicker({ createAction }: { createAction: (formData
             </div>
             <div style={{ position: "relative", width: "min(100vw - 3rem, 360px)" }}>
               <input
+                ref={searchRef}
                 type="text"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search prompts"
+                placeholder="Search prompts  (/)"
                 aria-label="Search prompts"
                 style={{
                   width: "100%",
