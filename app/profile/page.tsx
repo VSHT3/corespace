@@ -17,6 +17,15 @@ export default async function ProfilePage() {
     year: "numeric",
   });
 
+  const { data: exhibitions } = await supabase
+    .from("tok_exhibitions")
+    .select("id")
+    .eq("user_id", user.id);
+
+  const exhibitionCount = exhibitions?.length ?? 0;
+
+  const emailConfirmed = !!user.email_confirmed_at;
+
   return (
     <main className="page-main">
       <div style={{ marginBottom: "2.5rem" }}>
@@ -27,7 +36,14 @@ export default async function ProfilePage() {
       <div className="card space-y-5">
         <div>
           <p className="eyebrow" style={{ marginBottom: "0.25rem" }}>Email</p>
-          <p style={{ fontSize: "15px" }}>{user.email}</p>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+            <p style={{ fontSize: "15px" }}>{user.email}</p>
+            {emailConfirmed ? (
+              <span className="tag tag-mint" style={{ fontSize: "10px" }}>Verified</span>
+            ) : (
+              <span className="tag tag-yellow" style={{ fontSize: "10px" }}>Unverified</span>
+            )}
+          </div>
         </div>
 
         <div className="divider" />
@@ -45,6 +61,21 @@ export default async function ProfilePage() {
             <span className="tag tag-mint">Free</span>
             <Link href="/pricing" className="back-link" style={{ fontSize: "12px" }}>
               Upgrade →
+            </Link>
+          </div>
+        </div>
+
+        <div className="divider" />
+
+        <div>
+          <p className="eyebrow" style={{ marginBottom: "0.75rem" }}>TOK Progress</p>
+          <div style={{ display: "flex", alignItems: "center", gap: "1.25rem" }}>
+            <div>
+              <span className="heading" style={{ fontSize: "24px", display: "block" }}>{exhibitionCount}</span>
+              <span className="eyebrow">Exhibition{exhibitionCount !== 1 ? "s" : ""}</span>
+            </div>
+            <Link href="/dashboard/tok/exhibition" className="btn-ghost btn-ghost-hover" style={{ fontSize: "11px", padding: "5px 12px" }}>
+              Open TOK →
             </Link>
           </div>
         </div>

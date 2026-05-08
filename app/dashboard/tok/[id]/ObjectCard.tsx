@@ -232,13 +232,23 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
             <label style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: "4px" }}>
               Object Type
             </label>
-            <input
+            <select
               name="object_type"
-              type="text"
               defaultValue={object?.object_type ?? ""}
-              placeholder="e.g. Personal, Cultural, Natural"
               className="field-input"
-            />
+            >
+              <option value="">— Select type —</option>
+              <option value="Personal">Personal</option>
+              <option value="Cultural">Cultural</option>
+              <option value="Natural">Natural</option>
+              <option value="Linguistic">Linguistic</option>
+              <option value="Mathematical">Mathematical</option>
+              <option value="Scientific">Scientific</option>
+              <option value="Artistic">Artistic</option>
+              <option value="Historical">Historical</option>
+              <option value="Technological">Technological</option>
+              <option value="Other">Other</option>
+            </select>
           </div>
           <div>
             <label style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: "4px" }}>

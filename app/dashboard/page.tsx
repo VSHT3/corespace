@@ -17,7 +17,7 @@ const modules = [
     label: "Creativity Activity Service",
     description:
       "Log hours, write structured reflections, and hit every learning outcome.",
-    href: "#",
+    href: "/dashboard/cas",
     available: false,
     accent: "#bbf7d0",
   },
@@ -26,7 +26,7 @@ const modules = [
     label: "Extended Essay",
     description:
       "Outline, draft, and iterate with AI feedback at every stage.",
-    href: "#",
+    href: "/dashboard/ee",
     available: false,
     accent: "#fbcfe8",
   },
@@ -117,10 +117,11 @@ export default async function DashboardPage() {
               </div>
             </Link>
           ) : (
-            <div
+            <Link
               key={mod.id}
-              className="card"
-              style={{ padding: 0, overflow: "hidden", position: "relative", minHeight: "180px", opacity: 0.5, cursor: "not-allowed" }}
+              href={mod.href}
+              className="card-link"
+              style={{ padding: 0, overflow: "hidden", position: "relative", minHeight: "180px", display: "block", color: "inherit", textDecoration: "none" }}
             >
               <div style={{ height: "6px", background: mod.accent }} />
               <div style={{ padding: "1.25rem 1.5rem 2.75rem" }} className="space-y-3">
@@ -128,7 +129,7 @@ export default async function DashboardPage() {
                 <p style={{ color: "#555", fontSize: "14px", lineHeight: "1.6" }}>{mod.description}</p>
               </div>
               <span className="tag tag-sky" style={{ position: "absolute", bottom: "12px", right: "12px" }}>Soon</span>
-            </div>
+            </Link>
           )
         )}
       </div>
