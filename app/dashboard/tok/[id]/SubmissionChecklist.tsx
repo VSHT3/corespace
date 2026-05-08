@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface CheckItem {
   id: string;
@@ -14,8 +14,22 @@ interface Props {
   totalWords: number;
 }
 
-export default function SubmissionChecklist({ objectCount, justifiedCount, totalWords }: Props) {
+export default function SubmissionChecklist({ objectCount, justifiedCount, totalWords: initialWords }: Props) {
   const [open, setOpen] = useState(false);
+  const [liveWords, setLiveWords] = useState(initialWords);
+  const perSlot = useRef<Record<number, number>>({});
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { slot, words } = (e as CustomEvent<{ slot: number; words: number }>).detail;
+      perSlot.current = { ...perSlot.current, [slot]: words };
+      setLiveWords(Object.values(perSlot.current).reduce((a, b) => a + b, 0));
+    };
+    window.addEventListener("justification-wordcount", handler);
+    return () => window.removeEventListener("justification-wordcount", handler);
+  }, []);
+
+  const totalWords = liveWords;
 
   const items: CheckItem[] = [
     { id: "objects", label: "All 3 objects added", done: objectCount === 3 },
@@ -28,13 +42,20 @@ export default function SubmissionChecklist({ objectCount, justifiedCount, total
     { id: "supervisor", label: "Shared draft with supervisor for feedback", done: false },
   ];
 
-  const [checked, setChecked] = useState<Record<string, boolean>>(() => {
-    const initial: Record<string, boolean> = {};
-    items.forEach((item) => { initial[item.id] = item.done; });
-    return initial;
-  });
+  const [manualChecked, setManualChecked] = useState<Record<string, boolean>>({});
 
-  const doneCount = Object.values(checked).filter(Boolean).length;
+  const autoChecked: Record<string, boolean> = {
+    objects: objectCount === 3,
+    justified: justifiedCount === 3,
+    wordcount: totalWords >= 850,
+  };
+
+  const getChecked = (id: string) => {
+    if (id in autoChecked) return autoChecked[id];
+    return !!manualChecked[id];
+  };
+
+  const doneCount = items.filter((item) => getChecked(item.id)).length;
   const total = items.length;
 
   return (
@@ -73,21 +94,22 @@ export default function SubmissionChecklist({ objectCount, justifiedCount, total
                   gap: "0.75rem",
                   padding: "0.6rem 1rem",
                   borderTop: i > 0 ? "1px solid #f0ebe0" : undefined,
-                  cursor: "pointer",
-                  background: checked[item.id] ? "#f6fff9" : undefined,
+                  cursor: item.id in autoChecked ? "default" : "pointer",
+                  background: getChecked(item.id) ? "#f6fff9" : undefined,
                   transition: "background 0.15s",
                 }}
               >
                 <input
                   type="checkbox"
-                  checked={!!checked[item.id]}
-                  onChange={(e) => setChecked((prev) => ({ ...prev, [item.id]: e.target.checked }))}
-                  style={{ marginTop: "2px", flexShrink: 0, cursor: "pointer" }}
+                  checked={getChecked(item.id)}
+                  readOnly={item.id in autoChecked}
+                  onChange={item.id in autoChecked ? undefined : (e) => setManualChecked((prev) => ({ ...prev, [item.id]: e.target.checked }))}
+                  style={{ marginTop: "2px", flexShrink: 0, cursor: item.id in autoChecked ? "default" : "pointer" }}
                 />
                 <span style={{
                   fontSize: "13px",
-                  color: checked[item.id] ? "#666" : "var(--fg)",
-                  textDecoration: checked[item.id] ? "line-through" : "none",
+                  color: getChecked(item.id) ? "#666" : "var(--fg)",
+                  textDecoration: getChecked(item.id) ? "line-through" : "none",
                   lineHeight: 1.4,
                 }}>
                   {item.label}

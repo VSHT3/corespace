@@ -44,6 +44,10 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
   const wordCount = justification.trim() ? justification.trim().split(/\s+/).length : 0;
   const wordCountColor = wordCount === 0 ? "#aaa" : wordCount < 95 ? "#888" : wordCount <= 150 ? "#16a34a" : "#dc2626";
 
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent("justification-wordcount", { detail: { slot, words: wordCount } }));
+  }, [slot, wordCount]);
+
   const slotLabel = ["First", "Second", "Third"][slot];
   const accentColors = ["var(--pink)", "var(--mint)", "var(--sky)"];
   const accent = accentColors[slot];

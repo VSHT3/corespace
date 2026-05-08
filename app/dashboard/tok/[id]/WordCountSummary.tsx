@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface Props {
   initialJustifications: (string | null)[];
@@ -9,16 +9,26 @@ interface Props {
 export default function WordCountSummary({ initialJustifications }: Props) {
   const [totalWords, setTotalWords] = useState(0);
   const TARGET = 950;
+  const perSlot = useRef<Record<number, number>>({});
 
   useEffect(() => {
-    const count = initialJustifications
-      .filter(Boolean)
-      .reduce((sum, j) => {
-        const words = j!.trim() ? j!.trim().split(/\s+/).length : 0;
-        return sum + words;
-      }, 0);
-    setTotalWords(count);
+    const initial: Record<number, number> = {};
+    initialJustifications.forEach((j, i) => {
+      initial[i] = j?.trim() ? j.trim().split(/\s+/).length : 0;
+    });
+    perSlot.current = initial;
+    setTotalWords(Object.values(initial).reduce((a, b) => a + b, 0));
   }, [initialJustifications]);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { slot, words } = (e as CustomEvent<{ slot: number; words: number }>).detail;
+      perSlot.current = { ...perSlot.current, [slot]: words };
+      setTotalWords(Object.values(perSlot.current).reduce((a, b) => a + b, 0));
+    };
+    window.addEventListener("justification-wordcount", handler);
+    return () => window.removeEventListener("justification-wordcount", handler);
+  }, []);
 
   if (totalWords === 0) return null;
 
