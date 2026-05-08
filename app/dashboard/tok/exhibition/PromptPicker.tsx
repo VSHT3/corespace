@@ -147,10 +147,9 @@ export default function PromptPicker({ createAction }: { createAction: (formData
   function surpriseMe() {
     const pool = allIds.filter((id) => {
       const level = TOK_PROMPTS[id].difficulty;
-      if (difficultyFilter === "easy") return level <= 2;
-      if (difficultyFilter === "medium") return level === 3;
-      if (difficultyFilter === "hard") return level >= 4;
-      return true;
+      const diffOk = difficultyFilter === "easy" ? level <= 2 : difficultyFilter === "medium" ? level === 3 : difficultyFilter === "hard" ? level >= 4 : true;
+      const catOk = activeCategory === null ? true : (TOK_CATEGORIES.find((cat) => cat.id === activeCategory)?.promptIds.includes(id) ?? false);
+      return diffOk && catOk;
     });
     if (pool.length === 0) return;
     const pick = pool[Math.floor(Math.random() * pool.length)];
@@ -204,10 +203,16 @@ export default function PromptPicker({ createAction }: { createAction: (formData
       return true;
     };
 
-    if (normalizedSearch === "" && difficultyFilter === "all") return new Set<number>();
+    const catMatch = (id: number) => {
+      if (activeCategory === null) return true;
+      return TOK_CATEGORIES.find((cat) => cat.id === activeCategory)?.promptIds.includes(id) ?? false;
+    };
+
+    if (normalizedSearch === "" && difficultyFilter === "all" && activeCategory === null) return new Set<number>();
 
     return new Set(allIds.filter((id) => {
       if (!diffMatch(id)) return false;
+      if (!catMatch(id)) return false;
       if (normalizedSearch === "") return true;
       const prompt = TOK_PROMPTS[id];
       const category = TOK_CATEGORIES.find((cat) => cat.promptIds.includes(id));
@@ -220,9 +225,9 @@ export default function PromptPicker({ createAction }: { createAction: (formData
       ].join(" ").toLowerCase();
       return haystack.includes(normalizedSearch);
     }));
-  }, [allIds, done, normalizedSearch, difficultyFilter]);
+  }, [allIds, done, normalizedSearch, difficultyFilter, activeCategory]);
   const hasSearch = normalizedSearch !== "";
-  const hasFilter = hasSearch || difficultyFilter !== "all";
+  const hasFilter = hasSearch || difficultyFilter !== "all" || activeCategory !== null;
   const matchCount = matchingPromptIds.size;
   const messyLayoutFull = useMemo(() => computeMessyLayout(containerW, allIds), [containerW, allIds]);
   const messyLayout = messyLayoutFull.positions;
@@ -400,6 +405,14 @@ export default function PromptPicker({ createAction }: { createAction: (formData
             {hasFilter && (
               <span style={{ color: "#555", fontSize: "12px", fontWeight: 700 }}>
                 {matchCount} match{matchCount === 1 ? "" : "es"}
+                {activeCategory !== null && normalizedSearch === "" && difficultyFilter === "all" && (
+                  <button
+                    onClick={() => setActiveCategory(null)}
+                    style={{ marginLeft: "6px", fontSize: "10px", background: "none", border: "none", cursor: "pointer", color: "#888", textDecoration: "underline" }}
+                  >
+                    clear
+                  </button>
+                )}
               </span>
             )}
           </div>
