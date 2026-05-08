@@ -259,7 +259,9 @@ export async function POST(request: NextRequest) {
       contents,
       config: {
         systemInstruction: systemPrompt,
-        maxOutputTokens: intent === "object_scoring" ? 400 : 1000,
+        maxOutputTokens: intent === "object_scoring" || intent === "object_check" ? 400
+          : intent === "knowledge_question" || intent === "object_ideas" ? 1200
+          : 1000,
       },
     });
 
