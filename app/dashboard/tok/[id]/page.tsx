@@ -9,6 +9,7 @@ import PrintButton from "./PrintButton";
 import WordCountSummary from "./WordCountSummary";
 import RubricPanel from "./RubricPanel";
 import ObjectIdeasButton from "./ObjectIdeasButton";
+import SubmissionChecklist from "./SubmissionChecklist";
 import type { TOKExhibition, TOKObject } from "@/types";
 
 export default async function ExhibitionPage({ params }: { params: Promise<{ id: string }> }) {
@@ -40,6 +41,10 @@ export default async function ExhibitionPage({ params }: { params: Promise<{ id:
   const slots = [0, 1, 2];
   const justifiedCount = objs.filter(o => o.justification?.trim()).length;
   const isComplete = objs.length === 3 && justifiedCount === 3;
+  const totalWords = objs.reduce((sum, o) => {
+    const words = o.justification?.trim() ? o.justification.trim().split(/\s+/).length : 0;
+    return sum + words;
+  }, 0);
 
   return (
     <main
@@ -112,6 +117,7 @@ export default async function ExhibitionPage({ params }: { params: Promise<{ id:
       )}
 
       <ObjectIdeasButton prompt={prompt} promptId={ex.prompt_id} />
+      <SubmissionChecklist objectCount={objs.length} justifiedCount={justifiedCount} totalWords={totalWords} />
       <RubricPanel />
 
       <div

@@ -1,0 +1,107 @@
+"use client";
+
+import { useState } from "react";
+
+interface CheckItem {
+  id: string;
+  label: string;
+  done: boolean;
+}
+
+interface Props {
+  objectCount: number;
+  justifiedCount: number;
+  totalWords: number;
+}
+
+export default function SubmissionChecklist({ objectCount, justifiedCount, totalWords }: Props) {
+  const [open, setOpen] = useState(false);
+
+  const items: CheckItem[] = [
+    { id: "objects", label: "All 3 objects added", done: objectCount === 3 },
+    { id: "justified", label: "All 3 objects justified", done: justifiedCount === 3 },
+    { id: "wordcount", label: `Total word count 850+ (currently ${totalWords})`, done: totalWords >= 850 },
+    { id: "types", label: "At least 2 different object types used", done: false }, // can't auto-check without type data
+    { id: "personal", label: "At least 1 object with personal connection", done: false },
+    { id: "kq", label: "Each justification includes a knowledge question", done: false },
+    { id: "reviewed", label: "Justifications reviewed and not AI-copied verbatim", done: false },
+    { id: "supervisor", label: "Shared draft with supervisor for feedback", done: false },
+  ];
+
+  const [checked, setChecked] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    items.forEach((item) => { initial[item.id] = item.done; });
+    return initial;
+  });
+
+  const doneCount = Object.values(checked).filter(Boolean).length;
+  const total = items.length;
+
+  return (
+    <div style={{ maxWidth: "860px", margin: "0 auto 1.5rem" }} className="no-print">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="btn-ghost btn-ghost-hover"
+        style={{ fontSize: "11px", padding: "4px 12px" }}
+      >
+        {open ? "▲ Hide checklist" : `▼ Submission checklist (${doneCount}/${total})`}
+      </button>
+
+      {open && (
+        <div
+          style={{
+            marginTop: "0.75rem",
+            border: "2px solid var(--border)",
+            borderRadius: "var(--radius)",
+            background: "var(--surface)",
+            overflow: "hidden",
+          }}
+        >
+          <div style={{ padding: "0.75rem 1rem", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <p className="eyebrow" style={{ margin: 0 }}>Before you submit</p>
+            <span style={{ fontSize: "11px", fontWeight: 700, color: doneCount === total ? "#16a34a" : "#888" }}>
+              {doneCount}/{total} complete
+            </span>
+          </div>
+          <div>
+            {items.map((item, i) => (
+              <label
+                key={item.id}
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "0.75rem",
+                  padding: "0.6rem 1rem",
+                  borderTop: i > 0 ? "1px solid #f0ebe0" : undefined,
+                  cursor: "pointer",
+                  background: checked[item.id] ? "#f6fff9" : undefined,
+                  transition: "background 0.15s",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={!!checked[item.id]}
+                  onChange={(e) => setChecked((prev) => ({ ...prev, [item.id]: e.target.checked }))}
+                  style={{ marginTop: "2px", flexShrink: 0, cursor: "pointer" }}
+                />
+                <span style={{
+                  fontSize: "13px",
+                  color: checked[item.id] ? "#666" : "var(--fg)",
+                  textDecoration: checked[item.id] ? "line-through" : "none",
+                  lineHeight: 1.4,
+                }}>
+                  {item.label}
+                </span>
+              </label>
+            ))}
+          </div>
+          {doneCount === total && (
+            <div style={{ padding: "0.75rem 1rem", background: "var(--mint)", borderTop: "2px solid var(--border)", fontSize: "13px", fontWeight: 700 }}>
+              All done! Review your justifications one final time, then submit.
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
