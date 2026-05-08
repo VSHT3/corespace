@@ -51,16 +51,28 @@ export default async function DashboardPage() {
 
   let objectCount = 0;
   let justifiedCount = 0;
+  let totalWords = 0;
+  let latestObjects: { exhibition_id: string; justification: string | null }[] = [];
 
   if (exhibitionIds.length > 0) {
     const { data: objects } = await supabase
       .from("tok_objects")
-      .select("id, justification")
+      .select("id, exhibition_id, justification")
       .in("exhibition_id", exhibitionIds);
 
-    objectCount = objects?.length ?? 0;
-    justifiedCount = objects?.filter((o: { justification: string | null }) => o.justification?.trim()).length ?? 0;
+    const allObjects = objects ?? [];
+    objectCount = allObjects.length;
+    justifiedCount = allObjects.filter((o) => o.justification?.trim()).length;
+    totalWords = allObjects.reduce((sum, o) => {
+      const w = o.justification?.trim() ? o.justification.trim().split(/\s+/).length : 0;
+      return sum + w;
+    }, 0);
+    if (latestExhibition) {
+      latestObjects = allObjects.filter((o) => o.exhibition_id === latestExhibition.id);
+    }
   }
+
+  const latestJustified = latestObjects.filter((o) => o.justification?.trim()).length;
 
   const firstName = user.email?.split("@")[0] ?? "there";
 
@@ -77,7 +89,7 @@ export default async function DashboardPage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
+            gridTemplateColumns: "repeat(4, 1fr)",
             gap: "0.75rem",
             marginBottom: "2.5rem",
           }}
@@ -85,7 +97,8 @@ export default async function DashboardPage() {
           {[
             { val: exhibitionIds.length, label: "Exhibition" + (exhibitionIds.length !== 1 ? "s" : ""), accent: "var(--yellow)" },
             { val: objectCount, label: objectCount !== 1 ? "Objects" : "Object", accent: "var(--mint)" },
-            { val: justifiedCount, label: justifiedCount !== 1 ? "Justified" : "Justified", accent: "var(--pink)" },
+            { val: `${justifiedCount}/${exhibitionIds.length * 3}`, label: "Justified", accent: "var(--pink)" },
+            { val: totalWords, label: "Words written", accent: "var(--sky)" },
           ].map((stat) => (
             <div
               key={stat.label}
@@ -115,6 +128,16 @@ export default async function DashboardPage() {
               <div>
                 <span className="eyebrow" style={{ display: "block", marginBottom: "2px" }}>TOK Exhibition · Prompt {latestExhibition.prompt_id}</span>
                 <span className="heading" style={{ fontSize: "18px" }}>{latestExhibition.title}</span>
+                <span style={{ display: "flex", gap: "8px", marginTop: "6px", alignItems: "center" }}>
+                  <span style={{ display: "flex", gap: "4px" }}>
+                    {[0, 1, 2].map((i) => (
+                      <span key={i} style={{ width: "24px", height: "6px", borderRadius: "2px", border: "1.5px solid var(--border)", background: i < latestObjects.length ? (latestObjects[i]?.justification?.trim() ? "var(--mint)" : "var(--yellow)") : "transparent" }} />
+                    ))}
+                  </span>
+                  <span style={{ fontSize: "11px", color: "#888", fontWeight: 700 }}>
+                    {latestObjects.length}/3 objects · {latestJustified}/3 justified
+                  </span>
+                </span>
               </div>
               <span style={{ fontSize: "12px", fontWeight: 700, color: "#888", whiteSpace: "nowrap" }}>Open →</span>
             </div>
