@@ -89,6 +89,9 @@ export default async function ExhibitionEntryPage({ searchParams }: { searchPara
                   <p style={{ fontSize: "13px", color: "#555", marginBottom: "0.5rem", lineHeight: 1.4 }}>
                     {prompt?.title ?? `Prompt ${ex.prompt_id}`}
                   </p>
+                  <p style={{ fontSize: "11px", color: "#aaa", marginBottom: "0.5rem" }}>
+                    Created {new Date(ex.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                  </p>
                   <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
                     {[0, 1, 2].map((slot) => {
                       const obj = ex.tok_objects?.find((_, i) => i === slot);

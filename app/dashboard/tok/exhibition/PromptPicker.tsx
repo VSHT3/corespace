@@ -141,6 +141,7 @@ export default function PromptPicker({ createAction }: { createAction: (formData
   const [hoveredCategory, setHoveredCategory] = useState<TOKCategoryId | null>(null);
   const [hoveredPromptId, setHoveredPromptId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [difficultyFilter, setDifficultyFilter] = useState<"all" | "easy" | "medium" | "hard">("all");
   const [mounted, setMounted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
@@ -162,9 +163,21 @@ export default function PromptPicker({ createAction }: { createAction: (formData
   const allIds = useMemo(() => Object.keys(TOK_PROMPTS).map(Number), []);
   const normalizedSearch = searchQuery.trim().toLowerCase();
   const matchingPromptIds = useMemo(() => {
-    if (!done || normalizedSearch === "") return new Set<number>();
+    if (!done) return new Set<number>();
+
+    const diffMatch = (id: number) => {
+      const level = TOK_PROMPTS[id].difficulty;
+      if (difficultyFilter === "easy") return level <= 2;
+      if (difficultyFilter === "medium") return level === 3;
+      if (difficultyFilter === "hard") return level >= 4;
+      return true;
+    };
+
+    if (normalizedSearch === "" && difficultyFilter === "all") return new Set<number>();
 
     return new Set(allIds.filter((id) => {
+      if (!diffMatch(id)) return false;
+      if (normalizedSearch === "") return true;
       const prompt = TOK_PROMPTS[id];
       const category = TOK_CATEGORIES.find((cat) => cat.promptIds.includes(id));
       const haystack = [
@@ -174,11 +187,11 @@ export default function PromptPicker({ createAction }: { createAction: (formData
         prompt.description,
         category?.label ?? "",
       ].join(" ").toLowerCase();
-
       return haystack.includes(normalizedSearch);
     }));
-  }, [allIds, done, normalizedSearch]);
+  }, [allIds, done, normalizedSearch, difficultyFilter]);
   const hasSearch = normalizedSearch !== "";
+  const hasFilter = hasSearch || difficultyFilter !== "all";
   const matchCount = matchingPromptIds.size;
   const messyLayoutFull = useMemo(() => computeMessyLayout(containerW, allIds), [containerW, allIds]);
   const messyLayout = messyLayoutFull.positions;
@@ -276,6 +289,30 @@ export default function PromptPicker({ createAction }: { createAction: (formData
         )}
         {done && (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "0.75rem", flexWrap: "wrap", marginLeft: "auto" }}>
+            {/* Difficulty filter */}
+            <div style={{ display: "flex", gap: "4px" }}>
+              {(["all", "easy", "medium", "hard"] as const).map((level) => (
+                <button
+                  key={level}
+                  onClick={() => setDifficultyFilter(difficultyFilter === level ? "all" : level)}
+                  style={{
+                    fontSize: "10px",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em",
+                    padding: "3px 8px",
+                    border: "2px solid var(--fg)",
+                    borderRadius: "var(--radius)",
+                    cursor: "pointer",
+                    background: difficultyFilter === level ? "var(--fg)" : "transparent",
+                    color: difficultyFilter === level ? "var(--bg)" : "var(--fg)",
+                    transition: "background 0.12s, color 0.12s",
+                  }}
+                >
+                  {level === "all" ? "All" : level === "easy" ? "Easy (1–2)" : level === "medium" ? "Med (3)" : "Hard (4–5)"}
+                </button>
+              ))}
+            </div>
             <div style={{ position: "relative", width: "min(100vw - 3rem, 360px)" }}>
               <input
                 type="text"
@@ -320,7 +357,7 @@ export default function PromptPicker({ createAction }: { createAction: (formData
                 </button>
               )}
             </div>
-            {hasSearch && (
+            {hasFilter && (
               <span style={{ color: "#555", fontSize: "12px", fontWeight: 700 }}>
                 {matchCount} match{matchCount === 1 ? "" : "es"}
               </span>
@@ -402,8 +439,8 @@ export default function PromptPicker({ createAction }: { createAction: (formData
           const bg = lerpColor("#ffffff", resolveColor(cat.color), ph.color);
 
           const hovered = hoveredPromptId === id;
-          const searchMatch = hasSearch && matchingPromptIds.has(id);
-          const dimmed = done && (hasSearch ? !searchMatch : effectiveCategory !== null && effectiveCategory !== cat.id && !hovered);
+          const filterMatch = hasFilter && matchingPromptIds.has(id);
+          const dimmed = done && (hasFilter ? !filterMatch : effectiveCategory !== null && effectiveCategory !== cat.id && !hovered);
 
           return (
             <motion.div
@@ -428,7 +465,7 @@ export default function PromptPicker({ createAction }: { createAction: (formData
                 top: 0,
                 transformOrigin: "center",
                 willChange: "transform, width",
-                zIndex: searchMatch || hovered ? 2 : done ? 1 : 0,
+                zIndex: filterMatch || hovered ? 2 : done ? 1 : 0,
               }}
             >
               <PromptPreviewCard

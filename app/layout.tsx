@@ -5,8 +5,32 @@ import Footer from "@/components/Footer";
 import CookieBanner from "@/components/CookieBanner";
 
 export const metadata: Metadata = {
-  title: "Corespace",
-  description: "Tools for IB Diploma students: TOK, CAS, and EE",
+  title: {
+    default: "Corespace — IB Core made manageable",
+    template: "%s · Corespace",
+  },
+  description:
+    "AI-powered tools for IB Diploma students. TOK Exhibition helper, CAS tracker, and Extended Essay assistant — built by an IB student, for IB students.",
+  keywords: ["IB Diploma", "Theory of Knowledge", "TOK exhibition", "CAS tracker", "Extended Essay", "IB student tools"],
+  authors: [{ name: "Corespace" }],
+  openGraph: {
+    type: "website",
+    siteName: "Corespace",
+    title: "Corespace — IB Core made manageable",
+    description:
+      "AI-powered tools for IB Diploma students. TOK Exhibition helper, CAS tracker, and Extended Essay assistant.",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary",
+    title: "Corespace — IB Core made manageable",
+    description:
+      "AI-powered tools for IB Diploma students. Pick a TOK prompt, build your exhibition, get AI justifications.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({

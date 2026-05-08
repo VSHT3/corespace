@@ -169,4 +169,33 @@ Structure knowledge claims, arguments, analysis:
 
 ---
 
+---
+
+## Knowledge and the Knower — Core Theme Deep Dive
+
+This is the compulsory core theme. All students study it. Central question: **"How does who I am shape what I know?"**
+
+### Key Questions Under This Theme
+- What assumptions do I bring to knowledge claims without realising it?
+- How do my cultural background, education, and experiences bias my interpretation of evidence?
+- What are my epistemic responsibilities — obligations as someone who produces and shares knowledge?
+- What is intellectual humility and why does it matter in knowledge-making?
+- How does being inside a community of knowers (discipline, culture, institution) shape what counts as knowledge?
+
+### Knower Perspectives That Affect Knowledge
+- **Cognitive biases**: confirmation bias, availability heuristic, anchoring
+- **Cultural context**: what counts as legitimate knowledge varies across cultures
+- **Positional knowledge**: insider vs outsider perspectives (e.g., understanding poverty)
+- **Expert vs layperson**: how credentials affect whose knowledge claims are trusted
+- **Shared vs personal knowledge**: individual experience vs collective disciplinary knowledge
+
+### Connecting to Exhibition Objects
+When writing justifications, connecting to this core theme means:
+- Asking how the person who created/used the object understood knowledge differently from you
+- Asking what the object reveals about the limits of the knower's perspective
+- Asking what is assumed or taken for granted by the object's creator
+- Asking how your position as the knower affects how you read the object
+
+---
+
 *Based on IB TOK Guide (2022 syllabus, first examined May 2022). Current for 2025–2026 academic year.*
