@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { readFileSync } from "fs";
 import { join } from "path";
 import { gemini } from "@/lib/gemini";
+import { checkRateLimit } from "@/lib/rate-limit";
 import type { AIRequestBody, AIResponseBody, AIIntent } from "@/types";
 
 // Load reference docs once at module init (server-only, never sent to client)
@@ -164,6 +165,12 @@ export async function POST(request: NextRequest) {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
+  }
+
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const { ok: withinLimit } = checkRateLimit(ip);
+  if (!withinLimit) {
+    return NextResponse.json({ error: "Too many requests. Please wait a minute before trying again." }, { status: 429 });
   }
 
   const { intent, userMessage, context } = body;

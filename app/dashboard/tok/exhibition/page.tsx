@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase-server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { TOK_PROMPTS } from "@/lib/tok-prompts";
-import { createExhibition, deleteExhibition } from "../actions";
+import { createExhibition, deleteExhibition, duplicateExhibition } from "../actions";
 import type { TOKExhibition } from "@/types";
 import PromptPicker from "./PromptPicker";
 import ConfirmSubmitButton from "@/components/ConfirmSubmitButton";
@@ -116,10 +116,15 @@ export default async function ExhibitionEntryPage({ searchParams }: { searchPara
                   </div>
                 </div>
 
-                <div style={{ display: "flex", gap: "8px", alignItems: "center", flexShrink: 0 }}>
+                <div style={{ display: "flex", gap: "8px", alignItems: "center", flexShrink: 0, flexWrap: "wrap" }}>
                   <Link href={`/dashboard/tok/${ex.id}`} className="btn-primary btn-primary-hover" style={{ padding: "6px 14px" }}>
                     Open →
                   </Link>
+                  <form action={duplicateExhibition.bind(null, ex.id)}>
+                    <button type="submit" className="btn-ghost btn-ghost-hover" style={{ fontSize: "11px", padding: "6px 12px" }}>
+                      Duplicate
+                    </button>
+                  </form>
                   <form action={deleteExhibition.bind(null, ex.id)}>
                     <ConfirmSubmitButton
                       label="Delete"

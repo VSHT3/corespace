@@ -96,6 +96,51 @@ export async function deleteObject(exhibitionId: string, objectId: string) {
   revalidatePath(`/dashboard/tok/${exhibitionId}`);
 }
 
+export async function duplicateExhibition(id: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  // Fetch original exhibition + objects
+  const { data: original } = await supabase
+    .from("tok_exhibitions")
+    .select("*")
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!original) return;
+
+  const { data: newEx } = await supabase
+    .from("tok_exhibitions")
+    .insert({ user_id: user.id, title: `${original.title} (copy)`, prompt_id: original.prompt_id })
+    .select("id")
+    .single();
+
+  if (!newEx) return;
+
+  const { data: objects } = await supabase
+    .from("tok_objects")
+    .select("*")
+    .eq("exhibition_id", id);
+
+  if (objects && objects.length > 0) {
+    await supabase.from("tok_objects").insert(
+      objects.map((o: { title: string; description: string | null; object_type: string | null; justification: string | null; position: number }) => ({
+        exhibition_id: newEx.id,
+        title: o.title,
+        description: o.description,
+        object_type: o.object_type,
+        justification: o.justification,
+        position: o.position,
+      }))
+    );
+  }
+
+  revalidatePath("/dashboard/tok/exhibition");
+  redirect(`/dashboard/tok/${newEx.id}`);
+}
+
 export async function swapObjectPositions(exhibitionId: string, posA: number, posB: number) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
