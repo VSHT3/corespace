@@ -38,6 +38,9 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
   const [kqResult, setKqResult] = useState("");
   const [kqError, setKqError] = useState("");
   const [improveLoading, setImproveLoading] = useState(false);
+  const [checkLoading, setCheckLoading] = useState(false);
+  const [checkResult, setCheckResult] = useState<{ verdict: "strong" | "acceptable" | "weak"; issue: string | null; promptLink: string; tip: string } | null>(null);
+  const [checkError, setCheckError] = useState("");
 
   const DESC_MAX = 500;
 
@@ -224,6 +227,36 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
     }
   }
 
+  async function handleCheck() {
+    if (!object) return;
+    setCheckLoading(true);
+    setCheckError("");
+    setCheckResult(null);
+    try {
+      const res = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          intent: "object_check",
+          userMessage: "Check this object for IB suitability.",
+          context: {
+            prompt,
+            objectTitle: object.title,
+            objectType: object.object_type ?? "",
+            objectDescription: object.description ?? "",
+          },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Check failed");
+      setCheckResult(JSON.parse(data.text));
+    } catch (e: unknown) {
+      setCheckError(e instanceof Error ? e.message : "Check failed");
+    } finally {
+      setCheckLoading(false);
+    }
+  }
+
   async function handleScore() {
     if (!object) return;
     setScoreLoading(true);
@@ -403,6 +436,46 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
           <div style={{ marginBottom: "0.5rem", fontSize: "12px", color: "#666" }}>
             {object.object_type && <span className="tag tag-sky" style={{ marginRight: "6px" }}>{object.object_type}</span>}
             {object.description && <span>{object.description}</span>}
+          </div>
+
+          {/* Object suitability check */}
+          <div style={{ marginBottom: "0.5rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+              <button
+                onClick={handleCheck}
+                disabled={checkLoading}
+                className="btn-ghost btn-ghost-hover"
+                style={{ fontSize: "10px", padding: "3px 9px" }}
+                title="Check if this object is IB-appropriate"
+              >
+                {checkLoading ? "Checking…" : checkResult ? "Re-check object" : "Check IB suitability"}
+              </button>
+              {checkResult && !checkLoading && (
+                <span
+                  className="tag"
+                  style={{
+                    background: checkResult.verdict === "strong" ? "var(--mint)" : checkResult.verdict === "acceptable" ? "var(--yellow)" : "var(--pink)",
+                    fontSize: "10px",
+                  }}
+                >
+                  {checkResult.verdict === "strong" ? "Strong" : checkResult.verdict === "acceptable" ? "Acceptable" : "Needs work"}
+                </span>
+              )}
+            </div>
+            {checkError && (
+              <p style={{ fontSize: "11px", color: "#c00", marginTop: "4px" }}>{checkError}</p>
+            )}
+            {checkResult && !checkLoading && (
+              <div style={{ marginTop: "6px", fontSize: "12px", lineHeight: 1.6, display: "flex", flexDirection: "column", gap: "3px" }}>
+                {checkResult.issue && (
+                  <p style={{ color: "#c00", margin: 0 }}><strong>Issue:</strong> {checkResult.issue}</p>
+                )}
+                <p style={{ color: "#444", margin: 0 }}><strong>Prompt link:</strong> {checkResult.promptLink}</p>
+                <p style={{ background: "var(--yellow)", border: "1px solid var(--border)", borderRadius: "2px", padding: "3px 7px", margin: 0 }}>
+                  <strong>Tip:</strong> {checkResult.tip}
+                </p>
+              </div>
+            )}
           </div>
 
           <hr className="divider" style={{ margin: "1rem 0" }} />

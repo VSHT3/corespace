@@ -178,6 +178,30 @@ Format:
 
 Then add one sentence: "Best fit for justification: KQ [n] — [brief reason]."`;
 
+    case "object_check":
+      return `${BASE_CONTEXT}
+
+---
+
+You are an IB TOK examiner checking whether a proposed exhibition object is appropriate and IB-ready.
+
+Exhibition prompt: "${context.prompt ?? ""}"
+Proposed object: "${context.objectTitle ?? ""}" (type: ${context.objectType || "unspecified"})
+${context.objectDescription ? `Student's description: ${context.objectDescription}` : ""}
+
+Assess the object and respond with EXACTLY this JSON structure and nothing else:
+{
+  "verdict": "strong" | "acceptable" | "weak",
+  "issue": "<null or one-sentence description of the main problem>",
+  "promptLink": "<one sentence: how this object could connect to the prompt>",
+  "tip": "<one actionable sentence to make the object or its justification stronger>"
+}
+
+Verdict rubric:
+- "strong": specific real object with clear provenance, obvious analytical connection to prompt
+- "acceptable": object is valid but generic or loosely connected — could work with strong justification
+- "weak": object is too abstract, too generic (no specificity), created specifically for exhibition, or does not genuinely connect to prompt`;
+
     default:
       return BASE_CONTEXT;
   }
@@ -205,7 +229,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Both intent and userMessage are required." }, { status: 400 });
   }
 
-  const validIntents: AIIntent[] = ["prompt_explainer", "object_justification", "object_scoring", "justification_chat", "object_ideas", "knowledge_question", "justification_improve"];
+  const validIntents: AIIntent[] = ["prompt_explainer", "object_justification", "object_scoring", "justification_chat", "object_ideas", "knowledge_question", "justification_improve", "object_check"];
   if (!validIntents.includes(intent)) {
     return NextResponse.json({ error: `Unknown intent: ${intent}` }, { status: 400 });
   }
