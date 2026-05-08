@@ -3,6 +3,7 @@ import Link from "next/link";
 const NAV_LINKS = [
   { label: "Features", href: "/features" },
   { label: "TOK Prompts", href: "/tok-prompts" },
+  { label: "Tips", href: "/tips" },
   { label: "Pricing", href: "/pricing" },
   { label: "Privacy", href: "/privacy" },
   { label: "Terms", href: "/terms" },
