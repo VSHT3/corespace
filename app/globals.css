@@ -235,6 +235,18 @@ body {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* Print styles — clean exhibition export */
+@media print {
+  header, footer, .no-print { display: none !important; }
+  body { background: #fff; color: #000; font-size: 12pt; }
+  main { max-width: 100% !important; padding: 0 !important; animation: none !important; }
+  .card, .card-bump { box-shadow: none !important; transform: none !important; break-inside: avoid; border: 1pt solid #000; }
+  button, .btn-primary, .btn-ghost, .btn-sky { display: none !important; }
+  textarea { border: none !important; resize: none; overflow: visible; height: auto; }
+  a { color: inherit; text-decoration: none; }
+  @page { margin: 1.5cm; }
+}
+
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.35; }

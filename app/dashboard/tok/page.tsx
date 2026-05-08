@@ -20,7 +20,7 @@ export default async function TOKPage() {
       id: "essay",
       label: "TOK Essay",
       description: "Structure your prescribed title response with AI guidance at each stage.",
-      href: "#",
+      href: "/dashboard/tok/essay",
       available: false,
       accent: "var(--pink)",
     },
@@ -54,10 +54,11 @@ export default async function TOKPage() {
               </div>
             </Link>
           ) : (
-            <div
+            <Link
               key={mod.id}
-              className="card"
-              style={{ padding: 0, overflow: "hidden", position: "relative", minHeight: "160px", opacity: 0.5, cursor: "not-allowed" }}
+              href={mod.href}
+              className="card-link"
+              style={{ padding: 0, overflow: "hidden", position: "relative", minHeight: "160px", display: "block", color: "inherit", textDecoration: "none" }}
             >
               <div style={{ height: "6px", background: mod.accent }} />
               <div style={{ padding: "1.25rem 1.5rem 2.75rem" }}>
@@ -65,7 +66,7 @@ export default async function TOKPage() {
                 <p style={{ color: "#555", fontSize: "14px", lineHeight: "1.6" }}>{mod.description}</p>
               </div>
               <span className="tag tag-sky" style={{ position: "absolute", bottom: "12px", right: "12px" }}>Soon</span>
-            </div>
+            </Link>
           )
         )}
       </div>

@@ -11,6 +11,7 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -90,9 +91,18 @@ export default function LoginPage() {
           </div>
 
           <div className="space-y-1">
-            <label className="eyebrow block">Password</label>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <label className="eyebrow block">Password</label>
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: "11px", color: "#888", textTransform: "uppercase", letterSpacing: "0.04em", fontWeight: 700 }}
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}

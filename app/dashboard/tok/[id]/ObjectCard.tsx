@@ -24,6 +24,7 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
   const [scoreLoading, setScoreLoading] = useState(false);
   const [scoreError, setScoreError] = useState("");
   const [scoreResult, setScoreResult] = useState<{ score: number; strength: string; weakness: string; tip: string } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const wordCount = justification.trim() ? justification.trim().split(/\s+/).length : 0;
   const wordCountColor = wordCount === 0 ? "#aaa" : wordCount < 95 ? "#888" : wordCount <= 150 ? "#16a34a" : "#dc2626";
@@ -272,14 +273,29 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
             <p style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
               Justification
             </p>
-            <button
-              onClick={handleGenerateJustification}
-              disabled={aiLoading}
-              className="btn-primary btn-primary-hover"
-              style={{ fontSize: "11px", padding: "4px 12px", background: accent, color: "var(--fg)", borderColor: "var(--fg)" }}
-            >
-              {aiLoading ? "Generating…" : "Generate with AI"}
-            </button>
+            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+              {justification.trim() && (
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(justification);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 1800);
+                  }}
+                  className="btn-ghost btn-ghost-hover"
+                  style={{ fontSize: "11px", padding: "4px 10px" }}
+                >
+                  {copied ? "Copied!" : "Copy"}
+                </button>
+              )}
+              <button
+                onClick={handleGenerateJustification}
+                disabled={aiLoading}
+                className="btn-primary btn-primary-hover"
+                style={{ fontSize: "11px", padding: "4px 12px", background: accent, color: "var(--fg)", borderColor: "var(--fg)" }}
+              >
+                {aiLoading ? "Generating…" : "Generate with AI"}
+              </button>
+            </div>
           </div>
 
           {aiError && (
