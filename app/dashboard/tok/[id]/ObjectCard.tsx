@@ -35,6 +35,7 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
   const [kqLoading, setKqLoading] = useState(false);
   const [kqResult, setKqResult] = useState("");
   const [kqError, setKqError] = useState("");
+  const [improveLoading, setImproveLoading] = useState(false);
 
   const DESC_MAX = 500;
 
@@ -179,6 +180,43 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
       setKqError(e instanceof Error ? e.message : "Failed to generate");
     } finally {
       setKqLoading(false);
+    }
+  }
+
+  async function handleImprove() {
+    if (!object || !justification.trim()) return;
+    setImproveLoading(true);
+    setAiError("");
+    try {
+      const res = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          intent: "justification_improve",
+          userMessage: "Improve this justification.",
+          context: {
+            prompt,
+            objectTitle: object.title,
+            objectType: object.object_type ?? "",
+            objectDescription: object.description ?? "",
+            justification,
+          },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "AI request failed");
+      setJustification(data.text);
+      await fetch("/api/tok/justification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ exhibitionId, objectId: object.id, justification: data.text }),
+      });
+      setSavedOk(true);
+      setTimeout(() => setSavedOk(false), 2000);
+    } catch (e: unknown) {
+      setAiError(e instanceof Error ? e.message : "Improve failed");
+    } finally {
+      setImproveLoading(false);
     }
   }
 
@@ -383,9 +421,20 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
                   {copied ? "Copied!" : "Copy"}
                 </button>
               )}
+              {justification.trim() && (
+                <button
+                  onClick={handleImprove}
+                  disabled={improveLoading || aiLoading}
+                  className="btn-ghost btn-ghost-hover"
+                  style={{ fontSize: "11px", padding: "4px 10px" }}
+                  title="Rewrite justification to be stronger (keeps your ideas)"
+                >
+                  {improveLoading ? "Improving…" : "Improve"}
+                </button>
+              )}
               <button
                 onClick={handleGenerateJustification}
-                disabled={aiLoading}
+                disabled={aiLoading || improveLoading}
                 className="btn-primary btn-primary-hover"
                 style={{ fontSize: "11px", padding: "4px 12px", background: accent, color: "var(--fg)", borderColor: "var(--fg)" }}
               >

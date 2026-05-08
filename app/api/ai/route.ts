@@ -124,6 +124,30 @@ Assess this object and respond with EXACTLY this JSON structure and nothing else
 
 Score rubric: 9-10 = examiner-ready, strong knowledge question + clear prompt link; 7-8 = good, minor gaps; 5-6 = adequate but generic; 3-4 = weak connection or vague; 1-2 = off-prompt or no justification.`;
 
+    case "justification_improve":
+      return `${BASE_CONTEXT}
+
+---
+
+You are an IB TOK examiner rewriting a student's exhibition object justification to be stronger.
+
+Exhibition prompt: "${context.prompt ?? ""}"
+Object: "${context.objectTitle ?? ""}" (type: ${context.objectType || "unspecified"})
+${context.objectDescription ? `Description: ${context.objectDescription}` : ""}
+Current justification:
+${context.justification ?? "(none)"}
+
+Rewrite the justification to:
+1. Open with a clear knowledge question or epistemic claim connected to the prompt
+2. Explain why this specific object raises that question (not a generic object — THIS object)
+3. Connect to at least one way of knowing or area of knowledge naturally and specifically
+4. Close with why this object is analytically interesting for the prompt
+5. Stay within 95–150 words
+6. Write in first person as the student
+7. Be specific, not generic — every sentence should be about THIS object and THIS prompt
+
+Return ONLY the improved justification text. No preamble, no "here is the improved version", no explanation.`;
+
     case "knowledge_question":
       return `${BASE_CONTEXT}
 
@@ -179,7 +203,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Both intent and userMessage are required." }, { status: 400 });
   }
 
-  const validIntents: AIIntent[] = ["prompt_explainer", "object_justification", "object_scoring", "justification_chat", "object_ideas", "knowledge_question"];
+  const validIntents: AIIntent[] = ["prompt_explainer", "object_justification", "object_scoring", "justification_chat", "object_ideas", "knowledge_question", "justification_improve"];
   if (!validIntents.includes(intent)) {
     return NextResponse.json({ error: `Unknown intent: ${intent}` }, { status: 400 });
   }
