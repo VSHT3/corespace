@@ -162,22 +162,35 @@ export default function PromptPicker({ createAction }: { createAction: (formData
 
   useEffect(() => { setMounted(true); }, []);
 
-  // '/' shortcut focuses search when tour is done
+  // Keyboard shortcuts when tour is done
   useEffect(() => {
     if (!done) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "/" && document.activeElement?.tagName !== "INPUT" && document.activeElement?.tagName !== "TEXTAREA") {
+      const tag = document.activeElement?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") {
+        if (e.key === "Escape") {
+          setSearchQuery("");
+          (document.activeElement as HTMLElement)?.blur();
+        }
+        return;
+      }
+      if (e.key === "/") {
         e.preventDefault();
         searchRef.current?.focus();
       }
-      if (e.key === "Escape" && document.activeElement === searchRef.current) {
+      if (e.key === "r" || e.key === "R") {
+        surpriseMe();
+      }
+      if (e.key === "Escape") {
+        setActiveCategory(null);
         setSearchQuery("");
-        searchRef.current?.blur();
+        setDifficultyFilter("all");
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [done]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [done, difficultyFilter, activeCategory]);
 
   // Track container width
   useEffect(() => {
@@ -418,6 +431,22 @@ export default function PromptPicker({ createAction }: { createAction: (formData
           </div>
         )}
       </div>
+
+      {/* Keyboard shortcut hint bar */}
+      {done && (
+        <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginBottom: "0.65rem", alignItems: "center" }}>
+          {[
+            { key: "/", label: "focus search" },
+            { key: "r", label: "random prompt" },
+            { key: "Esc", label: "clear filters" },
+          ].map(({ key, label }) => (
+            <span key={key} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "#aaa" }}>
+              <kbd style={{ fontFamily: "monospace", fontWeight: 700, fontSize: "10px", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "3px", padding: "1px 5px", color: "#555", lineHeight: 1.6 }}>{key}</kbd>
+              <span>{label}</span>
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Category pills double as filter + heading: appear at end of tour */}
       <motion.div
