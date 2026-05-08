@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CookieBanner from "@/components/CookieBanner";
 import { ToastProvider } from "@/lib/toast";
+import ScrollToTop from "@/components/ScrollToTop";
 
 export const metadata: Metadata = {
   title: {
@@ -45,6 +46,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <ToastProvider>
+          <ScrollToTop />
           <Navbar />
           {children}
           <Footer />
