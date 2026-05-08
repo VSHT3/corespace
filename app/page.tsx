@@ -81,19 +81,19 @@ export default function Home() {
             label: "Theory of Knowledge",
             desc: "Pick a prompt, build your exhibition, and sharpen every object justification.",
             available: true,
-            accent: "#fde68a", // yellow
+            accent: "#fde68a",
           },
           {
             label: "Creativity Activity Service",
             desc: "Log hours, write structured reflections, and hit every learning outcome.",
             available: false,
-            accent: "#bbf7d0", // mint
+            accent: "#bbf7d0",
           },
           {
             label: "Extended Essay",
             desc: "Outline, draft, and iterate with AI feedback at every stage.",
             available: false,
-            accent: "#fbcfe8", // pink
+            accent: "#fbcfe8",
           },
         ].map((f) => (
           <div
@@ -107,16 +107,50 @@ export default function Home() {
               <p style={{ color: "#555", fontSize: "14px", lineHeight: "1.6" }}>{f.desc}</p>
             </div>
             {!f.available && (
-              <span
-                className="tag tag-sky"
-                style={{ position: "absolute", bottom: "12px", right: "12px" }}
-              >
+              <span className="tag tag-sky" style={{ position: "absolute", bottom: "12px", right: "12px" }}>
                 Soon
               </span>
             )}
           </div>
         ))}
       </section>
+
+      {/* TOK feature highlight */}
+      <section className="mt-16 max-w-3xl w-full">
+        <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+          <div style={{ height: "5px", background: "#fde68a" }} />
+          <div style={{ padding: "1.75rem 2rem" }}>
+            <p className="eyebrow" style={{ marginBottom: "0.75rem" }}>TOK Exhibition — live now</p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.75rem 2rem" }}>
+              {[
+                "All 35 official IB prompts with AI chat",
+                "3 objects per exhibition, IB-typed",
+                "AI justification generator",
+                "Knowledge question generator",
+                "AI scoring: score/10 + actionable tip",
+                "Word count targets (95–150 / object)",
+                "Print-ready export",
+                "Duplicate & reorder exhibitions",
+              ].map((item) => (
+                <p key={item} style={{ fontSize: "13px", color: "#444", margin: 0, display: "flex", alignItems: "flex-start", gap: "6px" }}>
+                  <span style={{ color: "#16a34a", fontWeight: 700, flexShrink: 0 }}>✓</span>
+                  {item}
+                </p>
+              ))}
+            </div>
+            <div style={{ marginTop: "1.25rem" }}>
+              <Link href="/login" className="btn-primary btn-primary-hover" style={{ padding: "8px 18px" }}>
+                Start your exhibition free →
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* IB disclaimer */}
+      <p style={{ marginTop: "3rem", fontSize: "11px", color: "#bbb", textAlign: "center", maxWidth: "36rem" }}>
+        Corespace is an independent study tool not affiliated with or endorsed by the International Baccalaureate Organization. IB® is a registered trademark of the International Baccalaureate Organization.
+      </p>
     </main>
   );
 }

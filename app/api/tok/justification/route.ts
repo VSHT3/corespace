@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -31,5 +32,6 @@ export async function POST(req: Request) {
 
   await supabase.from("tok_objects").update({ justification }).eq("id", objectId);
 
+  revalidatePath(`/dashboard/tok/${exhibitionId}`);
   return NextResponse.json({ ok: true });
 }
