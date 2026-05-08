@@ -91,7 +91,7 @@ export default async function ExhibitionPage({ params }: { params: Promise<{ id:
 
         <div style={{ justifySelf: "end", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.5rem" }}>
           <span className="tag tag-yellow">Prompt {ex.prompt_id}</span>
-          <PrintButton />
+          <PrintButton exhibitionId={id} />
         </div>
       </section>
 
