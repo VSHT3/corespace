@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import ReactMarkdown from "react-markdown";
 import type { TOKObject } from "@/types";
 import { useToast } from "@/lib/toast";
@@ -17,6 +17,8 @@ interface Props {
 export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObject, deleteObject }: Props) {
   const { showToast } = useToast();
   const [editing, setEditing] = useState(!object);
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSavedRef = useRef(object?.justification ?? "");
   const [justification, setJustification] = useState(object?.justification ?? "");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
@@ -98,6 +100,30 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
       setAiLoading(false);
     }
   }
+
+  const saveJustificationSilent = useCallback(async (text: string) => {
+    if (!object || text === lastSavedRef.current) return;
+    try {
+      await fetch("/api/tok/justification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ exhibitionId, objectId: object.id, justification: text }),
+      });
+      lastSavedRef.current = text;
+    } catch {
+      // silent — blur save will catch it
+    }
+  }, [object, exhibitionId]);
+
+  // Debounced auto-save: 2s after user stops typing
+  useEffect(() => {
+    if (!object || editing) return;
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => saveJustificationSilent(justification), 2000);
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [justification, object, editing, saveJustificationSilent]);
 
   async function handleSaveJustification() {
     if (!object) return;
@@ -564,7 +590,7 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
           {!aiLoading && (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "4px" }}>
               <p style={{ fontSize: "11px", color: "#aaa" }}>
-                {savedOk ? "✓ Saved" : "Auto-saved on blur."}
+                {savedOk ? "✓ Saved" : "Auto-saves 2s after you stop typing."}
               </p>
               <p style={{ fontSize: "11px", color: wordCountColor, fontWeight: wordCount >= 95 && wordCount <= 150 ? 700 : 400 }}>
                 {wordCount} {wordCount === 1 ? "word" : "words"}
