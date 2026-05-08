@@ -59,6 +59,24 @@ export async function saveObject(formData: FormData) {
   revalidatePath(`/dashboard/tok/${exhibitionId}`);
 }
 
+export async function updateExhibitionTitle(id: string, title: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const trimmed = title.trim();
+  if (!trimmed) return;
+
+  await supabase
+    .from("tok_exhibitions")
+    .update({ title: trimmed })
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  revalidatePath(`/dashboard/tok/${id}`);
+  revalidatePath("/dashboard/tok/exhibition");
+}
+
 export async function saveJustification(exhibitionId: string, objectId: string, justification: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

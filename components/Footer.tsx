@@ -1,5 +1,13 @@
 import Link from "next/link";
 
+const NAV_LINKS = [
+  { label: "Features", href: "/features" },
+  { label: "Pricing", href: "/pricing" },
+  { label: "Privacy", href: "/privacy" },
+  { label: "Terms", href: "/terms" },
+  { label: "Contact", href: "mailto:hello@corespace.app" },
+];
+
 export default function Footer() {
   return (
     <footer
@@ -10,19 +18,21 @@ export default function Footer() {
         justifyContent: "space-between",
         alignItems: "center",
         flexWrap: "wrap",
-        gap: "0.5rem",
+        gap: "0.75rem",
         flexShrink: 0,
       }}
     >
-      <p style={{ fontSize: "11px", color: "#aaa", margin: 0 }}>
-        © {new Date().getFullYear()} Corespace
-      </p>
-      <nav style={{ display: "flex", gap: "1.25rem" }}>
-        {[
-          { label: "Privacy", href: "/privacy" },
-          { label: "Terms", href: "/terms" },
-          { label: "Pricing", href: "/pricing" },
-        ].map((l) => (
+      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+        <p style={{ fontSize: "11px", color: "#aaa", margin: 0, fontWeight: 700 }}>
+          Corespace
+        </p>
+        <span style={{ fontSize: "11px", color: "#ccc" }}>·</span>
+        <p style={{ fontSize: "11px", color: "#aaa", margin: 0 }}>
+          © {new Date().getFullYear()}
+        </p>
+      </div>
+      <nav style={{ display: "flex", gap: "1.25rem", flexWrap: "wrap" }}>
+        {NAV_LINKS.map((l) => (
           <Link
             key={l.href}
             href={l.href}

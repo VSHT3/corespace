@@ -4,6 +4,7 @@ import Link from "next/link";
 import { TOK_PROMPTS } from "@/lib/tok-prompts";
 import { saveObject, deleteObject } from "../actions";
 import ObjectCard from "./ObjectCard";
+import ExhibitionTitleEditor from "./ExhibitionTitleEditor";
 import type { TOKExhibition, TOKObject } from "@/types";
 
 export default async function ExhibitionPage({ params }: { params: Promise<{ id: string }> }) {
@@ -56,7 +57,7 @@ export default async function ExhibitionPage({ params }: { params: Promise<{ id:
         <div>
           <Link href="/dashboard/tok/exhibition" className="back-link">← TOK Exhibition</Link>
           <p className="eyebrow" style={{ marginTop: "0.65rem", marginBottom: "0.25rem" }}>Exhibition</p>
-          <h1 className="heading" style={{ fontSize: "22px", maxWidth: "360px" }}>{ex.title}</h1>
+          <ExhibitionTitleEditor exhibitionId={id} initialTitle={ex.title} />
         </div>
 
         <div
