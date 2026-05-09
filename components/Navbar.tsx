@@ -42,7 +42,10 @@ export default async function Navbar() {
             Features
           </Link>
           <Link href="/tok-prompts" className="back-link" style={{ fontSize: "12px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-            TOK Prompts
+            Prompts
+          </Link>
+          <Link href="/tips" className="back-link" style={{ fontSize: "12px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            Tips
           </Link>
           <Link href="/pricing" className="back-link" style={{ fontSize: "12px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>
             Pricing
