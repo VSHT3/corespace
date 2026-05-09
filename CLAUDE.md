@@ -82,6 +82,8 @@ System prompts built server-side only. Reference docs in `lib/ai-docs/` loaded a
 
 Justification saves go through `app/api/tok/justification/route.ts` (POST) — verifies ownership before writing.
 
+Score saves go through `app/api/tok/scores/route.ts` (POST) — appends `ScoreEntry` to `scores` jsonb array (max 10), verifies ownership. Called fire-and-forget after each `object_scoring` AI call.
+
 ### Design system
 
 Brutalist Pastel theme. CSS vars + reusable `@utility` classes in `app/globals.css`. No component libraries, Tailwind only. No shadows, gradients, blur, or pill shapes.
@@ -233,6 +235,10 @@ ___
 - Print-ready workspace export via browser Cmd+P
 - Dynamic metadata (title = exhibition name + prompt) on workspace page with noindex
 - maxOutputTokens tuned per intent (400 for JSON, 1200 for multi-item, 1000 default)
+- AI score persistence — `/api/tok/scores` route saves each score entry to `scores` jsonb column (array, max 10 entries), ObjectCard shows score history as mini bar chart
+- Score history bar chart in ObjectCard (`initialScores` prop passed from page.tsx, `scoreHistory` state updated optimistically after each score)
+- "Tips" link added to Navbar (between Prompts and Pricing)
+- Exhibition list progress bars fixed to use position-based object lookup (not array index)
 
 ## New env vars (added May 2026)
 | Variable | Purpose |
