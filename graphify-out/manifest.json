@@ -1,0 +1,354 @@
+{
+  "/Users/vsht/Documents/Corespace/postcss.config.mjs": {
+    "mtime": 1777205386.1236353,
+    "hash": "239f3ebf717465dc636818a1a619398d"
+  },
+  "/Users/vsht/Documents/Corespace/next-env.d.ts": {
+    "mtime": 1777891522.2013369,
+    "hash": "d0f8375ae1199dc7acd3977fc33b78b8"
+  },
+  "/Users/vsht/Documents/Corespace/proxy.ts": {
+    "mtime": 1777894758.2087915,
+    "hash": "c04460021d6f52c95bb924c113fa41a0"
+  },
+  "/Users/vsht/Documents/Corespace/next.config.ts": {
+    "mtime": 1777205390.6167383,
+    "hash": "9b77af189a21a7a64e4bd7a426f64176"
+  },
+  "/Users/vsht/Documents/Corespace/types/index.ts": {
+    "mtime": 1778279564.3081584,
+    "hash": "01c1eb57ac5e6e6ab47c728d801410ed"
+  },
+  "/Users/vsht/Documents/Corespace/app/robots.ts": {
+    "mtime": 1778278341.9528692,
+    "hash": "accfa92859e178a6fcb9fc1b09ce85ba"
+  },
+  "/Users/vsht/Documents/Corespace/app/sitemap.ts": {
+    "mtime": 1778279274.9367511,
+    "hash": "f5db39c6626d82469a8fbf0394e6eb30"
+  },
+  "/Users/vsht/Documents/Corespace/app/layout.tsx": {
+    "mtime": 1778279162.0029805,
+    "hash": "7a3ee76a26c6f1c4defce3ca11363c1c"
+  },
+  "/Users/vsht/Documents/Corespace/app/page.tsx": {
+    "mtime": 1778279662.4672828,
+    "hash": "e17a5a08bd36509598955bfbc7c2e944"
+  },
+  "/Users/vsht/Documents/Corespace/app/not-found.tsx": {
+    "mtime": 1778277040.2324164,
+    "hash": "9c6dcd76787b58f08a0b37a64fe2a098"
+  },
+  "/Users/vsht/Documents/Corespace/app/contact/page.tsx": {
+    "mtime": 1778278383.813271,
+    "hash": "d961d7c34f18d5b5939669c91e3e8249"
+  },
+  "/Users/vsht/Documents/Corespace/app/privacy/page.tsx": {
+    "mtime": 1778279300.2096906,
+    "hash": "bd0160a09411ba621ae5618c19cdc877"
+  },
+  "/Users/vsht/Documents/Corespace/app/tok-prompts/page.tsx": {
+    "mtime": 1778278486.6391594,
+    "hash": "021d413d36ddff40f18d575dd3e67878"
+  },
+  "/Users/vsht/Documents/Corespace/app/auth/reset/route.ts": {
+    "mtime": 1777895039.550547,
+    "hash": "8a5888b8cac03fcf37aa250cb122804e"
+  },
+  "/Users/vsht/Documents/Corespace/app/auth/reset/complete/layout.tsx": {
+    "mtime": 1778278137.8775098,
+    "hash": "af814ba32ef23874236e6a9dcde2d71e"
+  },
+  "/Users/vsht/Documents/Corespace/app/auth/reset/complete/page.tsx": {
+    "mtime": 1777895053.5269232,
+    "hash": "3e5afa00f911634d721cb5b73814dac1"
+  },
+  "/Users/vsht/Documents/Corespace/app/auth/confirm/route.ts": {
+    "mtime": 1777894752.539301,
+    "hash": "05060c4dded030fffdfab10bb73ac721"
+  },
+  "/Users/vsht/Documents/Corespace/app/features/page.tsx": {
+    "mtime": 1778279521.3652945,
+    "hash": "fddd95d27a4f963f4b1614db0ab0df0d"
+  },
+  "/Users/vsht/Documents/Corespace/app/terms/page.tsx": {
+    "mtime": 1778278114.7506719,
+    "hash": "7a7caf8523bc76325d22c281d3b62fef"
+  },
+  "/Users/vsht/Documents/Corespace/app/about/page.tsx": {
+    "mtime": 1778279264.4920838,
+    "hash": "3bf66fb026c464c3738cdc4e298ba122"
+  },
+  "/Users/vsht/Documents/Corespace/app/dashboard/error.tsx": {
+    "mtime": 1778278766.1606545,
+    "hash": "38c1e40bf7fefdddc3c0f8bf26576819"
+  },
+  "/Users/vsht/Documents/Corespace/app/dashboard/loading.tsx": {
+    "mtime": 1778277769.9803426,
+    "hash": "5a48fcb3612e3b39ac8742ca3d1b6874"
+  },
+  "/Users/vsht/Documents/Corespace/app/dashboard/page.tsx": {
+    "mtime": 1778279503.126997,
+    "hash": "326bc7c7c404bc2512ac88dec25dc0bc"
+  },
+  "/Users/vsht/Documents/Corespace/app/dashboard/cas/page.tsx": {
+    "mtime": 1778277255.5382621,
+    "hash": "751eac74365d1e15b6a8af3f8dd6e169"
+  },
+  "/Users/vsht/Documents/Corespace/app/dashboard/tok/actions.ts": {
+    "mtime": 1778278841.7215958,
+    "hash": "367c6529f194b4a787697a4b533af9c8"
+  },
+  "/Users/vsht/Documents/Corespace/app/dashboard/tok/error.tsx": {
+    "mtime": 1778278772.8469377,
+    "hash": "a54fb9b258c9af2317686e7826cba3d5"
+  },
+  "/Users/vsht/Documents/Corespace/app/dashboard/tok/page.tsx": {
+    "mtime": 1778277887.600234,
+    "hash": "281c740530bbe1029fd5005b34f82728"
+  },
+  "/Users/vsht/Documents/Corespace/app/dashboard/tok/exhibition/PromptPicker.tsx": {
+    "mtime": 1778279448.5496347,
+    "hash": "4c3fd3fe93b772201ddeec99eebeef41"
+  },
+  "/Users/vsht/Documents/Corespace/app/dashboard/tok/exhibition/loading.tsx": {
+    "mtime": 1778277779.5240338,
+    "hash": "33210ec12c9a36e6e7a26cb92e471f54"
+  },
+  "/Users/vsht/Documents/Corespace/app/dashboard/tok/exhibition/page.tsx": {
+    "mtime": 1778278444.836695,
+    "hash": "f6ccc201a72e82b219e339d22867647f"
+  },
+  "/Users/vsht/Documents/Corespace/app/dashboard/tok/[id]/PrintButton.tsx": {
+    "mtime": 1778279761.787977,
+    "hash": "7a6f478fd72c81e301c89d1968eada13"
+  },
+  "/Users/vsht/Documents/Corespace/app/dashboard/tok/[id]/ObjectIdeasButton.tsx": {
+    "mtime": 1778277990.0403,
+    "hash": "70ac3f6506fe3e93b2b9ff0d88599212"
+  },
+  "/Users/vsht/Documents/Corespace/app/dashboard/tok/[id]/ExhibitionTitleEditor.tsx": {
+    "mtime": 1778278848.841165,
+    "hash": "75f7cce5ee9bcaeecb8c9f120098a64e"
+  },
+  "/Users/vsht/Documents/Corespace/app/dashboard/tok/[id]/ObjectCard.tsx": {
+    "mtime": 1778279690.4243927,
+    "hash": "dff416e418ca7cd9626f18445393a5ef"
+  },
+  "/Users/vsht/Documents/Corespace/app/dashboard/tok/[id]/WordCountSummary.tsx": {
+    "mtime": 1778279319.219912,
+    "hash": "0a3f9bde75bbbea439adc060315f1461"
+  },
+  "/Users/vsht/Documents/Corespace/app/dashboard/tok/[id]/error.tsx": {
+    "mtime": 1778278831.4603326,
+    "hash": "35c6e938302cdd14ac6be66e1f114665"
+  },
+  "/Users/vsht/Documents/Corespace/app/dashboard/tok/[id]/loading.tsx": {
+    "mtime": 1778277787.3953905,
+    "hash": "0087e9923970d438178365f8a0007321"
+  },
+  "/Users/vsht/Documents/Corespace/app/dashboard/tok/[id]/page.tsx": {
+    "mtime": 1778279707.1121383,
+    "hash": "4e9acb9206eefe5387243d121db371de"
+  },
+  "/Users/vsht/Documents/Corespace/app/dashboard/tok/[id]/RubricPanel.tsx": {
+    "mtime": 1778277948.9584818,
+    "hash": "82b8183ce25a0521f3bb95106235fc88"
+  },
+  "/Users/vsht/Documents/Corespace/app/dashboard/tok/[id]/SubmissionChecklist.tsx": {
+    "mtime": 1778279363.7526615,
+    "hash": "984ff7349c7908b279b54d3ac4b6b9db"
+  },
+  "/Users/vsht/Documents/Corespace/app/dashboard/tok/essay/page.tsx": {
+    "mtime": 1778277205.1211646,
+    "hash": "67cf61572f1732507d472b250ac65dd3"
+  },
+  "/Users/vsht/Documents/Corespace/app/dashboard/ee/page.tsx": {
+    "mtime": 1778277265.4340873,
+    "hash": "b437f25308091e7d7ac4bb70ba8f70db"
+  },
+  "/Users/vsht/Documents/Corespace/app/profile/DeleteAccountButton.tsx": {
+    "mtime": 1778278189.7245705,
+    "hash": "288b811f265c4f56dc39a8dab4270745"
+  },
+  "/Users/vsht/Documents/Corespace/app/profile/actions.ts": {
+    "mtime": 1778278181.4203103,
+    "hash": "04fdf1582706aaa51d4a3e5f3c2c0549"
+  },
+  "/Users/vsht/Documents/Corespace/app/profile/page.tsx": {
+    "mtime": 1778279540.2460988,
+    "hash": "87ebec9575eefdff8ae7d2415d124d27"
+  },
+  "/Users/vsht/Documents/Corespace/app/forgot-password/layout.tsx": {
+    "mtime": 1778278124.023396,
+    "hash": "e383767c5fbb170739e7bb1c07bf864a"
+  },
+  "/Users/vsht/Documents/Corespace/app/forgot-password/page.tsx": {
+    "mtime": 1777895035.304856,
+    "hash": "a117e6fe60b995ce9fffba9719f90911"
+  },
+  "/Users/vsht/Documents/Corespace/app/tips/page.tsx": {
+    "mtime": 1778279634.724792,
+    "hash": "03cf35f7c98c849e60263e5948510f24"
+  },
+  "/Users/vsht/Documents/Corespace/app/api/tok/justification/route.ts": {
+    "mtime": 1778278617.208046,
+    "hash": "f4181f46df4c464fea4265d2b7fc298f"
+  },
+  "/Users/vsht/Documents/Corespace/app/api/tok/export-text/route.ts": {
+    "mtime": 1778279753.1131973,
+    "hash": "11379dcccad9228c4456a03ec8f0fb37"
+  },
+  "/Users/vsht/Documents/Corespace/app/api/tok/export/route.ts": {
+    "mtime": 1778278905.8209274,
+    "hash": "88404b612969071767c24b67e9727e48"
+  },
+  "/Users/vsht/Documents/Corespace/app/api/health/route.ts": {
+    "mtime": 1778277379.8559306,
+    "hash": "c46748a06d646480decbf332f12c2653"
+  },
+  "/Users/vsht/Documents/Corespace/app/api/ai/route.ts": {
+    "mtime": 1778279718.6703928,
+    "hash": "e80dfdb61a89c4bae695c69f82938091"
+  },
+  "/Users/vsht/Documents/Corespace/app/api/og/route.tsx": {
+    "mtime": 1778278374.736238,
+    "hash": "c2007f3e1dfeee50b5d59612dd13af0b"
+  },
+  "/Users/vsht/Documents/Corespace/app/pricing/page.tsx": {
+    "mtime": 1778278560.8056512,
+    "hash": "197e95cef5618a39dc22e1548f1ea3a0"
+  },
+  "/Users/vsht/Documents/Corespace/app/login/layout.tsx": {
+    "mtime": 1778277653.8588269,
+    "hash": "43467acda32f5bc9d0f1510ddf659893"
+  },
+  "/Users/vsht/Documents/Corespace/app/login/page.tsx": {
+    "mtime": 1778278875.201896,
+    "hash": "c68a8caa8f85acb51229c1d7bccfc9b3"
+  },
+  "/Users/vsht/Documents/Corespace/supabase/migrations/002_tok_additions.sql": {
+    "mtime": 1777236468.0955253,
+    "hash": "93de5b755f2fec3165c25caebbd3dec4"
+  },
+  "/Users/vsht/Documents/Corespace/supabase/migrations/001_initial.sql": {
+    "mtime": 1777205515.1818788,
+    "hash": "e05831b2eef0d8c7a6b7509a2bca7430"
+  },
+  "/Users/vsht/Documents/Corespace/components/Navbar.tsx": {
+    "mtime": 1778278539.3341856,
+    "hash": "2149450f86c6a4224e8a0354ee29c86d"
+  },
+  "/Users/vsht/Documents/Corespace/components/ScrollToTop.tsx": {
+    "mtime": 1778279155.9682395,
+    "hash": "94a2a2e8b717f3257e29563bc4da7eb5"
+  },
+  "/Users/vsht/Documents/Corespace/components/ConfirmSubmitButton.tsx": {
+    "mtime": 1777407566.713864,
+    "hash": "427d36c01c2b1542295c34a3576b62b3"
+  },
+  "/Users/vsht/Documents/Corespace/components/LogoutButton.tsx": {
+    "mtime": 1777219037.3047912,
+    "hash": "e2921ac6f5b9e926f2f2d17f3dcf2099"
+  },
+  "/Users/vsht/Documents/Corespace/components/CookieBanner.tsx": {
+    "mtime": 1777239201.697972,
+    "hash": "52fa72fdc353a70a99e23bf1650019f8"
+  },
+  "/Users/vsht/Documents/Corespace/components/Footer.tsx": {
+    "mtime": 1778279272.1057525,
+    "hash": "8a0076e2b67648ee92d029badebbd931"
+  },
+  "/Users/vsht/Documents/Corespace/lib/supabase-server.ts": {
+    "mtime": 1777381155.9172919,
+    "hash": "5e0352a1c6a095f69be9eeb1397020d9"
+  },
+  "/Users/vsht/Documents/Corespace/lib/supabase-client.ts": {
+    "mtime": 1777205433.1802213,
+    "hash": "5453d99289cf630306e5030428c0fc33"
+  },
+  "/Users/vsht/Documents/Corespace/lib/gemini.ts": {
+    "mtime": 1777404111.2703784,
+    "hash": "c6f8a57cb8b7e46ed8143dadf1a2f166"
+  },
+  "/Users/vsht/Documents/Corespace/lib/tok-prompts.ts": {
+    "mtime": 1777923976.7114651,
+    "hash": "3435579d180714c551010c422c69a333"
+  },
+  "/Users/vsht/Documents/Corespace/lib/rate-limit.ts": {
+    "mtime": 1778278416.7129164,
+    "hash": "d3a48e12780823b95096f6cb247d10e8"
+  },
+  "/Users/vsht/Documents/Corespace/lib/toast.tsx": {
+    "mtime": 1778279107.946608,
+    "hash": "c34592bf9f1eb071c7024a76006b44f9"
+  },
+  "/Users/vsht/Documents/Corespace/PRODUCT.md": {
+    "mtime": 1777406450.0203133,
+    "hash": "98be28171d7448099625a45698292f32"
+  },
+  "/Users/vsht/Documents/Corespace/NEW_PROMPTS.md": {
+    "mtime": 1777923660.4250288,
+    "hash": "cab43ca122cb580cd52c801018ed1443"
+  },
+  "/Users/vsht/Documents/Corespace/README.md": {
+    "mtime": 1777404128.7400215,
+    "hash": "5eed02006f0fd8d74f7dba0881e461d3"
+  },
+  "/Users/vsht/Documents/Corespace/STYLE.md": {
+    "mtime": 1777208729.5239987,
+    "hash": "ed21dfaf579c193b20027995d5b865e3"
+  },
+  "/Users/vsht/Documents/Corespace/DESIGN.md": {
+    "mtime": 1777406514.0521145,
+    "hash": "2ac30e4f927d54f0a3421fc0a51aba8d"
+  },
+  "/Users/vsht/Documents/Corespace/AGENTS.md": {
+    "mtime": 1777384107.687276,
+    "hash": "1a48e3c89e291ca56f06adc73bfd53c7"
+  },
+  "/Users/vsht/Documents/Corespace/CLAUDE.md": {
+    "mtime": 1778279821.1936913,
+    "hash": "9eb1ef3ba15b3e9182cc93a94dd5d5ff"
+  },
+  "/Users/vsht/Documents/Corespace/lib/ai-docs/cas-guide.md": {
+    "mtime": 1778277395.9297647,
+    "hash": "c541ac4df9aa61e346a04edcb4d533aa"
+  },
+  "/Users/vsht/Documents/Corespace/lib/ai-docs/tok-exhibition-guide.md": {
+    "mtime": 1778277465.883021,
+    "hash": "b7c71ddec5f1b207a2800e000e79fc52"
+  },
+  "/Users/vsht/Documents/Corespace/lib/ai-docs/ee-guide.md": {
+    "mtime": 1778277409.408905,
+    "hash": "aaca20f23f0bead3d97fec9a13afce09"
+  },
+  "/Users/vsht/Documents/Corespace/lib/ai-docs/justification-examples.md": {
+    "mtime": 1778279214.4639308,
+    "hash": "4c97423b3d0d7415ac323c2d0de96a49"
+  },
+  "/Users/vsht/Documents/Corespace/lib/ai-docs/tok-overview.md": {
+    "mtime": 1778277569.666751,
+    "hash": "e63b5d7bb92637e66e4895483601993a"
+  },
+  "/Users/vsht/Documents/Corespace/public/file.svg": {
+    "mtime": 1777205390.569385,
+    "hash": "d09f95206c3fa0bb9bd9fefabfd0ea71"
+  },
+  "/Users/vsht/Documents/Corespace/public/vercel.svg": {
+    "mtime": 1777205390.569558,
+    "hash": "c0af2f507b369b085b35ef4bbe3bcf1e"
+  },
+  "/Users/vsht/Documents/Corespace/public/next.svg": {
+    "mtime": 1777205390.5697606,
+    "hash": "8e061864f388b47f33a1c3780831193e"
+  },
+  "/Users/vsht/Documents/Corespace/public/globe.svg": {
+    "mtime": 1777205390.5699713,
+    "hash": "2aaafa6a49b6563925fe440891e32717"
+  },
+  "/Users/vsht/Documents/Corespace/public/window.svg": {
+    "mtime": 1777205390.5701861,
+    "hash": "a2760511c65806022ad20adf74370ff3"
+  }
+}

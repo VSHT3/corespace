@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import { TOK_PROMPTS, TOK_CATEGORIES, type TOKCategoryId, type TOKPrompt } from "@/lib/tok-prompts";
 
@@ -11,130 +11,146 @@ type ChatMessage = { role: "user" | "ai"; text: string; id: number };
 const sessionChat = new Map<number, ChatMessage[]>();
 let msgIdCounter = 0;
 
-const SEEN_KEY = "tok-prompt-tour-seen-v5";
-const TOUR_DURATION_MS = 11000;
-const CARD_WIDTH_RANGE: [number, number] = [200, 280];
-const SORTED_CARD_GAP = 14;
+const SEEN_KEY = "tok-prompt-tour-seen-v6";
+
+// ─── Tour timing (seconds) ────────────────────────────────────────────
+const T_SPAWN_FIRST = 0.35;        // Delay of the first card
+const T_SPAWN_LAST = 4.2;          // Delay of the last card (35th)
+const T_SETTLE = T_SPAWN_LAST + 0.55;
+const T_UNIFY_START = T_SETTLE + 0.1;
+const T_UNIFY_DURATION = 1.8;      // Slower color + unify
+const T_FLIGHT_START = T_UNIFY_START + T_UNIFY_DURATION - 0.35; // Movement starts a bit before unify finishes
+const FLIGHT_PER_CARD_STAGGER = 0.018;
+const T_HEADINGS_DELAY = 0.55;     // Headings appear shortly after flight
+const T_HEADINGS_DURATION = 0.9;   // Headings reveal duration
+const T_FLIGHT_SETTLE_PADDING = 1.8; // Wait for spring overshoot to finish before ripple
+const T_RIPPLE_START_OFFSET = T_HEADINGS_DELAY + T_HEADINGS_DURATION + T_FLIGHT_SETTLE_PADDING;
+const T_RIPPLE_DURATION = 6.0;     // Total ripple window
+const RIPPLE_PER_STEP = 0.22;      // 220ms per Manhattan step
+
 const SORTED_CARD_HEIGHT = 166;
+const SORTED_CARD_GAP = 14;
 const PREVIEW_TOP_PADDING = 13.6;
 const PREVIEW_BOTTOM_PADDING = 18;
 const PREVIEW_TITLE_DESCRIPTION_GAP = 6.4;
 const PREVIEW_DESCRIPTION_LINE_HEIGHT = 16.5;
 
-// Stable pseudo-random for each prompt
+// Stable pseudo-random per (id, salt)
 function rng(id: number, salt: number) {
   return ((id * 9301 + salt * 49297 + 1) % 233280) / 233280;
 }
 
-// Deterministic masonry-style packing for messy phase
-function computeMessyLayout(containerW: number, allIds: number[]): { positions: Map<number, { x: number; y: number; w: number; rot: number }>; totalHeight: number } {
-  const map = new Map<number, { x: number; y: number; w: number; rot: number }>();
-  // Use 4 columns for masonry-like staggered packing, with random vertical jitter
-  const cols = Math.max(3, Math.floor(containerW / 260));
-  const colW = containerW / cols;
-  const colHeights = new Array(cols).fill(0);
-
-  // Shuffle ids deterministically for varied distribution
-  const shuffled = [...allIds].sort((a, b) => rng(a, 7) - rng(b, 7));
-
-  for (const id of shuffled) {
-    // Pick column with smallest current height (true masonry)
-    let minCol = 0;
-    for (let i = 1; i < cols; i++) if (colHeights[i] < colHeights[minCol]) minCol = i;
-
-    const w = CARD_WIDTH_RANGE[0] + rng(id, 11) * (CARD_WIDTH_RANGE[1] - CARD_WIDTH_RANGE[0]);
-    const cardH = 60 + rng(id, 13) * 30; // title-only cards ~60-90px
-    const xJitter = (rng(id, 17) - 0.5) * 50;
-    const yJitter = (rng(id, 19) - 0.5) * 20;
-    const rot = (rng(id, 23) - 0.5) * 14; // ±7°
-
-    const x = minCol * colW + (colW - w) / 2 + xJitter;
-    const y = colHeights[minCol] + yJitter;
-
-    map.set(id, { x, y, w, rot });
-    colHeights[minCol] += cardH + 20 + rng(id, 29) * 30; // 20-50px gaps
-  }
-
-  return { positions: map, totalHeight: Math.max(...colHeights) + 80 };
+// Spawn delay for the i-th card (0-indexed). Gaps start large, shrink toward
+// zero — first few cards have visibly slow cadence, later cards rapid-fire.
+// Use sqrt(u): derivative 1/(2*sqrt(u)) is huge near 0, small near 1, so
+// inter-card gaps are big at the start and tiny at the end.
+function spawnDelay(i: number, total: number): number {
+  if (total <= 1) return T_SPAWN_FIRST;
+  const u = i / (total - 1);
+  const eased = Math.sqrt(u);
+  return T_SPAWN_FIRST + eased * (T_SPAWN_LAST - T_SPAWN_FIRST);
 }
 
-// Sorted layout: 6 category columns. Uses fixed preview card height.
+// Scattered layout: messy positions across the full container width AND the
+// full eventual sorted height (so cards spread out, do not stack).
+type ScatterPos = {
+  x: number; y: number; w: number; rot: number;
+  floatDX: number; floatDY: number; floatPeriod: number; floatPhase: number;
+};
+function computeScatter(containerW: number, containerH: number, allIds: number[]): Map<number, ScatterPos> {
+  const map = new Map<number, ScatterPos>();
+  if (containerW === 0 || containerH === 0) {
+    for (const id of allIds) map.set(id, { x: 0, y: 0, w: 240, rot: 0, floatDX: 0, floatDY: 0, floatPeriod: 3, floatPhase: 0 });
+    return map;
+  }
+  const cardW = 240;
+  const cardH = 70;
+  const padX = 4;
+  const padY = 4;
+  const minX = padX;
+  const maxX = Math.max(padX, containerW - cardW - padX);
+  const minY = padY;
+  const maxY = Math.max(padY + 20, containerH - cardH - padY);
+
+  const total = allIds.length;
+  const aspect = (maxX - minX) / Math.max(1, maxY - minY);
+  const cols = Math.max(1, Math.round(Math.sqrt(total * aspect)));
+  const rows = Math.max(1, Math.ceil(total / cols));
+  const cellW = (maxX - minX) / cols;
+  const cellH = (maxY - minY) / rows;
+
+  const cellOrder = [...Array(cols * rows).keys()];
+  cellOrder.sort((a, b) => rng(a, 41) - rng(b, 41));
+
+  allIds.forEach((id, idx) => {
+    const cellIdx = cellOrder[idx % cellOrder.length];
+    const cx = cellIdx % cols;
+    const cy = Math.floor(cellIdx / cols);
+    // Heavy jitter within cell (0.95) plus slight neighbor-bleed for chaos
+    const jitterX = (rng(id, 17) - 0.5) * cellW * 0.95;
+    const jitterY = (rng(id, 19) - 0.5) * cellH * 0.95;
+    const rawX = minX + cx * cellW + (cellW - cardW) / 2 + jitterX;
+    const rawY = minY + cy * cellH + (cellH - cardH) / 2 + jitterY;
+    const x = Math.max(minX, Math.min(maxX, rawX));
+    const y = Math.max(minY, Math.min(maxY, rawY));
+    const rot = (rng(id, 23) - 0.5) * 28; // ±14° — more unhinged
+
+    // Float in a unique direction per card via random angle + magnitude
+    const angle = rng(id, 31) * Math.PI * 2;
+    const mag = 4 + rng(id, 33) * 8; // 4–12 px
+    const floatDX = Math.cos(angle) * mag;
+    const floatDY = Math.sin(angle) * mag;
+    const floatPeriod = 2.6 + rng(id, 37) * 2.4; // 2.6–5.0s
+    const floatPhase = rng(id, 39) * 1; // 0–1s offset so they desync
+
+    map.set(id, { x, y, w: cardW, rot, floatDX, floatDY, floatPeriod, floatPhase });
+  });
+
+  return map;
+}
+
+// Sorted layout: 6 category columns, fixed card height
 function computeSortedLayout(
   containerW: number,
   allIds: number[],
   fixedCardH: number
-): { perCategory: Map<TOKCategoryId, { x: number; w: number }>; cardsPerId: Map<number, { x: number; y: number; w: number }>; totalHeight: number } {
+): { cardsPerId: Map<number, { x: number; y: number; w: number; col: number; row: number }>; totalHeight: number; firstColW: number } {
   const cols = TOK_CATEGORIES.length;
   const gap = 16;
   const colW = (containerW - gap * (cols - 1)) / cols;
-
-  const perCategory = new Map<TOKCategoryId, { x: number; w: number }>();
-  const cardsPerId = new Map<number, { x: number; y: number; w: number }>();
+  const cardsPerId = new Map<number, { x: number; y: number; w: number; col: number; row: number }>();
   const visibleIds = new Set(allIds);
 
   let maxHeight = 0;
-
   TOK_CATEGORIES.forEach((cat, ci) => {
     const x = ci * (colW + gap);
-    perCategory.set(cat.id, { x, w: colW });
     let yOffset = 0;
+    let row = 0;
     cat.promptIds.filter((id) => visibleIds.has(id)).forEach((id) => {
-      cardsPerId.set(id, { x, y: yOffset, w: colW });
+      cardsPerId.set(id, { x, y: yOffset, w: colW, col: ci, row });
       yOffset += fixedCardH + SORTED_CARD_GAP;
+      row += 1;
     });
     if (yOffset > maxHeight) maxHeight = yOffset;
   });
 
-  return { perCategory, cardsPerId, totalHeight: maxHeight + 24 };
+  return { cardsPerId, totalHeight: maxHeight + 24, firstColW: colW };
 }
 
-function smoothstep(x: number) {
-  if (x <= 0) return 0;
-  if (x >= 1) return 1;
-  return x * x * (3 - 2 * x);
-}
-
-// Stronger ease-in-out (smootherstep / quintic): slow start + slow end, fast middle
-function easeInOut(x: number) {
-  if (x <= 0) return 0;
-  if (x >= 1) return 1;
-  return x * x * x * (x * (x * 6 - 15) + 10);
-}
-
-function linear01(x: number) {
-  return Math.max(0, Math.min(1, x));
-}
-// Aggressive springy easeInOut: quintic with steep middle, near-vertical acceleration
-function springyIO(x: number) {
-  if (x <= 0) return 0;
-  if (x >= 1) return 1;
-  // Quintic ease in/out with strong midpoint
-  return x < 0.5
-    ? 16 * x * x * x * x * x
-    : 1 - Math.pow(-2 * x + 2, 5) / 2;
-}
-
-// Phase mapping over t (0..1) over 11s total:
-//  0.00–0.18 : descriptions fade in (linear, fast)
-//  0.18–0.36 : colorize + de-rotate
-//  0.26–0.40 : equalize (springy resize)
-//  0.44–0.66 : flight (springy, tiny delay after equalize)
-//  0.50–0.72 : category headings
-function phaseValues(t: number) {
-  return {
-    desc:     linear01(t / 0.18),
-    color:    smoothstep((t - 0.18) / 0.18),
-    derot:    smoothstep((t - 0.18) / 0.18),
-    equalize: springyIO((t - 0.26) / 0.14),
-    flight:   springyIO((t - 0.44) / 0.22),
-    headings: smoothstep((t - 0.50) / 0.22),
-  };
-}
+// ─── Phase enum ───────────────────────────────────────────────────────
+type Phase = "spawn" | "settle" | "unify" | "flight" | "ripple" | "done";
 
 export default function PromptPicker({ createAction }: { createAction: (formData: FormData) => Promise<void> }) {
-  const [t, setT] = useState(0); // 0..1
-  const [done, setDone] = useState(false);
-  const [skipped, setSkipped] = useState(false);
+  const reduce = useReducedMotion();
+  // Compute initial tour state synchronously so the first render matches the
+  // final layout when the tour was already seen (or reduced motion is on).
+  // This prevents the spawn animation + delayed clamp measurement from
+  // causing description overflow on refresh / revisit.
+  const initialSkip = typeof window !== "undefined" && (sessionStorage.getItem(SEEN_KEY) !== null || !!reduce);
+  const [phase, setPhase] = useState<Phase>(initialSkip ? "done" : "spawn");
+  const [headingsShown, setHeadingsShown] = useState(initialSkip);
+  const [tourKey, setTourKey] = useState(0);
+  const [skipped, setSkipped] = useState(initialSkip);
   const [containerW, setContainerW] = useState(1200);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [activeCategory, setActiveCategory] = useState<TOKCategoryId | null>(null);
@@ -143,6 +159,18 @@ export default function PromptPicker({ createAction }: { createAction: (formData
   const [searchQuery, setSearchQuery] = useState("");
   const [difficultyFilter, setDifficultyFilter] = useState<"all" | "easy" | "medium" | "hard">("all");
   const [mounted, setMounted] = useState(false);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  // `done` = full sequence (incl. ripple) finished — gates card click + keyboard.
+  // `uiShown` = top toolbar (search, filters, replay) — appears with the column
+  // headings, before the ripple so the page feels assembled in one beat.
+  const done = phase === "done";
+  const uiShown = headingsShown;
+
+  const allIds = useMemo(() => Object.keys(TOK_PROMPTS).map(Number), []);
 
   function surpriseMe() {
     const pool = allIds.filter((id) => {
@@ -155,12 +183,78 @@ export default function PromptPicker({ createAction }: { createAction: (formData
     const pick = pool[Math.floor(Math.random() * pool.length)];
     setExpandedId(pick);
   }
-  const containerRef = useRef<HTMLDivElement>(null);
-  const searchRef = useRef<HTMLInputElement>(null);
-  const rafRef = useRef<number | null>(null);
-  const startRef = useRef(0);
 
   useEffect(() => { setMounted(true); }, []);
+
+  // Track container width
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const ro = new ResizeObserver(([entry]) => {
+      setContainerW(entry.contentRect.width);
+    });
+    ro.observe(containerRef.current);
+    setContainerW(containerRef.current.getBoundingClientRect().width);
+    return () => ro.disconnect();
+  }, []);
+
+  const sortedLayout = useMemo(() => computeSortedLayout(containerW, allIds, SORTED_CARD_HEIGHT), [containerW, allIds]);
+  const [viewportH, setViewportH] = useState(800);
+  useEffect(() => {
+    const update = () => setViewportH(window.innerHeight);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+  // Constrain scatter zone to roughly above-the-fold: don't overflow viewport.
+  // Subtract ~280px for navbar + page header + category placeholder.
+  const scatterZoneH = Math.min(sortedLayout.totalHeight, Math.max(420, viewportH - 280));
+  const scatterMap = useMemo(
+    () => computeScatter(containerW, scatterZoneH, allIds),
+    [containerW, scatterZoneH, allIds],
+  );
+
+  // Tour orchestration: schedule phase transitions
+  const runTour = useCallback(() => {
+    timeoutsRef.current.forEach(clearTimeout);
+    timeoutsRef.current = [];
+    setHeadingsShown(false);
+    setTourKey((k) => k + 1);
+    setPhase("spawn");
+
+    const at = (sec: number, fn: () => void) => {
+      timeoutsRef.current.push(setTimeout(fn, sec * 1000));
+    };
+    at(T_SETTLE, () => setPhase("settle"));
+    at(T_UNIFY_START, () => setPhase("unify"));
+    at(T_FLIGHT_START, () => setPhase("flight"));
+    at(T_FLIGHT_START + T_HEADINGS_DELAY, () => setHeadingsShown(true));
+    at(T_FLIGHT_START + T_RIPPLE_START_OFFSET, () => setPhase("ripple"));
+    at(T_FLIGHT_START + T_RIPPLE_START_OFFSET + T_RIPPLE_DURATION, () => {
+      setPhase("done");
+      sessionStorage.setItem(SEEN_KEY, "1");
+    });
+  }, []);
+
+  function skipTour() {
+    timeoutsRef.current.forEach(clearTimeout);
+    timeoutsRef.current = [];
+    setHeadingsShown(true);
+    setPhase("done");
+    sessionStorage.setItem(SEEN_KEY, "1");
+  }
+
+  useEffect(() => {
+    if (sessionStorage.getItem(SEEN_KEY) || reduce) {
+      setSkipped(true);
+      setHeadingsShown(true);
+      setPhase("done");
+    } else {
+      runTour();
+    }
+    return () => {
+      timeoutsRef.current.forEach(clearTimeout);
+    };
+  }, [reduce, runTour]);
 
   // Keyboard shortcuts when tour is done
   useEffect(() => {
@@ -192,22 +286,9 @@ export default function PromptPicker({ createAction }: { createAction: (formData
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [done, difficultyFilter, activeCategory]);
 
-  // Track container width
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const ro = new ResizeObserver(([entry]) => {
-      setContainerW(entry.contentRect.width);
-    });
-    ro.observe(containerRef.current);
-    setContainerW(containerRef.current.getBoundingClientRect().width);
-    return () => ro.disconnect();
-  }, []);
-
-  const allIds = useMemo(() => Object.keys(TOK_PROMPTS).map(Number), []);
   const normalizedSearch = searchQuery.trim().toLowerCase();
   const matchingPromptIds = useMemo(() => {
     if (!done) return new Set<number>();
-
     const diffMatch = (id: number) => {
       const level = TOK_PROMPTS[id].difficulty;
       if (difficultyFilter === "easy") return level <= 2;
@@ -215,14 +296,11 @@ export default function PromptPicker({ createAction }: { createAction: (formData
       if (difficultyFilter === "hard") return level >= 4;
       return true;
     };
-
     const catMatch = (id: number) => {
       if (activeCategory === null) return true;
       return TOK_CATEGORIES.find((cat) => cat.id === activeCategory)?.promptIds.includes(id) ?? false;
     };
-
     if (normalizedSearch === "" && difficultyFilter === "all" && activeCategory === null) return new Set<number>();
-
     return new Set(allIds.filter((id) => {
       if (!diffMatch(id)) return false;
       if (!catMatch(id)) return false;
@@ -239,84 +317,26 @@ export default function PromptPicker({ createAction }: { createAction: (formData
       return haystack.includes(normalizedSearch);
     }));
   }, [allIds, done, normalizedSearch, difficultyFilter, activeCategory]);
+
   const hasSearch = normalizedSearch !== "";
   const hasFilter = hasSearch || difficultyFilter !== "all" || activeCategory !== null;
   const matchCount = matchingPromptIds.size;
-  const messyLayoutFull = useMemo(() => computeMessyLayout(containerW, allIds), [containerW, allIds]);
-  const messyLayout = messyLayoutFull.positions;
-  const messyTotalHeight = messyLayoutFull.totalHeight;
-  const sortedLayout = useMemo(() => computeSortedLayout(containerW, allIds, SORTED_CARD_HEIGHT), [containerW, allIds]);
 
-  const equalW = useMemo(() => {
-    const sortedColW = sortedLayout.perCategory.values().next().value?.w ?? 220;
-    return sortedColW;
-  }, [sortedLayout]);
-
-  function runTour() {
-    cancel();
-    setDone(false);
-    setT(0);
-    startRef.current = performance.now();
-    const tick = (now: number) => {
-      const elapsed = now - startRef.current;
-      const v = Math.min(elapsed / TOUR_DURATION_MS, 1);
-      setT(v);
-      if (v < 1) rafRef.current = requestAnimationFrame(tick);
-      else {
-        setDone(true);
-        setSearchQuery("");
-        sessionStorage.setItem(SEEN_KEY, "1");
-      }
-    };
-    rafRef.current = requestAnimationFrame(tick);
-  }
-
-  function cancel() {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    rafRef.current = null;
-  }
-
-  function skipTour() {
-    cancel();
-    setT(1);
-    setDone(true);
-    sessionStorage.setItem(SEEN_KEY, "1");
-  }
-
-  useEffect(() => {
-    if (sessionStorage.getItem(SEEN_KEY)) {
-      setSkipped(true);
-      setT(1);
-      setDone(true);
-    } else {
-      runTour();
-    }
-    return cancel;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (activeCategory === null) return;
-
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target;
-      if (!(target instanceof Element)) return;
-      if (target.closest("[data-category-control], [data-prompt-card]")) return;
-
-      setActiveCategory(null);
-      setHoveredCategory(null);
-    };
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    return () => document.removeEventListener("pointerdown", handlePointerDown);
-  }, [activeCategory]);
-
-  const ph = phaseValues(t);
-
-  // Compute container height (interpolates between messy and sorted)
-  const containerH = (1 - ph.flight) * messyTotalHeight + ph.flight * sortedLayout.totalHeight;
+  // Container height: scatter uses sortedLayout.totalHeight too, so always that
+  const containerH = sortedLayout.totalHeight;
 
   const effectiveCategory = hoveredCategory ?? activeCategory;
+
+  const headingsVisible = headingsShown;
+
+  // Pre-compute spawn order index per id
+  const spawnIndex = useMemo(() => {
+    const m = new Map<number, number>();
+    // Random but deterministic spawn order
+    const order = [...allIds].sort((a, b) => rng(a, 53) - rng(b, 53));
+    order.forEach((id, i) => m.set(id, i));
+    return m;
+  }, [allIds]);
 
   return (
     <>
@@ -325,52 +345,49 @@ export default function PromptPicker({ createAction }: { createAction: (formData
           <p style={{ margin: 0 }}>
             Pick one of the 35 official IB prompts. Let the tour sort them by theme, then choose the prompt that best fits your objects.
           </p>
-          {done && skipped && (
-            <button onClick={() => { setSkipped(false); setSearchQuery(""); runTour(); }} className="back-link" style={{ marginTop: "0.45rem", padding: 0, fontSize: "12px", background: "none", border: "none", cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>
-              Replay tour
+          {uiShown && (
+            <button onClick={() => { setSkipped(false); setSearchQuery(""); setActiveCategory(null); setDifficultyFilter("all"); runTour(); }} className="back-link" style={{ marginTop: "0.45rem", padding: 0, fontSize: "12px", background: "none", border: "none", cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>
+              ↻ Replay tour
             </button>
           )}
         </div>
-        {!done && (
+        {!uiShown && (
           <button onClick={skipTour} className="back-link" style={{ fontSize: "12px", background: "none", border: "none", cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700, flexShrink: 0 }}>
             Skip tour →
           </button>
         )}
-        {done && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "0.75rem", flexWrap: "wrap", marginLeft: "auto" }}>
-            <button
-              onClick={surpriseMe}
-              className="btn-ghost btn-ghost-hover"
-              style={{ fontSize: "11px", padding: "4px 10px", flexShrink: 0 }}
-              title="Open a random prompt"
-            >
-              Surprise me
-            </button>
-            {/* Difficulty filter */}
-            <div style={{ display: "flex", gap: "4px" }}>
-              {(["all", "easy", "medium", "hard"] as const).map((level) => (
-                <button
-                  key={level}
-                  onClick={() => setDifficultyFilter(difficultyFilter === level ? "all" : level)}
-                  style={{
-                    fontSize: "10px",
-                    fontWeight: 700,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.04em",
-                    padding: "3px 8px",
-                    border: "2px solid var(--fg)",
-                    borderRadius: "var(--radius)",
-                    cursor: "pointer",
-                    background: difficultyFilter === level ? "var(--fg)" : "transparent",
-                    color: difficultyFilter === level ? "var(--bg)" : "var(--fg)",
-                    transition: "background 0.12s, color 0.12s",
-                  }}
-                >
-                  {level === "all" ? "All" : level === "easy" ? "Easy (1–2)" : level === "medium" ? "Med (3)" : "Hard (4–5)"}
-                </button>
-              ))}
-            </div>
-            <div style={{ position: "relative", width: "min(100vw - 3rem, 360px)" }}>
+      </div>
+
+      {/* Combined toolbar: kbd hints (left) + search/filter/surprise (right). */}
+      {uiShown && (
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: T_HEADINGS_DURATION, ease: [0.16, 1, 0.3, 1] }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "1rem",
+            flexWrap: "wrap",
+            marginBottom: "0.85rem",
+          }}
+        >
+          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center" }}>
+            {[
+              { key: "/", label: "focus search" },
+              { key: "r", label: "random prompt" },
+              { key: "Esc", label: "clear filters" },
+            ].map(({ key, label }) => (
+              <span key={key} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "#aaa" }}>
+                <kbd style={{ fontFamily: "monospace", fontWeight: 700, fontSize: "10px", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "3px", padding: "1px 5px", color: "#555", lineHeight: 1.6 }}>{key}</kbd>
+                <span>{label}</span>
+              </span>
+            ))}
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap", marginLeft: "auto" }}>
+            <div style={{ position: "relative", width: "min(100vw - 3rem, 280px)" }}>
               <input
                 ref={searchRef}
                 type="text"
@@ -384,8 +401,8 @@ export default function PromptPicker({ createAction }: { createAction: (formData
                   borderRadius: "var(--radius)",
                   background: "var(--surface)",
                   color: "var(--fg)",
-                  padding: "0.65rem 2.65rem 0.65rem 0.8rem",
-                  fontSize: "14px",
+                  padding: "0.5rem 2.4rem 0.5rem 0.7rem",
+                  fontSize: "13px",
                   fontWeight: 600,
                   outline: "none",
                 }}
@@ -400,13 +417,13 @@ export default function PromptPicker({ createAction }: { createAction: (formData
                     right: "3px",
                     top: "50%",
                     transform: "translateY(-50%)",
-                    width: "36px",
-                    height: "36px",
+                    width: "32px",
+                    height: "32px",
                     border: "none",
                     background: "transparent",
                     color: "var(--fg)",
                     cursor: "pointer",
-                    fontSize: "18px",
+                    fontSize: "16px",
                     fontWeight: 800,
                     lineHeight: 1,
                   }}
@@ -415,8 +432,39 @@ export default function PromptPicker({ createAction }: { createAction: (formData
                 </button>
               )}
             </div>
+            <div style={{ display: "flex", gap: "4px", flexShrink: 0 }}>
+              {(["all", "easy", "medium", "hard"] as const).map((level) => (
+                <button
+                  key={level}
+                  onClick={() => setDifficultyFilter(difficultyFilter === level ? "all" : level)}
+                  style={{
+                    fontSize: "10px",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em",
+                    padding: "5px 8px",
+                    border: "2px solid var(--fg)",
+                    borderRadius: "var(--radius)",
+                    cursor: "pointer",
+                    background: difficultyFilter === level ? "var(--fg)" : "transparent",
+                    color: difficultyFilter === level ? "var(--bg)" : "var(--fg)",
+                    transition: "background 0.12s, color 0.12s",
+                  }}
+                >
+                  {level === "all" ? "All" : level === "easy" ? "Easy" : level === "medium" ? "Med" : "Hard"}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={surpriseMe}
+              className="btn-ghost btn-ghost-hover"
+              style={{ fontSize: "11px", padding: "5px 10px", flexShrink: 0 }}
+              title="Open a random prompt"
+            >
+              Surprise me
+            </button>
             {hasFilter && (
-              <span style={{ color: "#555", fontSize: "12px", fontWeight: 700 }}>
+              <span style={{ color: "#555", fontSize: "12px", fontWeight: 700, flexBasis: "100%", textAlign: "right" }}>
                 {matchCount} match{matchCount === 1 ? "" : "es"}
                 {activeCategory !== null && normalizedSearch === "" && difficultyFilter === "all" && (
                   <button
@@ -429,34 +477,19 @@ export default function PromptPicker({ createAction }: { createAction: (formData
               </span>
             )}
           </div>
-        )}
-      </div>
-
-      {/* Keyboard shortcut hint bar */}
-      {done && (
-        <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginBottom: "0.65rem", alignItems: "center" }}>
-          {[
-            { key: "/", label: "focus search" },
-            { key: "r", label: "random prompt" },
-            { key: "Esc", label: "clear filters" },
-          ].map(({ key, label }) => (
-            <span key={key} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "#aaa" }}>
-              <kbd style={{ fontFamily: "monospace", fontWeight: 700, fontSize: "10px", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "3px", padding: "1px 5px", color: "#555", lineHeight: 1.6 }}>{key}</kbd>
-              <span>{label}</span>
-            </span>
-          ))}
-        </div>
+        </motion.div>
       )}
 
-      {/* Category pills double as filter + heading: appear at end of tour */}
+      {/* Category headings */}
       <motion.div
-        animate={{ opacity: ph.headings, y: ph.headings > 0 ? 0 : -8 }}
+        animate={{ opacity: headingsVisible ? 1 : 0, y: headingsVisible ? 0 : -8 }}
+        transition={{ duration: T_HEADINGS_DURATION, ease: [0.16, 1, 0.3, 1] }}
         style={{
           display: "grid",
           gridTemplateColumns: `repeat(${TOK_CATEGORIES.length}, 1fr)`,
           gap: "16px",
           marginBottom: "1.25rem",
-          pointerEvents: ph.headings > 0.5 ? "auto" : "none",
+          pointerEvents: headingsVisible ? "auto" : "none",
           minHeight: "44px",
           alignItems: "stretch",
           width: "100%",
@@ -504,63 +537,43 @@ export default function PromptPicker({ createAction }: { createAction: (formData
         ref={containerRef}
         style={{ position: "relative", width: "100%", height: containerH, transition: "height 0.3s ease" }}
       >
-        {/* Cards: single render, never unmount, animate from messy to sorted */}
         {allIds.map((id) => {
           const prompt = TOK_PROMPTS[id];
           const cat = TOK_CATEGORIES.find((c) => c.promptIds.includes(id))!;
-          const messy = messyLayout.get(id)!;
+          const scatter = scatterMap.get(id)!;
           const sorted = sortedLayout.cardsPerId.get(id)!;
-
-          const x = (1 - ph.flight) * messy.x + ph.flight * sorted.x;
-          const y = (1 - ph.flight) * messy.y + ph.flight * sorted.y;
-          // Width: messy → equalize lerps to equalW, then flight stays at equalW (which equals sorted.w)
-          const w = ph.flight > 0
-            ? (1 - ph.flight) * equalW + ph.flight * sorted.w
-            : (1 - ph.equalize) * messy.w + ph.equalize * equalW;
-          const rot = messy.rot * (1 - ph.derot);
-          const bg = lerpColor("#ffffff", resolveColor(cat.color), ph.color);
 
           const hovered = hoveredPromptId === id;
           const filterMatch = hasFilter && matchingPromptIds.has(id);
           const dimmed = done && (hasFilter ? !filterMatch : effectiveCategory !== null && effectiveCategory !== cat.id && !hovered);
 
+          const idx = spawnIndex.get(id) ?? 0;
+          const spawnAt = spawnDelay(idx, allIds.length);
+
+          // Manhattan ripple delay (col + row from top-left, sorted grid)
+          const rippleDelay = (sorted.col + sorted.row) * RIPPLE_PER_STEP;
+
           return (
-            <motion.div
-              key={id}
-              animate={{
-                x,
-                y,
-                width: w,
-                rotate: rot,
-                opacity: dimmed ? 0.2 : 1,
-              }}
-              transition={{
-                x: { type: "tween", duration: 0, ease: "linear" },
-                y: { type: "tween", duration: 0, ease: "linear" },
-                width: { type: "tween", duration: 0, ease: "linear" },
-                rotate: { type: "tween", duration: 0, ease: "linear" },
-                opacity: { type: "tween", duration: 0.3, ease: "easeOut" },
-              }}
-              style={{
-                position: "absolute",
-                left: 0,
-                top: 0,
-                transformOrigin: "center",
-                willChange: "transform, width",
-                zIndex: filterMatch || hovered ? 2 : done ? 1 : 0,
-              }}
-            >
-              <PromptPreviewCard
-                id={id}
-                prompt={prompt}
-                bg={bg}
-                done={done}
-                phDesc={ph.desc}
-                phEqualize={ph.equalize}
-                onHover={setHoveredPromptId}
-                onOpen={() => setExpandedId(id)}
-              />
-            </motion.div>
+            <PromptCardOrchestrator
+              key={`${tourKey}-${id}`}
+              id={id}
+              prompt={prompt}
+              cat={cat}
+              scatter={scatter}
+              sorted={sorted}
+              phase={phase}
+              spawnAt={spawnAt}
+              rippleDelay={rippleDelay}
+              flightStagger={idx * FLIGHT_PER_CARD_STAGGER}
+              dimmed={!!dimmed}
+              done={done}
+              filterMatch={filterMatch}
+              hovered={hovered}
+              onHover={setHoveredPromptId}
+              onOpen={() => setExpandedId(id)}
+              reduce={!!reduce}
+              skipAnimation={skipped}
+            />
           );
         })}
       </div>
@@ -578,13 +591,176 @@ export default function PromptPicker({ createAction }: { createAction: (formData
   );
 }
 
+// ─── Card orchestrator ───────────────────────────────────────────────
+function PromptCardOrchestrator({
+  id,
+  prompt,
+  cat,
+  scatter,
+  sorted,
+  phase,
+  spawnAt,
+  rippleDelay,
+  flightStagger,
+  dimmed,
+  done,
+  filterMatch,
+  hovered,
+  onHover,
+  onOpen,
+  reduce,
+  skipAnimation,
+}: {
+  id: number;
+  prompt: TOKPrompt;
+  cat: { id: TOKCategoryId; label: string; color: string; promptIds: number[] };
+  scatter: { x: number; y: number; w: number; rot: number; floatDX: number; floatDY: number; floatPeriod: number; floatPhase: number };
+  sorted: { x: number; y: number; w: number; col: number; row: number };
+  phase: Phase;
+  spawnAt: number;
+  rippleDelay: number;
+  flightStagger: number;
+  dimmed: boolean;
+  done: boolean;
+  filterMatch: boolean;
+  hovered: boolean;
+  onHover: (id: number | null) => void;
+  onOpen: () => void;
+  reduce: boolean;
+  skipAnimation: boolean;
+}) {
+  // Determine target position/size/rotation by phase
+  const inFlightOrLater = phase === "flight" || phase === "ripple" || phase === "done";
+  const inUnifyOrLater = phase === "unify" || inFlightOrLater;
+  const inSpawnOrSettle = phase === "spawn" || phase === "settle";
+
+  const targetX = inFlightOrLater ? sorted.x : scatter.x;
+  const targetY = inFlightOrLater ? sorted.y : scatter.y;
+  const targetW = inUnifyOrLater ? sorted.w : scatter.w;
+  const targetRot = inUnifyOrLater ? 0 : scatter.rot;
+
+  // Color: starts white, gains category color during unify
+  const catColor = resolveColor(cat.color);
+  const targetBg = inUnifyOrLater ? catColor : "#ffffff";
+
+  // Phase progress flags for child
+  const showDescription = inUnifyOrLater;
+  const showRipple = phase === "ripple" || phase === "done";
+
+  // Floating: only during spawn phase, and only after this card has spawned
+  // Implemented by varying x/y around target with relative motion via parent.
+  // Easiest: use an inner motion.div for float (continuous), outer for layout transition.
+
+  const positionTransition = inFlightOrLater
+    ? {
+        // Slower, very bouncy spring per-card with stagger
+        x: { type: "spring" as const, stiffness: 110, damping: 8, mass: 1.2, delay: flightStagger },
+        y: { type: "spring" as const, stiffness: 110, damping: 8, mass: 1.2, delay: flightStagger },
+        width: { type: "spring" as const, stiffness: 140, damping: 16, mass: 1.0, delay: flightStagger },
+        rotate: { type: "tween" as const, duration: 0.6, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] },
+      }
+    : phase === "unify"
+    ? {
+        x: { duration: 0 },
+        y: { duration: 0 },
+        width: { type: "spring" as const, stiffness: 110, damping: 22, mass: 1 },
+        rotate: { type: "tween" as const, duration: 1.1, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] },
+      }
+    : {
+        x: { duration: 0 },
+        y: { duration: 0 },
+        width: { duration: 0 },
+        rotate: { duration: 0 },
+      };
+
+  // Spawn entrance: hidden until delay fires, then pop in (scale + opacity).
+  // On refresh / revisit (skipAnimation), bypass entirely so the card mounts
+  // at its final state — no spawn, no measurement lag.
+  const noAnim = reduce || skipAnimation;
+  const spawnInitial = noAnim
+    ? { opacity: 1, scale: 1 }
+    : { opacity: 0, scale: 0.4 };
+  const spawnAnimate = { opacity: 1, scale: 1 };
+
+  return (
+    <motion.div
+      initial={spawnInitial}
+      animate={spawnAnimate}
+      transition={{
+        opacity: { duration: 0.22, delay: noAnim ? 0 : spawnAt, ease: [0.16, 1, 0.3, 1] },
+        scale: noAnim
+          ? { duration: 0 }
+          : { type: "spring", stiffness: 320, damping: 14, mass: 0.7, delay: spawnAt },
+      }}
+      style={{
+        position: "absolute",
+        left: 0,
+        top: 0,
+        zIndex: filterMatch || hovered ? 3 : done ? 1 : 2,
+        pointerEvents: done ? "auto" : "none",
+      }}
+    >
+      <motion.div
+        animate={{
+          x: targetX,
+          y: targetY,
+          width: targetW,
+          rotate: targetRot,
+        }}
+        transition={positionTransition}
+        style={{
+          position: "absolute",
+          left: 0,
+          top: 0,
+          transformOrigin: "center",
+          willChange: "transform, width",
+        }}
+      >
+        {/* Float layer: only animates during spawn/settle, then locks at 0 */}
+        <motion.div
+          animate={
+            inSpawnOrSettle && !reduce
+              ? {
+                  x: [0, scatter.floatDX, -scatter.floatDX * 0.6, scatter.floatDX * 0.3, 0],
+                  y: [0, scatter.floatDY, -scatter.floatDY * 0.6, scatter.floatDY * 0.3, 0],
+                }
+              : { x: 0, y: 0 }
+          }
+          transition={
+            inSpawnOrSettle && !reduce
+              ? { duration: scatter.floatPeriod, repeat: Infinity, ease: "easeInOut", delay: scatter.floatPhase }
+              : { duration: 0.35, ease: [0.16, 1, 0.3, 1] }
+          }
+        >
+          <PromptPreviewCard
+            id={id}
+            prompt={prompt}
+            bg={targetBg}
+            done={done}
+            showDescription={showDescription}
+            unified={inUnifyOrLater}
+            showRipple={showRipple}
+            rippleDelay={rippleDelay}
+            dimmed={dimmed}
+            onHover={onHover}
+            onOpen={onOpen}
+          />
+        </motion.div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 function PromptPreviewCard({
   id,
   prompt,
   bg,
   done,
-  phDesc,
-  phEqualize,
+  showDescription,
+  unified,
+  showRipple,
+  rippleDelay,
+  dimmed,
   onHover,
   onOpen,
 }: {
@@ -592,15 +768,20 @@ function PromptPreviewCard({
   prompt: TOKPrompt;
   bg: string;
   done: boolean;
-  phDesc: number;
-  phEqualize: number;
+  showDescription: boolean;
+  unified: boolean;
+  showRipple: boolean;
+  rippleDelay: number;
+  dimmed: boolean;
   onHover: (id: number | null) => void;
   onOpen: () => void;
 }) {
   const titleRef = useRef<HTMLDivElement>(null);
-  const [descriptionLines, setDescriptionLines] = useState(0);
+  const [descriptionLines, setDescriptionLines] = useState(1);
 
-  useEffect(() => {
+  // Measure synchronously before paint so the line clamp matches the card on
+  // the very first frame (no overflow flash on the no-tour refresh path).
+  useLayoutEffect(() => {
     const el = titleRef.current;
     if (!el) return;
 
@@ -613,7 +794,7 @@ function PromptPreviewCard({
         PREVIEW_TITLE_DESCRIPTION_GAP -
         titleHeight;
 
-      setDescriptionLines(Math.max(0, Math.floor(availableHeight / PREVIEW_DESCRIPTION_LINE_HEIGHT)));
+      setDescriptionLines(Math.max(1, Math.floor(availableHeight / PREVIEW_DESCRIPTION_LINE_HEIGHT)));
     };
 
     updateLineCount();
@@ -631,12 +812,24 @@ function PromptPreviewCard({
       onMouseEnter={() => onHover(id)}
       onMouseLeave={() => onHover(null)}
       onClick={() => done && onOpen()}
-      animate={{
-        backgroundColor: bg,
-      }}
+      animate={showRipple
+        ? {
+            backgroundColor: bg,
+            opacity: dimmed ? 0.2 : 1,
+            scale: [1, 1.05, 0.985, 1],
+          }
+        : {
+            backgroundColor: bg,
+            opacity: dimmed ? 0.2 : 1,
+            scale: 1,
+          }}
       whileHover={done ? { x: -4, y: -4, boxShadow: "8px 8px 0 0 var(--fg)" } : undefined}
       transition={{
-        backgroundColor: { type: "tween", duration: 0, ease: "linear" },
+        backgroundColor: { duration: 1.1, ease: [0.16, 1, 0.3, 1] },
+        opacity: { duration: 0.3, ease: "easeOut" },
+        scale: showRipple
+          ? { duration: 0.42, times: [0, 0.35, 0.7, 1], delay: rippleDelay, ease: [0.16, 1, 0.3, 1] }
+          : { duration: 0 },
         x: { type: "spring", stiffness: 400, damping: 30 },
         y: { type: "spring", stiffness: 400, damping: 30 },
         boxShadow: { type: "spring", stiffness: 400, damping: 30 },
@@ -648,9 +841,9 @@ function PromptPreviewCard({
         cursor: done ? "pointer" : "default",
         userSelect: "none",
         width: "100%",
-        minHeight: phEqualize * SORTED_CARD_HEIGHT,
-        height: done ? SORTED_CARD_HEIGHT : undefined,
-        overflow: phEqualize > 0 ? "hidden" : undefined,
+        height: unified ? SORTED_CARD_HEIGHT : undefined,
+        minHeight: unified ? undefined : 60,
+        overflow: unified ? "hidden" : undefined,
         display: "flex",
         flexDirection: "column",
       }}
@@ -669,18 +862,38 @@ function PromptPreviewCard({
         >
           {prompt.title}
         </p>
-        <span style={{ opacity: phDesc, flexShrink: 0, paddingTop: "1px" }}>
+        <motion.span
+          initial={{ opacity: 0, scale: 0.3 }}
+          animate={showRipple ? "show" : "hide"}
+          variants={{
+            hide: { opacity: 0, scale: 0.3, transition: { duration: 0.15 } },
+            show: {
+              opacity: 1,
+              scale: 1,
+              transition: {
+                opacity: { duration: 0.32, delay: rippleDelay, ease: [0.16, 1, 0.3, 1] },
+                scale: { type: "spring", stiffness: 320, damping: 14, mass: 0.7, delay: rippleDelay },
+              },
+            },
+          }}
+          style={{ flexShrink: 0, paddingTop: "1px", display: "inline-flex" }}
+        >
           <DifficultyDots level={prompt.difficulty} size={6} gap={2} />
-        </span>
+        </motion.span>
       </div>
-      <div
-        style={{
-          overflow: "hidden",
-          height: phDesc * descriptionHeight,
-          opacity: phDesc,
-          marginTop: descriptionLines > 0 ? `${phDesc * PREVIEW_TITLE_DESCRIPTION_GAP}px` : 0,
-          flexShrink: 0,
+      <motion.div
+        initial={false}
+        animate={{
+          height: showDescription ? descriptionHeight : 0,
+          opacity: showDescription ? 1 : 0,
+          marginTop: showDescription && descriptionLines > 0 ? PREVIEW_TITLE_DESCRIPTION_GAP : 0,
         }}
+        transition={{
+          height: { duration: 1.0, ease: [0.16, 1, 0.3, 1] },
+          opacity: { duration: 0.85, ease: [0.16, 1, 0.3, 1] },
+          marginTop: { duration: 1.0, ease: [0.16, 1, 0.3, 1] },
+        }}
+        style={{ overflow: "hidden", flexShrink: 0 }}
       >
         <p
           style={{
@@ -697,13 +910,12 @@ function PromptPreviewCard({
         >
           {prompt.description}
         </p>
-      </div>
+      </motion.div>
     </motion.div>
   );
 }
 
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
-const EASE_IN = [0.7, 0, 0.84, 0] as const;
 
 const CHIPS = [
   { label: "What's it really asking?", question: "What is this prompt really asking? Be specific about the core knowledge question." },
@@ -724,24 +936,20 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Sync messages to session store
   useEffect(() => {
     sessionChat.set(id, messages);
   }, [id, messages]);
 
-  // Scroll to bottom on new message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, aiLoading]);
 
-  // Focus input when chat opens
   useEffect(() => {
     if (chatOpen) {
       setTimeout(() => inputRef.current?.focus(), 380);
     }
   }, [chatOpen]);
 
-  // ESC: close chat first, then card
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -799,7 +1007,6 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
 
   return createPortal(
     <>
-      {/* Backdrop */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -814,7 +1021,6 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
         }}
       />
 
-      {/* Outer positioning shell */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -828,7 +1034,6 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
           pointerEvents: "auto",
         }}
       >
-        {/* Two-panel container */}
         <div
           onClick={(e) => e.stopPropagation()}
           style={{
@@ -840,7 +1045,6 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
             transition: `max-width 380ms cubic-bezier(${EASE_OUT_EXPO.join(",")})`,
           }}
         >
-          {/* Prompt card */}
           <motion.div
             layoutId={`prompt-${id}`}
             style={{
@@ -921,7 +1125,6 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
             </div>
           </motion.div>
 
-          {/* Chat panel */}
           <AnimatePresence>
             {chatOpen && (
               <motion.div
@@ -947,7 +1150,6 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
                   flexShrink: 0,
                 }}
               >
-                {/* Chat header */}
                 <div style={{
                   padding: "0.875rem 1.125rem 0.75rem",
                   borderBottom: "2px solid var(--border)",
@@ -964,7 +1166,6 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
                   </button>
                 </div>
 
-                {/* Messages */}
                 <div style={{ flex: 1, overflowY: "auto", padding: "1rem 1.125rem", display: "flex", flexDirection: "column", gap: "10px" }}>
                   {messages.length === 0 && !aiLoading && (
                     <p style={{ fontSize: "13px", color: "#999", textAlign: "center", marginTop: "1.5rem", lineHeight: 1.5 }}>
@@ -1072,7 +1273,6 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Chips */}
                 {messages.length === 0 && (
                   <div style={{ padding: "0 1.125rem 0.75rem", display: "flex", gap: "6px", flexWrap: "wrap", flexShrink: 0 }}>
                     {CHIPS.map((chip) => (
@@ -1096,7 +1296,6 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
                   </div>
                 )}
 
-                {/* Input */}
                 <form
                   onSubmit={(e) => { e.preventDefault(); sendMessage(input); }}
                   style={{
@@ -1174,23 +1373,4 @@ function resolveColor(c: string): string {
     return map[c] ?? c;
   }
   return c;
-}
-
-function lerpColor(aHex: string, bHex: string, t: number): string {
-  const a = hexToRgb(aHex);
-  const b = hexToRgb(bHex);
-  const r = Math.round(a.r + (b.r - a.r) * t);
-  const g = Math.round(a.g + (b.g - a.g) * t);
-  const bl = Math.round(a.b + (b.b - a.b) * t);
-  return `rgb(${r}, ${g}, ${bl})`;
-}
-
-function hexToRgb(hex: string): { r: number; g: number; b: number } {
-  const h = hex.replace("#", "");
-  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
-  return {
-    r: parseInt(full.slice(0, 2), 16),
-    g: parseInt(full.slice(2, 4), 16),
-    b: parseInt(full.slice(4, 6), 16),
-  };
 }

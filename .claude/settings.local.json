@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(graphify export *)",
+      "Bash(graphify benchmark *)",
+      "Bash(graphify claude *)",
+      "Bash(node node_modules/typescript/bin/tsc --noEmit)",
+      "Bash(node *)",
+      "Bash(python3 -m scripts /Users/vsht/Documents/Corespace/lib/ai-docs/tok-overview.md)",
+      "Bash(python3 -m scripts /Users/vsht/Documents/Corespace/lib/ai-docs/tok-exhibition-guide.md)",
+      "Bash(npm install *)",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(pkill -f \"npm run dev\")",
+      "Bash(git add *)",
+      "Bash(git push *)"
+    ]
+  }
+}
