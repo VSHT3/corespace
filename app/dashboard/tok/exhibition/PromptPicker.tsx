@@ -645,7 +645,7 @@ function PromptCardOrchestrator({
 
   // Phase progress flags for child
   const showDescription = inUnifyOrLater;
-  const showRipple = phase === "ripple" || phase === "done";
+  const showRipple = phase === "ripple";
 
   // Floating: only during spawn phase, and only after this card has spawned
   // Implemented by varying x/y around target with relative motion via parent.
@@ -809,19 +809,21 @@ function PromptPreviewCard({
     <motion.div
       data-prompt-card
       layoutId={`prompt-${id}`}
-      onMouseEnter={() => onHover(id)}
-      onMouseLeave={() => onHover(null)}
+      onHoverStart={() => onHover(id)}
+      onHoverEnd={() => onHover(null)}
       onClick={() => done && onOpen()}
       animate={showRipple
         ? {
             backgroundColor: bg,
             opacity: dimmed ? 0.2 : 1,
             scale: [1, 1.05, 0.985, 1],
+            boxShadow: "0 0 0 0 transparent",
           }
         : {
             backgroundColor: bg,
             opacity: dimmed ? 0.2 : 1,
             scale: 1,
+            boxShadow: "0 0 0 0 transparent",
           }}
       whileHover={done ? { x: -4, y: -4, boxShadow: "8px 8px 0 0 var(--fg)" } : undefined}
       transition={{
