@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useMemo, useCallback, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion, useMotionValue, animate } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import { TOK_PROMPTS, TOK_CATEGORIES, type TOKCategoryId, type TOKPrompt } from "@/lib/tok-prompts";
 
@@ -164,10 +164,13 @@ export default function PromptPicker({ createAction }: { createAction: (formData
   const searchRef = useRef<HTMLInputElement>(null);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
-  // `done` = full sequence (incl. ripple) finished — gates card click + keyboard.
+  // `done` = full sequence (incl. ripple) finished — gates keyboard shortcuts.
+  // `interactive` = cards are hoverable/clickable — activates when headings appear,
+  // well before the ripple ends (~7s vs ~15s).
   // `uiShown` = top toolbar (search, filters, replay) — appears with the column
   // headings, before the ripple so the page feels assembled in one beat.
   const done = phase === "done";
+  const [interactive, setInteractive] = useState(initialSkip);
   const uiShown = headingsShown;
 
   const allIds = useMemo(() => Object.keys(TOK_PROMPTS).map(Number), []);
@@ -227,7 +230,7 @@ export default function PromptPicker({ createAction }: { createAction: (formData
     at(T_SETTLE, () => setPhase("settle"));
     at(T_UNIFY_START, () => setPhase("unify"));
     at(T_FLIGHT_START, () => setPhase("flight"));
-    at(T_FLIGHT_START + T_HEADINGS_DELAY, () => setHeadingsShown(true));
+    at(T_FLIGHT_START + T_HEADINGS_DELAY, () => { setHeadingsShown(true); setInteractive(true); });
     at(T_FLIGHT_START + T_RIPPLE_START_OFFSET, () => setPhase("ripple"));
     at(T_FLIGHT_START + T_RIPPLE_START_OFFSET + T_RIPPLE_DURATION, () => {
       setPhase("done");
@@ -239,6 +242,7 @@ export default function PromptPicker({ createAction }: { createAction: (formData
     timeoutsRef.current.forEach(clearTimeout);
     timeoutsRef.current = [];
     setHeadingsShown(true);
+    setInteractive(true);
     setPhase("done");
     sessionStorage.setItem(SEEN_KEY, "1");
   }
@@ -247,6 +251,7 @@ export default function PromptPicker({ createAction }: { createAction: (formData
     if (sessionStorage.getItem(SEEN_KEY) || reduce) {
       setSkipped(true);
       setHeadingsShown(true);
+      setInteractive(true);
       setPhase("done");
     } else {
       runTour();
@@ -567,6 +572,7 @@ export default function PromptPicker({ createAction }: { createAction: (formData
               flightStagger={idx * FLIGHT_PER_CARD_STAGGER}
               dimmed={!!dimmed}
               done={done}
+              interactive={interactive}
               filterMatch={filterMatch}
               hovered={hovered}
               onHover={setHoveredPromptId}
@@ -604,6 +610,7 @@ function PromptCardOrchestrator({
   flightStagger,
   dimmed,
   done,
+  interactive,
   filterMatch,
   hovered,
   onHover,
@@ -622,6 +629,7 @@ function PromptCardOrchestrator({
   flightStagger: number;
   dimmed: boolean;
   done: boolean;
+  interactive: boolean;
   filterMatch: boolean;
   hovered: boolean;
   onHover: (id: number | null) => void;
@@ -697,7 +705,7 @@ function PromptCardOrchestrator({
         left: 0,
         top: 0,
         zIndex: filterMatch || hovered ? 3 : done ? 1 : 2,
-        pointerEvents: done ? "auto" : "none",
+        pointerEvents: interactive ? "auto" : "none",
       }}
     >
       <motion.div
@@ -737,6 +745,7 @@ function PromptCardOrchestrator({
             prompt={prompt}
             bg={targetBg}
             done={done}
+            interactive={interactive}
             showDescription={showDescription}
             unified={inUnifyOrLater}
             showRipple={showRipple}
@@ -756,6 +765,7 @@ function PromptPreviewCard({
   prompt,
   bg,
   done,
+  interactive,
   showDescription,
   unified,
   showRipple,
@@ -768,6 +778,7 @@ function PromptPreviewCard({
   prompt: TOKPrompt;
   bg: string;
   done: boolean;
+  interactive: boolean;
   showDescription: boolean;
   unified: boolean;
   showRipple: boolean;
@@ -804,39 +815,39 @@ function PromptPreviewCard({
   }, [prompt.title]);
 
   const descriptionHeight = descriptionLines * PREVIEW_DESCRIPTION_LINE_HEIGHT;
+  const scaleMV = useMotionValue(1);
+
+  useEffect(() => {
+    if (!showRipple) {
+      scaleMV.set(1);
+      return;
+    }
+    const controls = animate(scaleMV, [1, 1.05, 0.985, 1], {
+      duration: 0.42,
+      times: [0, 0.35, 0.7, 1],
+      delay: rippleDelay,
+      ease: [0.16, 1, 0.3, 1],
+    });
+    return () => controls.stop();
+  }, [showRipple, scaleMV, rippleDelay]);
 
   return (
     <motion.div
       data-prompt-card
-      layoutId={`prompt-${id}`}
       onHoverStart={() => onHover(id)}
       onHoverEnd={() => onHover(null)}
       onClick={() => done && onOpen()}
-      animate={showRipple
-        ? {
-            backgroundColor: bg,
-            opacity: dimmed ? 0.2 : 1,
-            scale: [1, 1.05, 0.985, 1],
-            boxShadow: "0 0 0 0 transparent",
-          }
-        : {
-            backgroundColor: bg,
-            opacity: dimmed ? 0.2 : 1,
-            scale: 1,
-            boxShadow: "0 0 0 0 transparent",
-          }}
-      whileHover={done ? { x: -4, y: -4, boxShadow: "8px 8px 0 0 var(--fg)" } : undefined}
+      className={interactive ? "card-bump" : undefined}
+      animate={{
+        backgroundColor: bg,
+        opacity: dimmed ? 0.2 : 1,
+      }}
       transition={{
         backgroundColor: { duration: 1.1, ease: [0.16, 1, 0.3, 1] },
         opacity: { duration: 0.3, ease: "easeOut" },
-        scale: showRipple
-          ? { duration: 0.42, times: [0, 0.35, 0.7, 1], delay: rippleDelay, ease: [0.16, 1, 0.3, 1] }
-          : { duration: 0 },
-        x: { type: "spring", stiffness: 400, damping: 30 },
-        y: { type: "spring", stiffness: 400, damping: 30 },
-        boxShadow: { type: "spring", stiffness: 400, damping: 30 },
       }}
       style={{
+        scale: scaleMV,
         border: "2px solid var(--border)",
         borderRadius: "var(--radius)",
         padding: `${PREVIEW_TOP_PADDING}px 1rem ${PREVIEW_BOTTOM_PADDING}px`,
@@ -866,7 +877,7 @@ function PromptPreviewCard({
         </p>
         <motion.span
           initial={{ opacity: 0, scale: 0.3 }}
-          animate={showRipple ? "show" : "hide"}
+          animate={showRipple || done ? "show" : "hide"}
           variants={{
             hide: { opacity: 0, scale: 0.3, transition: { duration: 0.15 } },
             show: {
@@ -1013,7 +1024,7 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.22 }}
+        transition={{ duration: 0.35 }}
         onClick={() => { if (chatOpen) setChatOpen(false); else onClose(); }}
         style={{
           position: "fixed", inset: 0, zIndex: 199,
@@ -1027,7 +1038,7 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.22 }}
+        transition={{ duration: 0.35 }}
         onClick={() => { if (chatOpen) setChatOpen(false); else onClose(); }}
         style={{
           position: "fixed", inset: 0, zIndex: 200,
@@ -1048,7 +1059,6 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
           }}
         >
           <motion.div
-            layoutId={`prompt-${id}`}
             style={{
               background: catColor,
               border: "2px solid var(--border)",
