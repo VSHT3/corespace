@@ -2,14 +2,23 @@
 
 // Note: metadata must be exported from a server component — login page is client.
 // Title set via layout template: "Sign in · Corespace"
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase-client";
 
+function ConfirmationError({ onError }: { onError: (msg: string) => void }) {
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get("error") === "confirmation_failed") {
+      onError("Confirmation link invalid or expired. Try signing up again.");
+    }
+  }, [searchParams, onError]);
+  return null;
+}
+
 export default function LoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -25,12 +34,6 @@ export default function LoginPage() {
     : "strong"
     : null;
   const pwStrengthColor = pwStrength === "weak" ? "#dc2626" : pwStrength === "fair" ? "#b45309" : "#16a34a";
-
-  useEffect(() => {
-    if (searchParams.get("error") === "confirmation_failed") {
-      setError("Confirmation link invalid or expired. Try signing up again.");
-    }
-  }, [searchParams]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -78,6 +81,9 @@ export default function LoginPage() {
 
   return (
     <main className="flex flex-1 items-center justify-center px-6 py-24">
+      <Suspense fallback={null}>
+        <ConfirmationError onError={(msg) => setError(msg)} />
+      </Suspense>
       <div className="w-full space-y-8" style={{ maxWidth: "360px" }}>
         <div className="space-y-1 text-center">
           <p className="eyebrow">Corespace</p>
