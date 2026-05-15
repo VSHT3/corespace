@@ -118,10 +118,6 @@ Tables:
 - `tok_exhibitions` — `id`, `user_id`, `prompt_id` (1–35), `title`, `created_at`
 - `tok_objects` — `id`, `exhibition_id`, `title`, `description`, `object_type`, `justification`, `position`, `scores` (jsonb), `created_at`
 
-Migrations to run:
-1. `supabase/migrations/001_initial.sql`
-2. `supabase/migrations/002_tok_additions.sql`
-
 ### TOK server actions
 
 `app/dashboard/tok/actions.ts` — `"use server"` functions for all DB mutations:
