@@ -280,7 +280,7 @@ export default function PromptPicker({ createAction }: { createAction: (formData
       if (e.key === "r" || e.key === "R") {
         surpriseMe();
       }
-      if (e.key === "Escape") {
+      if (e.key === "Escape" && expandedId === null) {
         setActiveCategory(null);
         setSearchQuery("");
         setDifficultyFilter("all");
@@ -288,8 +288,7 @@ export default function PromptPicker({ createAction }: { createAction: (formData
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [done, difficultyFilter, activeCategory]);
+  }, [done, difficultyFilter, activeCategory, expandedId]);
 
   const normalizedSearch = searchQuery.trim().toLowerCase();
   const matchingPromptIds = useMemo(() => {
@@ -350,13 +349,13 @@ export default function PromptPicker({ createAction }: { createAction: (formData
           <p style={{ margin: 0 }}>
             Pick one of the 35 official IB prompts. Let the tour sort them by theme, then choose the prompt that best fits your objects.
           </p>
-          {uiShown && (
+          {mounted && uiShown && (
             <button onClick={() => { setSkipped(false); setSearchQuery(""); setActiveCategory(null); setDifficultyFilter("all"); runTour(); }} className="back-link" style={{ marginTop: "0.45rem", padding: 0, fontSize: "12px", background: "none", border: "none", cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>
               ↻ Replay tour
             </button>
           )}
         </div>
-        {!uiShown && (
+        {mounted && !uiShown && (
           <button onClick={skipTour} className="back-link" style={{ fontSize: "12px", background: "none", border: "none", cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700, flexShrink: 0 }}>
             Skip tour →
           </button>
@@ -364,7 +363,7 @@ export default function PromptPicker({ createAction }: { createAction: (formData
       </div>
 
       {/* Combined toolbar: kbd hints (left) + search/filter/surprise (right). */}
-      {uiShown && (
+      {mounted && uiShown && (
         <motion.div
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
@@ -392,6 +391,11 @@ export default function PromptPicker({ createAction }: { createAction: (formData
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap", marginLeft: "auto" }}>
+            {hasFilter && (
+              <span style={{ color: "#555", fontSize: "12px", fontWeight: 700, flexShrink: 0 }}>
+                {matchCount} match{matchCount === 1 ? "" : "es"}
+              </span>
+            )}
             <div style={{ position: "relative", width: "min(100vw - 3rem, 280px)" }}>
               <input
                 ref={searchRef}
@@ -406,36 +410,12 @@ export default function PromptPicker({ createAction }: { createAction: (formData
                   borderRadius: "var(--radius)",
                   background: "var(--surface)",
                   color: "var(--fg)",
-                  padding: "0.5rem 2.4rem 0.5rem 0.7rem",
+                  padding: "0.5rem 0.7rem",
                   fontSize: "13px",
                   fontWeight: 600,
                   outline: "none",
                 }}
               />
-              {hasSearch && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery("")}
-                  aria-label="Clear search"
-                  style={{
-                    position: "absolute",
-                    right: "3px",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    width: "32px",
-                    height: "32px",
-                    border: "none",
-                    background: "transparent",
-                    color: "var(--fg)",
-                    cursor: "pointer",
-                    fontSize: "16px",
-                    fontWeight: 800,
-                    lineHeight: 1,
-                  }}
-                >
-                  x
-                </button>
-              )}
             </div>
             <div style={{ display: "flex", gap: "4px", flexShrink: 0 }}>
               {(["all", "easy", "medium", "hard"] as const).map((level) => (
@@ -468,24 +448,12 @@ export default function PromptPicker({ createAction }: { createAction: (formData
             >
               Surprise me
             </button>
-            {hasFilter && (
-              <span style={{ color: "#555", fontSize: "12px", fontWeight: 700, flexBasis: "100%", textAlign: "right" }}>
-                {matchCount} match{matchCount === 1 ? "" : "es"}
-                {activeCategory !== null && normalizedSearch === "" && difficultyFilter === "all" && (
-                  <button
-                    onClick={() => setActiveCategory(null)}
-                    style={{ marginLeft: "6px", fontSize: "10px", background: "none", border: "none", cursor: "pointer", color: "#888", textDecoration: "underline" }}
-                  >
-                    clear
-                  </button>
-                )}
-              </span>
-            )}
           </div>
         </motion.div>
       )}
 
       {/* Category headings */}
+      {mounted && (
       <motion.div
         animate={{ opacity: headingsVisible ? 1 : 0, y: headingsVisible ? 0 : -8 }}
         transition={{ duration: T_HEADINGS_DURATION, ease: [0.16, 1, 0.3, 1] }}
@@ -503,7 +471,10 @@ export default function PromptPicker({ createAction }: { createAction: (formData
         {TOK_CATEGORIES.map((cat) => {
           const selected = activeCategory === cat.id;
           const active = effectiveCategory === cat.id;
-          const dimmed = effectiveCategory !== null && !active;
+          // A selected column stays visible even when hovering another column.
+          // Only dim when a filter is active AND this column is neither
+          // selected nor the one being hovered.
+          const dimmed = effectiveCategory !== null && !active && !selected;
           return (
             <button
               key={cat.id}
@@ -515,7 +486,7 @@ export default function PromptPicker({ createAction }: { createAction: (formData
               onBlur={() => setHoveredCategory(null)}
               style={{
                 cursor: "pointer",
-                background: selected ? cat.color : "transparent",
+                background: selected ? cat.color : (active && !selected ? `${cat.color}22` : "transparent"),
                 border: "2px solid var(--fg)",
                 borderBottom: `5px solid ${cat.color}`,
                 borderRadius: "var(--radius)",
@@ -537,6 +508,7 @@ export default function PromptPicker({ createAction }: { createAction: (formData
           );
         })}
       </motion.div>
+      )}
 
       <div
         ref={containerRef}
@@ -550,7 +522,21 @@ export default function PromptPicker({ createAction }: { createAction: (formData
 
           const hovered = hoveredPromptId === id;
           const filterMatch = hasFilter && matchingPromptIds.has(id);
-          const dimmed = done && (hasFilter ? !filterMatch : effectiveCategory !== null && effectiveCategory !== cat.id && !hovered);
+          // Category visibility unions selected + hovered. A clicked column
+          // stays visible while you hover a different column header — the
+          // hovered column is ADDED to the visible set, not swapped in.
+          // When neither is set, no category filter applies (all visible).
+          const inSelected = activeCategory !== null && activeCategory === cat.id;
+          const inHovered = hoveredCategory !== null && hoveredCategory === cat.id;
+          const passesCategory =
+            activeCategory === null && hoveredCategory === null
+              ? true
+              : inSelected || inHovered;
+          const dimmed =
+            done &&
+            (hasFilter
+              ? !filterMatch
+              : !passesCategory && !hovered);
 
           const idx = spawnIndex.get(id) ?? 0;
           const spawnAt = spawnDelay(idx, allIds.length);
@@ -837,16 +823,27 @@ function PromptPreviewCard({
       onHoverStart={() => onHover(id)}
       onHoverEnd={() => onHover(null)}
       onClick={() => done && onOpen()}
-      className={interactive ? "card-bump" : undefined}
       animate={{
         backgroundColor: bg,
         opacity: dimmed ? 0.2 : 1,
       }}
+      // Framer `scale: scaleMV` (from ripple) is an inline transform —
+      // CSS `:hover { transform }` would lose to it every time. Wire the
+      // card-bump through Framer so the translate composes with the scale.
+      whileHover={
+        interactive
+          ? { x: -4, y: -4, boxShadow: "8px 8px 0px 0px #1a1a1a" }
+          : undefined
+      }
       transition={{
         backgroundColor: { duration: 1.1, ease: [0.16, 1, 0.3, 1] },
         opacity: { duration: 0.3, ease: "easeOut" },
+        x: { type: "tween", duration: 0.15, ease: [0.4, 0, 0.2, 1] },
+        y: { type: "tween", duration: 0.15, ease: [0.4, 0, 0.2, 1] },
+        boxShadow: { type: "tween", duration: 0.15, ease: [0.4, 0, 0.2, 1] },
       }}
       style={{
+        boxShadow: "0px 0px 0px 0px #1a1a1a",
         scale: scaleMV,
         border: "2px solid var(--border)",
         borderRadius: "var(--radius)",

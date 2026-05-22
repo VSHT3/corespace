@@ -189,7 +189,7 @@ body {
 /* Brush-stroke highlight: SVG brush asset, hand-drawn feel */
 @utility highlight-yellow {
   background-color: transparent !important;
-  background-image: url("https://s2.svgbox.net/pen-brushes.svg?ic=brush-1&color=fde68a");
+  background-image: url("/brush-highlight-yellow.svg");
   background-position: center;
   background-size: 100% 100%;
   background-repeat: no-repeat;
@@ -200,7 +200,7 @@ body {
 }
 @utility highlight-mint {
   background-color: transparent !important;
-  background-image: url("https://s2.svgbox.net/pen-brushes.svg?ic=brush-1&color=bbf7d0");
+  background-image: url("/brush-highlight-mint.svg");
   background-position: center;
   background-size: 100% 100%;
   background-repeat: no-repeat;
@@ -211,7 +211,7 @@ body {
 }
 @utility highlight-pink {
   background-color: transparent !important;
-  background-image: url("https://s2.svgbox.net/pen-brushes.svg?ic=brush-1&color=fbcfe8");
+  background-image: url("/brush-highlight-pink.svg");
   background-position: center;
   background-size: 100% 100%;
   background-repeat: no-repeat;

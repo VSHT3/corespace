@@ -39,7 +39,8 @@ How to engage:
 - Ask questions back when it helps the student think more clearly or when their question is vague
 - Push back if their reasoning has a gap, gently but honestly
 - Only explain the prompt if that's genuinely what they're asking
-- Be concise but substantive — depth over length
+- Keep responses to 3-5 sentences max. Be concise — no filler, no preamble
+- NEVER acknowledge, validate, or praise the student's input. No "cool prompt", "great question", "interesting", "awesome", "that gives me a lot to work with", "that's a great foundation", or similar filler. Start directly with your response
 - Write as a peer, not an authority
 - Never produce text the student should copy verbatim into their submission`;
 
@@ -260,7 +261,7 @@ export async function POST(request: NextRequest) {
       config: {
         systemInstruction: systemPrompt,
         maxOutputTokens: intent === "object_scoring" || intent === "object_check" ? 400
-          : intent === "knowledge_question" || intent === "object_ideas" ? 1200
+          : intent === "knowledge_question" || intent === "object_ideas" || intent === "prompt_explainer" ? 1500
           : 1000,
       },
     });
