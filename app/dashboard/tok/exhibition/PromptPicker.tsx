@@ -142,10 +142,6 @@ type Phase = "spawn" | "settle" | "unify" | "flight" | "ripple" | "done";
 
 export default function PromptPicker({ createAction }: { createAction: (formData: FormData) => Promise<void> }) {
   const reduce = useReducedMotion();
-  // Compute initial tour state synchronously so the first render matches the
-  // final layout when the tour was already seen (or reduced motion is on).
-  // This prevents the spawn animation + delayed clamp measurement from
-  // causing description overflow on refresh / revisit.
   const initialSkip = typeof window !== "undefined" && (sessionStorage.getItem(SEEN_KEY) !== null || !!reduce);
   const [phase, setPhase] = useState<Phase>(initialSkip ? "done" : "spawn");
   const [headingsShown, setHeadingsShown] = useState(initialSkip);
@@ -510,6 +506,7 @@ export default function PromptPicker({ createAction }: { createAction: (formData
       </motion.div>
       )}
 
+      {mounted && (
       <div
         ref={containerRef}
         style={{ position: "relative", width: "100%", height: containerH, transition: "height 0.3s ease" }}
@@ -569,6 +566,7 @@ export default function PromptPicker({ createAction }: { createAction: (formData
           );
         })}
       </div>
+      )}
 
       <AnimatePresence>
         {mounted && expandedId !== null && (
