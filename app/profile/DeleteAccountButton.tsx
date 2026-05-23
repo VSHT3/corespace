@@ -23,7 +23,7 @@ export default function DeleteAccountButton() {
       <button
         onClick={() => setStep("confirm")}
         className="btn-ghost btn-ghost-hover"
-        style={{ fontSize: "11px", padding: "5px 12px", color: "#c00", borderColor: "#c00" }}
+        style={{ fontSize: "11px", padding: "5px 12px", color: "#c00", borderColor: "#c00", width: "100%" }}
       >
         Delete account
       </button>

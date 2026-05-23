@@ -55,11 +55,11 @@ body {
 
 /* ─── Typography utilities ───────────────────────────────────── */
 @utility eyebrow {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #888;
+  color: #000;
 }
 
 @utility heading {

@@ -40,6 +40,12 @@ export default async function DashboardPage() {
 
   if (!user) redirect("/login");
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("username, show_ai_limit_on_dashboard")
+    .eq("id", user.id)
+    .single();
+
   const { data: exhibitions } = await supabase
     .from("tok_exhibitions")
     .select("id, title, prompt_id, created_at")
@@ -74,7 +80,25 @@ export default async function DashboardPage() {
 
   const latestJustified = latestObjects.filter((o) => o.justification?.trim()).length;
 
-  const firstName = user.email?.split("@")[0] ?? "there";
+  let aiCalls = 0;
+  const showAiOnDashboard = profile?.show_ai_limit_on_dashboard ?? true;
+  if (showAiOnDashboard && exhibitionIds.length > 0) {
+    const { data: objects } = await supabase
+      .from("tok_objects")
+      .select("justification, scores")
+      .in("exhibition_id", exhibitionIds);
+    aiCalls = (objects ?? []).reduce((count, o) => {
+      let c = 0;
+      if (o.justification?.trim()) c += 1;
+      if (o.scores && typeof o.scores === "object" && !Array.isArray(o.scores) && Object.keys(o.scores).length > 0) {
+        c += 1;
+      }
+      return count + c;
+    }, 0);
+  }
+  const aiLimit = 20;
+
+  const firstName = profile?.username ?? user.email?.split("@")[0] ?? "there";
 
   return (
     <main className="page-main">
@@ -89,7 +113,7 @@ export default async function DashboardPage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
+            gridTemplateColumns: `repeat(${showAiOnDashboard ? 5 : 4}, 1fr)`,
             gap: "0.75rem",
             marginBottom: "2.5rem",
           }}
@@ -99,6 +123,7 @@ export default async function DashboardPage() {
             { val: objectCount, label: objectCount !== 1 ? "Objects" : "Object", accent: "var(--mint)" },
             { val: `${justifiedCount}/${exhibitionIds.length * 3}`, label: "Justified", accent: "var(--pink)" },
             { val: totalWords, label: "Words written", accent: "var(--sky)" },
+            ...(showAiOnDashboard ? [{ val: aiCalls + " / " + aiLimit, label: "AI calls", accent: "var(--mint)" as const }] : []),
           ].map((stat) => (
             <div
               key={stat.label}

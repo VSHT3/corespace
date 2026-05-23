@@ -70,5 +70,23 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/login?error=google_auth_failed`);
   }
 
+  // Ensure profile has a username if one wasn't set by the trigger
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("username")
+      .eq("id", user.id)
+      .single();
+
+    if (profile && !profile.username) {
+      const emailPrefix = user.email?.split("@")[0] ?? `user_${user.id.slice(0, 8)}`;
+      await supabase
+        .from("profiles")
+        .update({ username: emailPrefix, updated_at: new Date().toISOString() })
+        .eq("id", user.id);
+    }
+  }
+
   return NextResponse.redirect(`${origin}/dashboard`);
 }

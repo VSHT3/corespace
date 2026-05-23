@@ -22,6 +22,7 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +45,7 @@ export default function LoginPage() {
     const { error } =
       mode === "login"
         ? await supabase.auth.signInWithPassword({ email, password })
-        : await supabase.auth.signUp({ email, password });
+        : await supabase.auth.signUp({ email, password, options: { data: { username } } });
 
     setLoading(false);
 
@@ -104,6 +105,22 @@ export default function LoginPage() {
               placeholder="you@school.edu"
             />
           </div>
+
+          {mode === "signup" && (
+            <div className="space-y-1">
+              <label className="eyebrow block">Username</label>
+              <input
+                type="text"
+                required
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="field-input"
+                placeholder="yourname"
+                pattern="[a-zA-Z0-9_]{3,20}"
+                title="3–20 letters, numbers, or underscores"
+              />
+            </div>
+          )}
 
           <div className="space-y-1">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
