@@ -822,7 +822,7 @@ function PromptPreviewCard({
       data-prompt-card
       onHoverStart={() => onHover(id)}
       onHoverEnd={() => onHover(null)}
-      onClick={() => done && onOpen()}
+      onClick={() => interactive && onOpen()}
       animate={{
         backgroundColor: bg,
         opacity: dimmed ? 0.2 : 1,
@@ -848,7 +848,7 @@ function PromptPreviewCard({
         border: "2px solid var(--border)",
         borderRadius: "var(--radius)",
         padding: `${PREVIEW_TOP_PADDING}px 1rem ${PREVIEW_BOTTOM_PADDING}px`,
-        cursor: done ? "pointer" : "default",
+        cursor: done ? "pointer" : (interactive ? "pointer" : "default"),
         userSelect: "none",
         width: "100%",
         height: unified ? SORTED_CARD_HEIGHT : undefined,
