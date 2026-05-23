@@ -6,6 +6,7 @@ import CookieBanner from "@/components/CookieBanner";
 import { ToastProvider } from "@/lib/toast";
 import ScrollToTop from "@/components/ScrollToTop";
 import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 export const metadata: Metadata = {
   title: {
@@ -54,6 +55,7 @@ export default function RootLayout({
           <CookieBanner />
         </ToastProvider>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
