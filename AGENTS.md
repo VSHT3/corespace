@@ -173,7 +173,7 @@ Paddle handles VAT, invoicing, tax compliance. Paddle is merchant of record, not
 ### P1 — Auth gaps
 1. **Email confirmation** — `/auth/confirm` route built. Enable "Confirm email" in Supabase Auth dashboard + set redirect URLs. ✓ code done, manual Supabase config needed.
 2. **Password reset** — `/forgot-password` + `/auth/reset` + `/auth/reset/complete` all built. ✓ code done.
-3. **Google OAuth** — not yet wired. Needs Google Cloud OAuth credentials + Supabase provider config + login page buttons.
+3. **Google OAuth** — `/auth/callback` route + login page button built. Needs Google Cloud OAuth credentials + Supabase provider config. ✓ code done, manual Supabase + Google Cloud config needed.
 
 ### P2 — Payments
 4. **Paddle checkout** — wire upgrade button on `/profile` to `Paddle.Checkout.open()`
@@ -189,10 +189,10 @@ ___
 
 ## Plan
 1. ✓ Gemini live calls — working, graceful error handling done.
-2. ✓ Auth completeness — email confirm + password reset routes built. Manual Supabase config needed.
+2. ✓ Auth completeness — email confirm + password reset + Google OAuth routes built. Manual Supabase config needed.
 3. Usage gates — build `profiles` table migration, enforce free tier limits server-side.
 4. ✓ TOK workspace polish — loading states, save states, delete confirmations, word count, AI scoring done.
-5. Google OAuth — add login buttons + wire Supabase provider.
+5. ✓ Google OAuth — callback route + login button built. Manual Supabase + Google Cloud config needed.
 6. Custom SMTP — configure Resend before launch.
 7. Export/share — @media print CSS done. PDF export via browser Cmd+P works.
 8. Payments — Paddle checkout + webhook after usage gates exist.
@@ -244,6 +244,7 @@ ___
 - Exhibition list progress bars fixed to use position-based object lookup (not array index)
 - Login page: `useSearchParams()` wrapped in `<Suspense>` for Next.js 16 static generation compatibility
 - Favicon: hexagon+C SVG (`app/icon.svg`) + ICO fallback (`public/favicon.ico`)
+- Google OAuth: `/auth/callback` route + "Continue with Google" button on login page. Needs manual Supabase + Google Cloud config.
 
 ## New env vars (added May 2026)
 | Variable | Purpose |
