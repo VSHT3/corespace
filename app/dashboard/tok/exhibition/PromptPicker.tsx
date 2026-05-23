@@ -170,7 +170,7 @@ export default function PromptPicker({ createAction }: { createAction: (formData
   // `uiShown` = top toolbar (search, filters, replay) — appears with the column
   // headings, before the ripple so the page feels assembled in one beat.
   const done = phase === "done";
-  const [interactive, setInteractive] = useState(initialSkip);
+  const [interactive, setInteractive] = useState(true);
   const uiShown = headingsShown;
 
   const allIds = useMemo(() => Object.keys(TOK_PROMPTS).map(Number), []);
@@ -1045,14 +1045,19 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
         }}
       >
         <div
+          style={{
+            maxWidth: chatOpen ? "1060px" : "640px",
+            overflow: "hidden",
+            transition: `max-width 380ms cubic-bezier(${EASE_OUT_EXPO.join(",")})`,
+          }}
+        >
+        <div
           onClick={(e) => e.stopPropagation()}
           style={{
             display: "flex",
             gap: "12px",
-            width: "100%",
-            maxWidth: chatOpen ? "1060px" : "640px",
+            width: "1060px",
             alignItems: "stretch",
-            transition: `max-width 380ms cubic-bezier(${EASE_OUT_EXPO.join(",")})`,
           }}
         >
           <motion.div
@@ -1065,9 +1070,7 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
               position: "relative",
               overflowY: "auto",
               maxHeight: "85vh",
-              flex: chatOpen ? "0 0 52%" : "1 1 100%",
-              minWidth: 0,
-              transition: `flex 380ms cubic-bezier(${EASE_OUT_EXPO.join(",")})`,
+              flex: "0 0 640px",
             }}
           >
             <button
@@ -1089,38 +1092,12 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
             </div>
 
             <h2 className="heading" style={{ fontSize: "22px", marginBottom: "1rem", lineHeight: 1.25 }}>{prompt.title}</h2>
-            <p style={{ fontSize: "14px", color: "#333", lineHeight: 1.7, marginBottom: "1.5rem" }}>
+            <p style={{ fontSize: "14px", color: "#333", lineHeight: 1.7, margin: "0 0 0.3rem", textAlign: "justify", overflow: "hidden" }}>
               {prompt.description}
-            </p>
-
-            <form action={createAction} style={{ display: "flex", flexDirection: "column", gap: "0.6rem", marginBottom: "0.75rem" }}>
-              <input type="hidden" name="prompt_id" value={id} />
-              <div>
-                <label style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: "4px", color: "#666" }}>
-                  Exhibition name
-                </label>
-                <input
-                  name="title"
-                  type="text"
-                  value={titleValue}
-                  onChange={(e) => setTitleValue(e.target.value)}
-                  placeholder="My TOK Exhibition"
-                  className="field-input"
-                  style={{ fontSize: "13px", padding: "6px 10px" }}
-                  required
-                />
-              </div>
-              <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-                <button type="submit" className="btn-primary btn-primary-hover">
-                  Select this prompt →
-                </button>
-              </div>
-            </form>
-            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
               <button
                 onClick={() => setChatOpen((v) => !v)}
                 className="btn-ghost btn-ghost-hover"
-                style={{ position: "relative" }}
+                style={{ float: "right", margin: "0.15rem 0 0 0.4rem", position: "relative" }}
               >
                 {chatOpen ? "Hide AI" : "Ask AI"}
                 {!chatOpen && messages.length > 0 && (
@@ -1131,20 +1108,42 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
                   }} />
                 )}
               </button>
-            </div>
+            </p>
+            <form action={createAction}>
+              <input type="hidden" name="prompt_id" value={id} />
+              <div style={{ display: "flex", gap: "0.75rem", alignItems: "flex-end" }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: "12px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: "6px", color: "#666" }}>
+                    Exhibition name
+                  </label>
+                  <input
+                    name="title"
+                    type="text"
+                    value={titleValue}
+                    onChange={(e) => setTitleValue(e.target.value)}
+                    placeholder="My TOK Exhibition"
+                    className="field-input"
+                    style={{ fontSize: "15px", padding: "10px 12px" }}
+                    required
+                  />
+                </div>
+                <button type="submit" className="btn-primary btn-primary-hover" style={{ flex: 1, padding: "10px 16px", fontSize: "13px" }}>
+                  Select this prompt →
+                </button>
+              </div>
+            </form>
           </motion.div>
 
           <AnimatePresence>
             {chatOpen && (
               <motion.div
                 key="chat-panel"
-                initial={{ opacity: 0, x: 32, width: 0 }}
-                animate={{ opacity: 1, x: 0, width: "48%" }}
-                exit={{ opacity: 0, x: 24, width: 0 }}
+                initial={{ opacity: 0, x: 32 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 24 }}
                 transition={{
                   opacity: { duration: 0.28, ease: EASE_OUT_EXPO },
                   x: { duration: 0.34, ease: EASE_OUT_EXPO },
-                  width: { duration: 0.38, ease: EASE_OUT_EXPO },
                 }}
                 style={{
                   background: "var(--surface)",
@@ -1156,7 +1155,7 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
                   maxHeight: "85vh",
                   minWidth: 0,
                   overflow: "hidden",
-                  flexShrink: 0,
+                  flex: 1,
                 }}
               >
                 <div style={{
@@ -1336,6 +1335,7 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
               </motion.div>
             )}
           </AnimatePresence>
+        </div>
         </div>
       </motion.div>
     </>,
