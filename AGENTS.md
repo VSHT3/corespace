@@ -173,7 +173,7 @@ Paddle handles VAT, invoicing, tax compliance. Paddle is merchant of record, not
 ### P1 — Auth gaps
 1. **Email confirmation** — `/auth/confirm` route built. Enable "Confirm email" in Supabase Auth dashboard + set redirect URLs. ✓ code done, manual Supabase config needed.
 2. **Password reset** — `/forgot-password` + `/auth/reset` + `/auth/reset/complete` all built. ✓ code done.
-3. **Google OAuth** — `/auth/callback` route + login page button built. Needs Google Cloud OAuth credentials + Supabase provider config. ✓ code done, manual Supabase + Google Cloud config needed.
+3. **Google OAuth** — `/auth/callback` route + login page button built + Supabase provider configured via Management API. ✓ done.
 
 ### P2 — Payments
 4. **Paddle checkout** — wire upgrade button on `/profile` to `Paddle.Checkout.open()`
@@ -192,7 +192,7 @@ ___
 2. ✓ Auth completeness — email confirm + password reset + Google OAuth routes built. Manual Supabase config needed.
 3. Usage gates — build `profiles` table migration, enforce free tier limits server-side.
 4. ✓ TOK workspace polish — loading states, save states, delete confirmations, word count, AI scoring done.
-5. ✓ Google OAuth — callback route + login button built. Manual Supabase + Google Cloud config needed.
+5. ✓ Google OAuth — callback route + login button + Supabase provider configured via Management API.
 6. Custom SMTP — configure Resend before launch.
 7. Export/share — @media print CSS done. PDF export via browser Cmd+P works.
 8. Payments — Paddle checkout + webhook after usage gates exist.
@@ -244,12 +244,15 @@ ___
 - Exhibition list progress bars fixed to use position-based object lookup (not array index)
 - Login page: `useSearchParams()` wrapped in `<Suspense>` for Next.js 16 static generation compatibility
 - Favicon: hexagon+C SVG (`app/icon.svg`) + ICO fallback (`public/favicon.ico`)
-- Google OAuth: `/auth/callback` route + "Continue with Google" button on login page. Needs manual Supabase + Google Cloud config.
+- Google OAuth: full flow built — callback route, login button, Supabase provider configured via Management API.
 
 ## New env vars (added May 2026)
 | Variable | Purpose |
 |---|---|
 | `SUPABASE_SERVICE_ROLE_KEY` | Required for account deletion (admin.deleteUser). Server-only, never expose to client. |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID for direct OAuth flow (server-only). |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret for token exchange (server-only, never expose to client). |
+| `NEXT_PUBLIC_SITE_URL` | Canonical base URL for OAuth redirect URIs (`http://localhost:3000` dev, `https://corespace.vercel.app` prod). |
 
 ## Deployment (Vercel)
 
@@ -267,6 +270,9 @@ Primary deploy target. GitHub push → auto-build. Hobby tier free, works for �
 | `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` | Paddle dashboard |
 | `NEXT_PUBLIC_PADDLE_STUDENT_PRICE_ID` | Paddle product catalog |
 | `SUPABASE_SERVICE_ROLE_KEY` | Account deletion (server-only, never expose to client) |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID for direct OAuth flow (server-only) |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret (server-only, never expose to client) |
+| `NEXT_PUBLIC_SITE_URL` | Canonical base URL for OAuth redirects (`http://localhost:3000` dev) |
 
 ### Pre-deploy checklist
 
