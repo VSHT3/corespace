@@ -23,6 +23,16 @@ TypeScript check (no dedicated lint script):
 node node_modules/typescript/bin/tsc --noEmit
 ```
 
+## Available CLIs
+
+| Tool | How to use | Notes |
+|---|---|---|
+| **Vercel CLI** | `vercel <command>` (aliased globally) | Auto-deploys on git push to `main`. Env vars set via `vercel env add <KEY> production`. Project: `vsht/corespace`. |
+| **Supabase CLI** | Not installed | For local DB dev. Use Supabase Dashboard for schema edits. Migrations tracked in `supabase/migrations/`, run in SQL Editor manually. |
+| **Supabase MCP** | Built into opencode | Configured in opencode.json. Provides: SQL execution, migration apply, TS types gen, table listing, extension management. Use for DB queries and schema operations. |
+| **Supabase Management API** | `curl -X PATCH "https://api.supabase.com/v1/projects/pjjupictmrlpxbvhcgxf/config/auth" -H "Authorization: Bearer sbp_...`" | Used for auth provider config (Google OAuth, SMTP, etc.). Requires Supabase PAT. Base: `https://api.supabase.com/v1/projects/pjjupictmrlpxbvhcgxf`. |
+| **GitHub CLI** | `gh` (available in env) | For PRs, issues, releases. |
+
 ## Architecture
 
 Corespace — SaaS for IB Diploma students. TOK Exhibition helper live; CAS and EE stubs.
