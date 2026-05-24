@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import type { TOKObject } from "@/types";
 import { useToast } from "@/lib/toast";
@@ -38,7 +38,7 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
   const [scoreLoading, setScoreLoading] = useState(false);
   const [scoreError, setScoreError] = useState("");
   const [scoreResult, setScoreResult] = useState<{ score: number; strength: string; weakness: string; tip: string } | null>(null);
-  const [copied, setCopied] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<{ role: "user" | "ai"; text: string }[]>([]);
   const [chatInput, setChatInput] = useState("");
@@ -57,11 +57,35 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
   const DESC_MAX = 500;
 
   const wordCount = justification.trim() ? justification.trim().split(/\s+/).length : 0;
-  const wordCountColor = wordCount === 0 ? "#aaa" : wordCount < 95 ? "#888" : wordCount <= 150 ? "#16a34a" : "#dc2626";
+  const targetWords = 300;
+  const maxWords = 950;
+  const wordCountColor = useMemo(() => {
+    if (wordCount === 0) return "var(--muted)";
+    if (wordCount >= maxWords) return "#dc2626";
+    if (wordCount <= targetWords) {
+      const t = wordCount / targetWords;
+      const r = Math.round(0xb9 - t * (0xb9 - 0x16));
+      const g = Math.round(0x1c + t * (0xa3 - 0x1c));
+      const b = Math.round(0x1c + t * (0x4a - 0x1c));
+      return `rgb(${r},${g},${b})`;
+    }
+    const t = (wordCount - targetWords) / (maxWords - targetWords);
+    const r = Math.round(0x16 + t * (0xdc - 0x16));
+    const g = Math.round(0xa3 - t * (0xa3 - 0x26));
+    const b = Math.round(0x4a - t * (0x4a - 0x26));
+    return `rgb(${r},${g},${b})`;
+  }, [wordCount]);
 
   useEffect(() => {
     window.dispatchEvent(new CustomEvent("justification-wordcount", { detail: { slot, words: wordCount } }));
   }, [slot, wordCount]);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [justification]);
 
   const slotLabel = ["First", "Second", "Third"][slot];
   const accentColors = ["var(--pink)", "var(--mint)", "var(--sky)"];
@@ -539,20 +563,6 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
             <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
               {justification.trim() && (
                 <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(justification);
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 1800);
-                    showToast("Justification copied to clipboard", "info");
-                  }}
-                  className="btn-ghost btn-ghost-hover"
-                  style={{ fontSize: "11px", padding: "4px 10px" }}
-                >
-                  {copied ? "Copied!" : "Copy"}
-                </button>
-              )}
-              {justification.trim() && (
-                <button
                   onClick={handleImprove}
                   disabled={improveLoading || aiLoading}
                   className="btn-ghost btn-ghost-hover"
@@ -597,13 +607,13 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
             </div>
           ) : (
             <textarea
-              rows={5}
+              ref={textareaRef}
               value={justification}
               onChange={(e) => setJustification(e.target.value)}
               onBlur={handleSaveJustification}
               placeholder="Write your justification here, or generate one with AI above."
               className="field-input"
-              style={{ resize: "vertical" }}
+              style={{ resize: "none", overflow: "hidden", minHeight: "100px" }}
             />
           )}
 
@@ -615,15 +625,18 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
 
           {!aiLoading && (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "4px" }}>
-              <p style={{ fontSize: "11px", color: "#aaa" }}>
+              <p style={{ fontSize: "11px", color: "var(--muted)" }}>
                 {savedOk ? "✓ Saved" : "Auto-saves 2s after you stop typing."}
               </p>
-              <p style={{ fontSize: "11px", color: wordCountColor, fontWeight: wordCount >= 95 && wordCount <= 150 ? 700 : 400 }}>
-                {wordCount} {wordCount === 1 ? "word" : "words"}
-                {wordCount > 0 && wordCount < 95 && <span style={{ color: "#aaa" }}> (aim for 95–150)</span>}
-                {wordCount > 150 && <span style={{ color: "#aaa" }}> (over 150)</span>}
-                {wordCount >= 95 && wordCount <= 150 && <span style={{ color: "#16a34a" }}> ✓</span>}
-              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                {wordCount >= maxWords && (
+                  <span style={{ fontSize: "11px", color: "#dc2626", fontWeight: 700 }}>⚠ Too long</span>
+                )}
+                <p style={{ fontSize: "11px", color: wordCountColor, fontWeight: 700 }}>
+                  {wordCount} {wordCount === 1 ? "word" : "words"}
+                  {wordCount > 0 && wordCount < targetWords && <span style={{ color: "var(--muted)", fontWeight: 400 }}> / {targetWords} target</span>}
+                </p>
+              </div>
             </div>
           )}
 
@@ -689,7 +702,7 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
           )}
 
           {!scoreResult && !scoreLoading && !scoreError && (
-            <p style={{ fontSize: "11px", color: "#aaa" }}>
+            <p style={{ fontSize: "11px", color: "var(--muted)" }}>
               {justification.trim() ? "Get AI feedback on object quality and justification strength." : "Write a justification first to enable scoring."}
             </p>
           )}
@@ -697,7 +710,7 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
           {/* Score history */}
           {scoreHistory.length > 1 && (
             <div style={{ marginTop: "0.75rem" }}>
-              <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#aaa", marginBottom: "6px" }}>Score history</p>
+              <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--muted)", marginBottom: "6px" }}>Score history</p>
               <div style={{ display: "flex", alignItems: "flex-end", gap: "4px" }}>
                 {scoreHistory.map((entry, i) => (
                   <div
@@ -714,7 +727,7 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
                     }}
                   />
                 ))}
-                <span style={{ fontSize: "10px", color: "#aaa", marginLeft: "4px" }}>
+                <span style={{ fontSize: "10px", color: "var(--muted)", marginLeft: "4px" }}>
                   {scoreHistory.length > 1 && (() => {
                     const first = scoreHistory[0].score;
                     const last = scoreHistory[scoreHistory.length - 1].score;
@@ -768,7 +781,7 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
             </div>
           )}
           {!kqResult && !kqLoading && !kqError && (
-            <p style={{ fontSize: "11px", color: "#aaa" }}>
+            <p style={{ fontSize: "11px", color: "var(--muted)" }}>
               Generate IB-style knowledge questions that could anchor your justification.
             </p>
           )}
@@ -795,7 +808,7 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
             <div style={{ border: "2px solid var(--border)", borderRadius: "var(--radius)", overflow: "hidden" }}>
               <div style={{ maxHeight: "200px", overflowY: "auto", padding: "0.75rem", display: "flex", flexDirection: "column", gap: "8px", background: "var(--bg)" }}>
                 {chatMessages.length === 0 && !chatLoading && (
-                  <p style={{ fontSize: "12px", color: "#aaa", textAlign: "center", margin: "0.5rem 0" }}>
+                  <p style={{ fontSize: "12px", color: "var(--muted)", textAlign: "center", margin: "0.5rem 0" }}>
                     Ask AI to improve, explain, or critique your justification.
                   </p>
                 )}
@@ -852,7 +865,7 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
           )}
 
           {!chatOpen && (
-            <p style={{ fontSize: "11px", color: "#aaa" }}>
+            <p style={{ fontSize: "11px", color: "var(--muted)" }}>
               Chat with AI to refine your justification, ask for improvements, or get specific feedback.
             </p>
           )}

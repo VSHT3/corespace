@@ -16,6 +16,8 @@
   --radius:     4px;
   --border-w:   2px;
 
+  --muted:      #888;
+
   --font-sans:  system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
@@ -180,7 +182,8 @@ body {
 }
 
 @utility back-link {
-  color: #888;
+  color: #333;
+  font-weight: 600;
   font-size: 13px;
   text-decoration: none;
   &:hover { color: var(--fg); }

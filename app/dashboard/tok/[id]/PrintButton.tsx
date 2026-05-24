@@ -34,14 +34,7 @@ export default function PrintButton({ exhibitionId }: Props) {
       >
         Export TXT
       </button>
-      <button
-        onClick={() => downloadFrom(`/api/tok/export?id=${exhibitionId}`, "tok-exhibition.json")}
-        className="btn-ghost btn-ghost-hover"
-        style={{ fontSize: "11px", padding: "4px 10px" }}
-        title="Download exhibition as JSON"
-      >
-        Export JSON
-      </button>
+
     </div>
   );
 }
