@@ -111,6 +111,7 @@ export default async function DashboardPage() {
 
       {exhibitionIds.length > 0 && (
         <div
+          className="stats-grid"
           style={{
             display: "grid",
             gridTemplateColumns: `repeat(${showAiOnDashboard ? 5 : 4}, 1fr)`,
@@ -119,9 +120,9 @@ export default async function DashboardPage() {
           }}
         >
           {[
-            { val: exhibitionIds.length, label: "Exhibition" + (exhibitionIds.length !== 1 ? "s" : ""), accent: "var(--yellow)" },
+            { val: 1, label: "Exhibition", accent: "var(--yellow)" },
             { val: objectCount, label: objectCount !== 1 ? "Objects" : "Object", accent: "var(--mint)" },
-            { val: `${justifiedCount}/${exhibitionIds.length * 3}`, label: "Justified", accent: "var(--pink)" },
+            { val: `${justifiedCount}/3`, label: "Justified", accent: "var(--pink)" },
             { val: totalWords, label: "Words written", accent: "var(--sky)" },
             ...(showAiOnDashboard ? [{ val: aiCalls + " / " + aiLimit, label: "AI calls", accent: "var(--mint)" as const }] : []),
           ].map((stat) => (

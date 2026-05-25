@@ -48,10 +48,9 @@ export default async function TOKPage() {
         <h1 className="heading" style={{ fontSize: "36px" }}>TOK</h1>
         <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
           <p style={{ color: "#555" }}>Choose which TOK component to work on.</p>
-          {exhibitionCount > 0 && (
+          {exhibitionCount > 0 && lastActivity && (
             <span style={{ fontSize: "12px", color: "#888" }}>
-              {exhibitionCount} exhibition{exhibitionCount !== 1 ? "s" : ""}
-              {lastActivity && ` · Last: ${lastActivity}`}
+              Created {lastActivity}
             </span>
           )}
         </div>

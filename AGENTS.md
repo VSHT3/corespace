@@ -2,6 +2,10 @@
 
 Guidance for Claude Code (claude.ai/code) when working in this repo.
 
+## Caveman mode
+
+Always use `/caveman` (full intensity) for all communication. Commits use `/caveman-commit` format. Do not revert to normal mode unless user says "stop caveman" / "normal mode".
+
 ## Critical: This is Next.js 16
 
 **Not Next.js 13/14/15.** Breaking changes apply. Before writing code, read relevant guide in `node_modules/next/dist/docs/`. Heed all deprecation warnings from dev server.
@@ -13,7 +17,7 @@ Key renames vs prior versions:
 ## Commands
 
 ```bash
-npm run dev      # dev server on localhost:3000
+npm run dev      # dev server on localhost:3000 (Turbopack)
 npm run build    # production build (runs tsc + page generation)
 npm run start    # serve production build
 ```
@@ -23,13 +27,20 @@ TypeScript check (no dedicated lint script):
 node node_modules/typescript/bin/tsc --noEmit
 ```
 
+Available via `opencode.json` commands:
+```bash
+opencode build     # tsc + build
+opencode check     # tsc only
+opencode commit    # git add -A + conventional commit
+```
+
 ## Available CLIs
 
 | Tool | How to use | Notes |
 |---|---|---|
 | **Vercel CLI** | `vercel <command>` (aliased globally) | Auto-deploys on git push to `main`. Env vars set via `vercel env add <KEY> production`. Project: `vsht/corespace`. |
 | **Supabase CLI** | Not installed | For local DB dev. Use Supabase Dashboard for schema edits. Migrations tracked in `supabase/migrations/`, run in SQL Editor manually. |
-| **Supabase MCP** | Built into opencode | Configured in opencode.json. Provides: SQL execution, migration apply, TS types gen, table listing, extension management. Use for DB queries and schema operations. |
+| **Supabase MCP** | `supabase-mcp` (via opencode.json) | Installed + configured in opencode.json. SQL execution, migration apply, TS types gen, table listing. Needs `SUPABASE_SERVICE_ROLE_KEY` in env. |
 | **Supabase Management API** | `curl -X PATCH "https://api.supabase.com/v1/projects/pjjupictmrlpxbvhcgxf/config/auth" -H "Authorization: Bearer sbp_...`" | Used for auth provider config (Google OAuth, SMTP, etc.). Requires Supabase PAT. Base: `https://api.supabase.com/v1/projects/pjjupictmrlpxbvhcgxf`. |
 | **GitHub CLI** | `gh` (available in env) | For PRs, issues, releases. |
 
@@ -75,7 +86,7 @@ Routes:
 - `components/Navbar.tsx` — server component, shows auth state. Sticky, 2px border-bottom. 3-col grid layout (logo | nav | actions).
 - `components/LogoutButton.tsx` — client component, calls `supabase.auth.signOut()`.
 - `components/Footer.tsx` — server component, tucked legal links.
-- `components/CookieBanner.tsx` — client component, sessionStorage dismiss, bottom-left corner.
+- `components/CookieBanner.tsx` — client component, localStorage-persisted consent (accept/reject/customize), bottom-left corner.
 
 ### Supabase: two clients, never mixed
 
@@ -144,12 +155,10 @@ Tables:
 ### TOK server actions
 
 `app/dashboard/tok/actions.ts` — `"use server"` functions for all DB mutations:
-- `createExhibition(formData)` — inserts exhibition, redirects to workspace
-- `deleteExhibition(id)`
+- `createExhibition(formData)` — guards multiple creations (IB rule: 1 per student), inserts or redirects to existing
+- `deleteExhibition(id)` — deletes and redirects to prompt picker
 - `saveObject(formData)` — upserts tok_object; max 3 objects per exhibition enforced
 - `deleteObject(exhibitionId, objectId)`
-- `duplicateExhibition(id)` — copies exhibition + all objects with "(copy)" suffix
-- `swapObjectPositions(exhibitionId, posA, posB)` — swaps two objects' positions
 - `updateExhibitionTitle(id, title)` — updates exhibition title
 
 Justification saves use a dedicated route `app/api/tok/justification/route.ts` (POST) for client components. Also calls `revalidatePath` after write.
@@ -235,7 +244,6 @@ ___
 - PromptPicker: Column heading hover tint — subtle background when `active && !selected`
 - PromptPicker: Match count moved left of search bar, clear (x) button removed
 - PromptPicker: Hydration errors fixed by gating toolbar buttons and category headings with `mounted` — SSR and client first render always match
-- Multi-exhibition list with progress indicators
 - AI object scoring intent (score/10 + strength/weakness/tip)
 - AI knowledge question generator (3 IB-style KQs with rationale)
 - AI object_check intent — IB suitability pre-flight (verdict/issue/promptLink/tip)
@@ -254,7 +262,7 @@ ___
 - Keyboard shortcuts: / (search), r (random), Esc (clear all filters) in prompt picker
 - Keyboard hints bar in prompt picker
 - Account deletion flow on profile (DeleteAccountButton + deleteAccount server action, requires SUPABASE_SERVICE_ROLE_KEY)
-- Exhibition duplication (duplicateExhibition action)
+
 - In-memory rate limiter on AI route (20 req/min per IP)
 - Public /tok-prompts reference page (all 35 prompts, SEO-friendly)
 - /contact, /about, /tips pages
@@ -263,7 +271,7 @@ ___
 - ScrollToTop component — scrolls to top on every route change
 - Live word count sync via custom DOM event (ObjectCard → WordCountSummary + SubmissionChecklist)
 - SubmissionChecklist — auto-checked items use live state, manual checkboxes for soft items
-- Plain text export (/api/tok/export-text) + JSON export (/api/tok/export) on workspace
+- Plain text export (/api/tok/export-text) on workspace
 - Print-ready workspace export via browser Cmd+P
 - Dynamic metadata (title = exhibition name + prompt) on workspace page with noindex
 - maxOutputTokens tuned per intent (400 for JSON, 1200 for multi-item, 1000 default)
@@ -326,6 +334,14 @@ Primary deploy target. GitHub push → auto-build. Hobby tier free, works for �
 
 - `app/icon.svg` — Next.js 16 auto-serves as primary favicon. Clean hexagon outline + bold "C". Dark mode via `@media (prefers-color-scheme: dark)` (black → white).
 - `public/favicon.ico` — legacy browser fallback, multi-res (16–256px), dark logo for light tabs.
+
+## TODO
+
+`TODO.md` at repo root — comprehensive audit of everything pending. **Delete items when done** (no checkmarks). Read it before starting any significant work to know what's on deck and avoid duplicating effort.
+
+## FEATURES
+
+`FEATURES.md` at repo root — catalog of everything built. Append to it when finishing significant features. Consult it before answering "does this already exist?" questions.
 
 ## graphify
 
