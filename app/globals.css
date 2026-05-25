@@ -246,21 +246,11 @@ body {
 
 /* Mobile: stack multi-col layouts to single column below 700px */
 @media (max-width: 700px) {
-  .objects-grid {
-    grid-template-columns: 1fr !important;
-  }
   .stats-grid {
     grid-template-columns: repeat(3, 1fr) !important;
   }
   .workspace-grid {
     grid-template-columns: 1fr !important;
-  }
-  .workspace-2col {
-    grid-template-columns: 1fr !important;
-    max-width: 100% !important;
-  }
-  .workspace-1col {
-    max-width: 100% !important;
   }
 }
 

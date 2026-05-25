@@ -83,7 +83,7 @@
 - SVG brush-stroke highlights (yellow, mint, pink)
 - No shadows/gradients/blur/pill shapes
 - System font stack, no Google Fonts
-- Responsive: `.objects-grid`, `.workspace-grid`, `.workspace-2col`, `.stats-grid` collapse at 700px; stats collapse to 2-col at 500px; tighter padding at 500px
+- Responsive: `.workspace-grid` collapses at 700px; stats grid collapses to 2-col at 500px; tighter padding at 500px
 - Print styles: clean exhibition export via `@media print`
 
 ## Pages

@@ -186,71 +186,25 @@ export default async function ExhibitionPage({ params }: { params: Promise<{ id:
         </div>
       </div>
 
-      {objs.length === 0 && (
-        <div style={{ display: "flex", justifyContent: "center", marginTop: "2rem" }}>
-          <AddObjectSlot slot={0} exhibitionId={id} prompt={prompt} saveObject={saveObject} deleteObject={deleteObject} />
-        </div>
-      )}
-
-      {objs.length === 1 && (
-        <div className="workspace-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", maxWidth: "70%", margin: "0 auto" }}>
-          <ObjectCard
-            slot={0}
-            exhibitionId={id}
-            object={objs[0]}
-            prompt={prompt}
-            saveObject={saveObject}
-            deleteObject={deleteObject}
-            initialScores={Array.isArray(objs[0]?.scores) ? objs[0].scores : []}
-          />
-          <AddObjectSlot slot={1} exhibitionId={id} prompt={prompt} saveObject={saveObject} deleteObject={deleteObject} />
-        </div>
-      )}
-
-      {objs.length === 2 && (
-        <>
-          <div className="workspace-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", margin: "0 auto" }}>
-            {[0, 1].map((pos) => {
-              const obj = objs.find((o) => o.position === pos) ?? null;
-              return (
-                <ObjectCard
-                  key={pos}
-                  slot={pos}
-                  exhibitionId={id}
-                  object={obj}
-                  prompt={prompt}
-                  saveObject={saveObject}
-                  deleteObject={deleteObject}
-                  initialScores={Array.isArray(obj?.scores) ? obj.scores : []}
-                />
-              );
-            })}
-          </div>
-          <div style={{ display: "flex", justifyContent: "center", marginTop: "1.5rem" }}>
-            <AddObjectSlot slot={2} exhibitionId={id} prompt={prompt} saveObject={saveObject} deleteObject={deleteObject} />
-          </div>
-        </>
-      )}
-
-      {objs.length === 3 && (
-        <div className="objects-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "1rem", alignItems: "start" }}>
-          {[0, 1, 2].map((pos) => {
-            const obj = objs.find((o) => o.position === pos) ?? null;
-            return (
-              <ObjectCard
-                key={pos}
-                slot={pos}
-                exhibitionId={id}
-                object={obj}
-                prompt={prompt}
-                saveObject={saveObject}
-                deleteObject={deleteObject}
-                initialScores={Array.isArray(obj?.scores) ? obj.scores : []}
-              />
-            );
-          })}
-        </div>
-      )}
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem", maxWidth: "720px", margin: "0 auto" }}>
+        {[0, 1, 2].map((slot) => {
+          const obj = objs.find((o) => o.position === slot) ?? null;
+          return obj ? (
+            <ObjectCard
+              key={slot}
+              slot={slot}
+              exhibitionId={id}
+              object={obj}
+              prompt={prompt}
+              saveObject={saveObject}
+              deleteObject={deleteObject}
+              initialScores={Array.isArray(obj.scores) ? obj.scores : []}
+            />
+          ) : (
+            <AddObjectSlot key={slot} slot={slot} exhibitionId={id} prompt={prompt} saveObject={saveObject} deleteObject={deleteObject} />
+          );
+        })}
+      </div>
 
       <WorkspaceKeyboardShortcuts />
     </main>
