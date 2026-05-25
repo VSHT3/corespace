@@ -47,9 +47,13 @@
 
 ## General — Pages
 
-- [ ] **CAS tracker** — basic structure built (list + detail + reflections). Needs: hours breakdown per category, evidence links, supervisor export, deadline reminders. Migration `003_cas.sql` must be run in Supabase SQL Editor.
 - [ ] **EE page** — `/dashboard/ee` is a stub. Build real EE assistant (research question, outline, draft feedback).
 - [ ] **Contact page** — `/contact` is static. Wire to a form handler or mail service.
+
+## CAS
+
+- [ ] **CAS experience** -
+- [ ] **CAS experience banner** — solid colors + gradient options 
 
 ## General — Infrastructure
 
@@ -57,10 +61,19 @@
 - [ ] **Server-side AI usage enforcement** — `ai_calls` column on profiles, increment on each `/api/ai` call, reject when ≥ 20/month for free tier.
 - [ ] **Paddle webhook secret** — verify signature before updating plan.
 
-## Polish
+## Polished
 
 - [ ] **IB Exhibition submission checklist** — "At least 2 different object types" could be auto-checked by looking at object types. "Personal connection" could be auto-checked if at least one object type is "Personal".
 - [ ] **Exhibition "submitted" state** — no way to mark an exhibition as done/submitted. Add a status field to `tok_exhibitions` table.
+- [ ] animations
+- [ ] moments of joy
+
+## CAS Tracker — Next
+
+- [ ] Hours breakdown per category (C/A/S totals in stats)
+- [ ] Evidence links (URLs per experience)
+- [ ] Supervisor review export (PDF/print-ready)
+- [ ] Deadline and milestone reminders
 
 ## Deferred (after launch)
 

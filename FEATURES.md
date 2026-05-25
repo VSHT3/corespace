@@ -56,6 +56,25 @@
 - Stats: exhibitions count, object count, justified ratio, words written, AI calls
 - "Continue where you left off" card with latest exhibition progress
 
+## CAS Tracker
+
+### Experience List (`/dashboard/cas`)
+- Stats banner: experiences count, total hours, completed, outcomes met
+- Experience grid with category-colored cards
+- Create form (title, category, description)
+- Empty state with call-to-action
+
+### Experience Detail (`/dashboard/cas/[id]`)
+- Inline editing: title, category, hours, status, description
+- 7 IB learning outcomes as checkboxes
+- Reflection timeline with add form
+- Delete experience
+
+### Database
+- `cas_experiences` — id, user_id, title, description, category, hours, status, learning_outcomes
+- `cas_reflections` — id, experience_id, user_id, content, created_at
+- RLS policies on both tables
+
 ## Auth & Account
 
 ### Authentication
@@ -113,7 +132,8 @@
 - `/dashboard/tok` — TOK module selector (Exhibition + Essay stub)
 - `/dashboard/tok/exhibition` — Exhibition list / prompt picker
 - `/dashboard/tok/[id]` — Exhibition workspace
-- `/dashboard/cas` — Stub
+- `/dashboard/cas` — CAS experience list + stats
+- `/dashboard/cas/[id]` — CAS experience detail + reflections + outcome tracking
 - `/dashboard/ee` — Stub
 - `/profile` — Account settings
 
@@ -157,6 +177,5 @@
 
 ## Coming Soon (stubs exist)
 
-- CAS tracker — hours log, structured reflections, learning outcomes
 - Extended Essay assistant — research question, outline, draft feedback
 - Paddle payments — checkout + webhook + plan enforcement
