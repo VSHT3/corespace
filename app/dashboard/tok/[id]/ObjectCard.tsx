@@ -23,6 +23,52 @@ interface Props {
   initialScores?: ScoreEntry[];
 }
 
+function AccordionSection({ title, defaultOpen, children, count }: { title: string; defaultOpen?: boolean; children: React.ReactNode; count?: React.ReactNode }) {
+  const [open, setOpen] = useState(defaultOpen ?? false);
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "0.75rem",
+          padding: "0.6rem 0",
+          border: "none",
+          borderTop: "2px solid var(--border)",
+          background: "none",
+          cursor: "pointer",
+          fontFamily: "inherit",
+          color: "var(--fg)",
+          textAlign: "left",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            {title}
+          </span>
+          {count !== undefined && (
+            <span style={{ fontSize: "10px", color: "var(--muted)", fontWeight: 600 }}>
+              ({count})
+            </span>
+          )}
+        </div>
+        <span style={{ fontSize: "14px", lineHeight: 1, transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}>
+          ▾
+        </span>
+      </button>
+      {open && (
+        <div style={{ padding: "0 0 0.5rem" }}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObject, deleteObject, initialScores }: Props) {
   const { showToast } = useToast();
   const [editing, setEditing] = useState(!object);
@@ -640,235 +686,226 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
             </div>
           )}
 
-          {/* AI Scoring */}
-          <hr className="divider" style={{ margin: "1rem 0" }} />
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem", flexWrap: "wrap", gap: "0.5rem" }}>
-            <p style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-              AI Score
-            </p>
-            <button
-              onClick={handleScore}
-              disabled={scoreLoading || !justification.trim()}
-              className="btn-ghost btn-ghost-hover"
-              style={{ fontSize: "11px", padding: "4px 10px" }}
-            >
-              {scoreLoading ? "Scoring…" : scoreResult ? "Re-score" : "Score with AI"}
-            </button>
-          </div>
-
-          {scoreError && (
-            <p className="tag tag-pink" style={{ display: "block", fontWeight: 400, textTransform: "none", letterSpacing: 0, fontSize: "12px", padding: "6px 10px", marginBottom: "0.5rem" }}>
-              {scoreError}
-            </p>
-          )}
-
-          {scoreLoading && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              {[60, 80, 50].map((w, i) => (
-                <div key={i} style={{ height: "12px", width: `${w}%`, background: "var(--border)", borderRadius: "2px", animation: "pulse 1.4s ease-in-out infinite", animationDelay: `${i * 0.12}s` }} />
-              ))}
+          {/* Accordion sections for less-used tools */}
+          <AccordionSection title="AI Score" count={scoreHistory.length > 0 ? `${scoreHistory[scoreHistory.length - 1].score}/10` : undefined}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem", flexWrap: "wrap", gap: "0.5rem" }}>
+              <button
+                onClick={handleScore}
+                disabled={scoreLoading || !justification.trim()}
+                className="btn-ghost btn-ghost-hover"
+                style={{ fontSize: "11px", padding: "4px 10px" }}
+              >
+                {scoreLoading ? "Scoring…" : scoreResult ? "Re-score" : "Score with AI"}
+              </button>
             </div>
-          )}
 
-          {scoreResult && !scoreLoading && (
-            <div style={{ background: "var(--bg)", border: "2px solid var(--border)", borderRadius: "var(--radius)", padding: "1rem", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-                <span
-                  className="heading"
-                  style={{
-                    fontSize: "28px",
-                    color: scoreResult.score >= 8 ? "#16a34a" : scoreResult.score >= 5 ? "#b45309" : "#dc2626",
-                  }}
-                >
-                  {scoreResult.score}/10
-                </span>
-                <span
-                  className="tag"
-                  style={{
-                    background: scoreResult.score >= 8 ? "var(--mint)" : scoreResult.score >= 5 ? "var(--yellow)" : "var(--pink)",
-                  }}
-                >
-                  {scoreResult.score >= 8 ? "Strong" : scoreResult.score >= 5 ? "Developing" : "Needs work"}
-                </span>
+            {scoreError && (
+              <p className="tag tag-pink" style={{ display: "block", fontWeight: 400, textTransform: "none", letterSpacing: 0, fontSize: "12px", padding: "6px 10px", marginBottom: "0.5rem" }}>
+                {scoreError}
+              </p>
+            )}
+
+            {scoreLoading && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                {[60, 80, 50].map((w, i) => (
+                  <div key={i} style={{ height: "12px", width: `${w}%`, background: "var(--border)", borderRadius: "2px", animation: "pulse 1.4s ease-in-out infinite", animationDelay: `${i * 0.12}s` }} />
+                ))}
               </div>
-              <div style={{ fontSize: "12px", color: "#444", lineHeight: 1.6 }}>
-                <p style={{ marginBottom: "0.4rem" }}><strong>✓ </strong>{scoreResult.strength}</p>
-                <p style={{ marginBottom: "0.4rem" }}><strong>△ </strong>{scoreResult.weakness}</p>
-                <p style={{ background: "var(--yellow)", border: "1px solid var(--border)", borderRadius: "2px", padding: "4px 8px", marginTop: "0.25rem" }}>
-                  <strong>Tip: </strong>{scoreResult.tip}
-                </p>
-              </div>
-            </div>
-          )}
+            )}
 
-          {!scoreResult && !scoreLoading && !scoreError && (
-            <p style={{ fontSize: "11px", color: "var(--muted)" }}>
-              {justification.trim() ? "Get AI feedback on object quality and justification strength." : "Write a justification first to enable scoring."}
-            </p>
-          )}
-
-          {/* Score history */}
-          {scoreHistory.length > 1 && (
-            <div style={{ marginTop: "0.75rem" }}>
-              <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--muted)", marginBottom: "6px" }}>Score history</p>
-              <div style={{ display: "flex", alignItems: "flex-end", gap: "4px" }}>
-                {scoreHistory.map((entry, i) => (
-                  <div
-                    key={i}
-                    title={`${new Date(entry.ts).toLocaleDateString("en-GB", { day: "numeric", month: "short" })} — ${entry.score}/10`}
+            {scoreResult && !scoreLoading && (
+              <div style={{ background: "var(--bg)", border: "2px solid var(--border)", borderRadius: "var(--radius)", padding: "1rem", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                  <span
+                    className="heading"
                     style={{
-                      width: "16px",
-                      height: `${entry.score * 3.2}px`,
-                      background: entry.score >= 8 ? "var(--mint)" : entry.score >= 5 ? "var(--yellow)" : "var(--pink)",
-                      border: "1.5px solid var(--border)",
-                      borderRadius: "2px",
-                      position: "relative",
-                      flexShrink: 0,
+                      fontSize: "28px",
+                      color: scoreResult.score >= 8 ? "#16a34a" : scoreResult.score >= 5 ? "#b45309" : "#dc2626",
                     }}
-                  />
-                ))}
-                <span style={{ fontSize: "10px", color: "var(--muted)", marginLeft: "4px" }}>
-                  {scoreHistory.length > 1 && (() => {
-                    const first = scoreHistory[0].score;
-                    const last = scoreHistory[scoreHistory.length - 1].score;
-                    const diff = last - first;
-                    if (diff === 0) return "no change";
-                    return diff > 0 ? `+${diff} since first` : `${diff} since first`;
-                  })()}
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Knowledge Questions */}
-          <hr className="divider" style={{ margin: "1rem 0" }} />
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem", flexWrap: "wrap", gap: "0.5rem" }}>
-            <p style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-              Knowledge Questions
-            </p>
-            <button
-              onClick={handleKnowledgeQuestion}
-              disabled={kqLoading}
-              className="btn-ghost btn-ghost-hover"
-              style={{ fontSize: "11px", padding: "4px 10px" }}
-            >
-              {kqLoading ? "Generating…" : kqResult ? "Regenerate" : "Generate KQs"}
-            </button>
-          </div>
-          {kqError && (
-            <p className="tag tag-pink" style={{ display: "block", fontWeight: 400, textTransform: "none", letterSpacing: 0, fontSize: "12px", padding: "6px 10px", marginBottom: "0.5rem" }}>
-              {kqError}
-            </p>
-          )}
-          {kqLoading && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              {[70, 90, 60].map((w, i) => (
-                <div key={i} style={{ height: "12px", width: `${w}%`, background: "var(--border)", borderRadius: "2px", animation: "pulse 1.4s ease-in-out infinite", animationDelay: `${i * 0.12}s` }} />
-              ))}
-            </div>
-          )}
-          {kqResult && !kqLoading && (
-            <div style={{ background: "var(--bg)", border: "2px solid var(--border)", borderRadius: "var(--radius)", padding: "0.875rem 1rem", fontSize: "12px", lineHeight: 1.6 }}>
-              <ReactMarkdown
-                components={{
-                  p: ({ children }) => <p style={{ margin: "0 0 0.4em" }}>{children}</p>,
-                  strong: ({ children }) => <strong style={{ fontWeight: 700 }}>{children}</strong>,
-                  em: ({ children }) => <em style={{ fontStyle: "italic", color: "#555" }}>{children}</em>,
-                }}
-              >
-                {kqResult}
-              </ReactMarkdown>
-            </div>
-          )}
-          {!kqResult && !kqLoading && !kqError && (
-            <p style={{ fontSize: "11px", color: "var(--muted)" }}>
-              Generate IB-style knowledge questions that could anchor your justification.
-            </p>
-          )}
-
-          {/* Justification Chat */}
-          <hr className="divider" style={{ margin: "1rem 0" }} />
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem", flexWrap: "wrap", gap: "0.5rem" }}>
-            <p style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-              Refine with AI
-            </p>
-            <button
-              onClick={() => setChatOpen((v) => !v)}
-              className="btn-ghost btn-ghost-hover"
-              style={{ fontSize: "11px", padding: "4px 10px", position: "relative" }}
-            >
-              {chatOpen ? "Close chat" : "Open chat"}
-              {!chatOpen && chatMessages.length > 0 && (
-                <span style={{ position: "absolute", top: "-3px", right: "-3px", width: "7px", height: "7px", borderRadius: "50%", background: "var(--fg)" }} />
-              )}
-            </button>
-          </div>
-
-          {chatOpen && (
-            <div style={{ border: "2px solid var(--border)", borderRadius: "var(--radius)", overflow: "hidden" }}>
-              <div style={{ maxHeight: "200px", overflowY: "auto", padding: "0.75rem", display: "flex", flexDirection: "column", gap: "8px", background: "var(--bg)" }}>
-                {chatMessages.length === 0 && !chatLoading && (
-                  <p style={{ fontSize: "12px", color: "var(--muted)", textAlign: "center", margin: "0.5rem 0" }}>
-                    Ask AI to improve, explain, or critique your justification.
+                  >
+                    {scoreResult.score}/10
+                  </span>
+                  <span
+                    className="tag"
+                    style={{
+                      background: scoreResult.score >= 8 ? "var(--mint)" : scoreResult.score >= 5 ? "var(--yellow)" : "var(--pink)",
+                    }}
+                  >
+                    {scoreResult.score >= 8 ? "Strong" : scoreResult.score >= 5 ? "Developing" : "Needs work"}
+                  </span>
+                </div>
+                <div style={{ fontSize: "12px", color: "#444", lineHeight: 1.6 }}>
+                  <p style={{ marginBottom: "0.4rem" }}><strong>✓ </strong>{scoreResult.strength}</p>
+                  <p style={{ marginBottom: "0.4rem" }}><strong>△ </strong>{scoreResult.weakness}</p>
+                  <p style={{ background: "var(--yellow)", border: "1px solid var(--border)", borderRadius: "2px", padding: "4px 8px", marginTop: "0.25rem" }}>
+                    <strong>Tip: </strong>{scoreResult.tip}
                   </p>
-                )}
-                {chatMessages.map((msg, i) => (
-                  <div key={i} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start" }}>
-                    <div style={{
-                      maxWidth: "90%",
-                      padding: "6px 10px",
-                      borderRadius: "var(--radius)",
-                      border: "2px solid var(--border)",
-                      background: msg.role === "user" ? "var(--fg)" : accent,
-                      color: msg.role === "user" ? "var(--bg)" : "var(--fg)",
-                      fontSize: "12px",
-                      lineHeight: 1.5,
-                      whiteSpace: "pre-wrap",
-                    }}>
-                      {msg.text}
-                    </div>
-                  </div>
-                ))}
-                {chatLoading && (
-                  <div style={{ display: "flex", gap: "4px", padding: "4px 2px" }}>
-                    {[0, 1, 2].map((i) => (
-                      <span key={i} style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--fg)", opacity: 0.4, display: "inline-block", animation: "pulse 1.2s ease-in-out infinite", animationDelay: `${i * 0.18}s` }} />
-                    ))}
-                  </div>
-                )}
-                {chatError && (
-                  <p className="tag tag-pink" style={{ display: "block", fontWeight: 400, textTransform: "none", letterSpacing: 0, fontSize: "11px", padding: "4px 8px" }}>{chatError}</p>
-                )}
+                </div>
               </div>
-              <form
-                onSubmit={(e) => { e.preventDefault(); handleChatSend(chatInput); }}
-                style={{ display: "flex", borderTop: "2px solid var(--border)", background: "var(--surface)" }}
-              >
-                <input
-                  type="text"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  placeholder="Ask about your justification…"
-                  disabled={chatLoading}
-                  style={{ flex: 1, border: "none", outline: "none", padding: "8px 10px", fontSize: "12px", background: "transparent", fontFamily: "inherit" }}
-                />
-                <button
-                  type="submit"
-                  disabled={chatLoading || !chatInput.trim()}
-                  className="btn-primary btn-primary-hover"
-                  style={{ fontSize: "11px", padding: "6px 12px", borderRadius: 0, borderLeft: "2px solid var(--border)", opacity: chatLoading || !chatInput.trim() ? 0.4 : 1 }}
-                >
-                  Send
-                </button>
-              </form>
-            </div>
-          )}
+            )}
 
-          {!chatOpen && (
-            <p style={{ fontSize: "11px", color: "var(--muted)" }}>
-              Chat with AI to refine your justification, ask for improvements, or get specific feedback.
-            </p>
-          )}
+            {!scoreResult && !scoreLoading && !scoreError && (
+              <p style={{ fontSize: "11px", color: "var(--muted)" }}>
+                {justification.trim() ? "Get AI feedback on object quality and justification strength." : "Write a justification first to enable scoring."}
+              </p>
+            )}
+
+            {scoreHistory.length > 1 && (
+              <div style={{ marginTop: "0.75rem" }}>
+                <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--muted)", marginBottom: "6px" }}>Score history</p>
+                <div style={{ display: "flex", alignItems: "flex-end", gap: "4px" }}>
+                  {scoreHistory.map((entry, i) => (
+                    <div
+                      key={i}
+                      title={`${new Date(entry.ts).toLocaleDateString("en-GB", { day: "numeric", month: "short" })} — ${entry.score}/10`}
+                      style={{
+                        width: "16px",
+                        height: `${entry.score * 3.2}px`,
+                        background: entry.score >= 8 ? "var(--mint)" : entry.score >= 5 ? "var(--yellow)" : "var(--pink)",
+                        border: "1.5px solid var(--border)",
+                        borderRadius: "2px",
+                        position: "relative",
+                        flexShrink: 0,
+                      }}
+                    />
+                  ))}
+                  <span style={{ fontSize: "10px", color: "var(--muted)", marginLeft: "4px" }}>
+                    {scoreHistory.length > 1 && (() => {
+                      const first = scoreHistory[0].score;
+                      const last = scoreHistory[scoreHistory.length - 1].score;
+                      const diff = last - first;
+                      if (diff === 0) return "no change";
+                      return diff > 0 ? `+${diff} since first` : `${diff} since first`;
+                    })()}
+                  </span>
+                </div>
+              </div>
+            )}
+          </AccordionSection>
+
+          <AccordionSection title="Knowledge Questions">
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "0.75rem" }}>
+              <button
+                onClick={handleKnowledgeQuestion}
+                disabled={kqLoading}
+                className="btn-ghost btn-ghost-hover"
+                style={{ fontSize: "11px", padding: "4px 10px" }}
+              >
+                {kqLoading ? "Generating…" : kqResult ? "Regenerate" : "Generate KQs"}
+              </button>
+            </div>
+            {kqError && (
+              <p className="tag tag-pink" style={{ display: "block", fontWeight: 400, textTransform: "none", letterSpacing: 0, fontSize: "12px", padding: "6px 10px", marginBottom: "0.5rem" }}>
+                {kqError}
+              </p>
+            )}
+            {kqLoading && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                {[70, 90, 60].map((w, i) => (
+                  <div key={i} style={{ height: "12px", width: `${w}%`, background: "var(--border)", borderRadius: "2px", animation: "pulse 1.4s ease-in-out infinite", animationDelay: `${i * 0.12}s` }} />
+                ))}
+              </div>
+            )}
+            {kqResult && !kqLoading && (
+              <div style={{ background: "var(--bg)", border: "2px solid var(--border)", borderRadius: "var(--radius)", padding: "0.875rem 1rem", fontSize: "12px", lineHeight: 1.6 }}>
+                <ReactMarkdown
+                  components={{
+                    p: ({ children }) => <p style={{ margin: "0 0 0.4em" }}>{children}</p>,
+                    strong: ({ children }) => <strong style={{ fontWeight: 700 }}>{children}</strong>,
+                    em: ({ children }) => <em style={{ fontStyle: "italic", color: "#555" }}>{children}</em>,
+                  }}
+                >
+                  {kqResult}
+                </ReactMarkdown>
+              </div>
+            )}
+            {!kqResult && !kqLoading && !kqError && (
+              <p style={{ fontSize: "11px", color: "var(--muted)" }}>
+                Generate IB-style knowledge questions that could anchor your justification.
+              </p>
+            )}
+          </AccordionSection>
+
+          <AccordionSection title="Refine with AI & Chat">
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem", marginBottom: "0.75rem" }}>
+              <button
+                onClick={() => setChatOpen((v) => !v)}
+                className="btn-ghost btn-ghost-hover"
+                style={{ fontSize: "11px", padding: "4px 10px", position: "relative" }}
+              >
+                {chatOpen ? "Close chat" : "Open chat"}
+                {!chatOpen && chatMessages.length > 0 && (
+                  <span style={{ position: "absolute", top: "-3px", right: "-3px", width: "7px", height: "7px", borderRadius: "50%", background: "var(--fg)" }} />
+                )}
+              </button>
+            </div>
+
+            {chatOpen && (
+              <div style={{ border: "2px solid var(--border)", borderRadius: "var(--radius)", overflow: "hidden" }}>
+                <div style={{ maxHeight: "200px", overflowY: "auto", padding: "0.75rem", display: "flex", flexDirection: "column", gap: "8px", background: "var(--bg)" }}>
+                  {chatMessages.length === 0 && !chatLoading && (
+                    <p style={{ fontSize: "12px", color: "var(--muted)", textAlign: "center", margin: "0.5rem 0" }}>
+                      Ask AI to improve, explain, or critique your justification.
+                    </p>
+                  )}
+                  {chatMessages.map((msg, i) => (
+                    <div key={i} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start" }}>
+                      <div style={{
+                        maxWidth: "90%",
+                        padding: "6px 10px",
+                        borderRadius: "var(--radius)",
+                        border: "2px solid var(--border)",
+                        background: msg.role === "user" ? "var(--fg)" : accent,
+                        color: msg.role === "user" ? "var(--bg)" : "var(--fg)",
+                        fontSize: "12px",
+                        lineHeight: 1.5,
+                        whiteSpace: "pre-wrap",
+                      }}>
+                        {msg.text}
+                      </div>
+                    </div>
+                  ))}
+                  {chatLoading && (
+                    <div style={{ display: "flex", gap: "4px", padding: "4px 2px" }}>
+                      {[0, 1, 2].map((i) => (
+                        <span key={i} style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--fg)", opacity: 0.4, display: "inline-block", animation: "pulse 1.2s ease-in-out infinite", animationDelay: `${i * 0.18}s` }} />
+                      ))}
+                    </div>
+                  )}
+                  {chatError && (
+                    <p className="tag tag-pink" style={{ display: "block", fontWeight: 400, textTransform: "none", letterSpacing: 0, fontSize: "11px", padding: "4px 8px" }}>{chatError}</p>
+                  )}
+                </div>
+                <form
+                  onSubmit={(e) => { e.preventDefault(); handleChatSend(chatInput); }}
+                  style={{ display: "flex", borderTop: "2px solid var(--border)", background: "var(--surface)" }}
+                >
+                  <input
+                    type="text"
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    placeholder="Ask about your justification…"
+                    disabled={chatLoading}
+                    style={{ flex: 1, border: "none", outline: "none", padding: "8px 10px", fontSize: "12px", background: "transparent", fontFamily: "inherit" }}
+                  />
+                  <button
+                    type="submit"
+                    disabled={chatLoading || !chatInput.trim()}
+                    className="btn-primary btn-primary-hover"
+                    style={{ fontSize: "11px", padding: "6px 12px", borderRadius: 0, borderLeft: "2px solid var(--border)", opacity: chatLoading || !chatInput.trim() ? 0.4 : 1 }}
+                  >
+                    Send
+                  </button>
+                </form>
+              </div>
+            )}
+
+            {!chatOpen && (
+              <p style={{ fontSize: "11px", color: "var(--muted)" }}>
+                Chat with AI to refine your justification, ask for improvements, or get specific feedback.
+              </p>
+            )}
+          </AccordionSection>
         </div>
       )}
       </div>

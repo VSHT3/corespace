@@ -244,7 +244,7 @@ body {
   50% { opacity: 1; }
 }
 
-/* Mobile: stack 3-col grids to single column below 700px */
+/* Mobile: stack multi-col layouts to single column below 700px */
 @media (max-width: 700px) {
   .objects-grid {
     grid-template-columns: 1fr !important;
@@ -252,12 +252,29 @@ body {
   .stats-grid {
     grid-template-columns: repeat(3, 1fr) !important;
   }
+  .workspace-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .workspace-2col {
+    grid-template-columns: 1fr !important;
+    max-width: 100% !important;
+  }
+  .workspace-1col {
+    max-width: 100% !important;
+  }
 }
 
 /* Mobile: tighten page padding */
 @media (max-width: 500px) {
   .page-main {
     padding: 2rem 1rem !important;
+  }
+}
+
+/* Mobile: collapse stats to 2-col at 500px */
+@media (max-width: 500px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
   }
 }
 
@@ -271,11 +288,6 @@ body {
   textarea { border: none !important; resize: none; overflow: visible; height: auto; }
   a { color: inherit; text-decoration: none; }
   @page { margin: 1.5cm; }
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.35; }
 }
 
 /* Inner bump on hover: intended for elements whose parent already

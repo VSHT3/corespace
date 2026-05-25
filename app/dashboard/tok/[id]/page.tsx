@@ -12,6 +12,7 @@ import WordCountSummary from "./WordCountSummary";
 import RubricPanel from "./RubricPanel";
 import ObjectIdeasButton from "./ObjectIdeasButton";
 import SubmissionChecklist from "./SubmissionChecklist";
+import WorkspaceKeyboardShortcuts from "@/components/WorkspaceKeyboardShortcuts";
 import type { TOKExhibition, TOKObject } from "@/types";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
@@ -72,6 +73,7 @@ export default async function ExhibitionPage({ params }: { params: Promise<{ id:
     >
       <section
         aria-labelledby="tok-prompt-heading"
+        className="workspace-grid"
         style={{
           display: "grid",
           gridTemplateColumns: "minmax(180px, 1fr) minmax(420px, 980px) minmax(180px, 1fr)",
@@ -191,7 +193,7 @@ export default async function ExhibitionPage({ params }: { params: Promise<{ id:
       )}
 
       {objs.length === 1 && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", maxWidth: "70%", margin: "0 auto" }}>
+        <div className="workspace-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", maxWidth: "70%", margin: "0 auto" }}>
           <ObjectCard
             slot={0}
             exhibitionId={id}
@@ -207,7 +209,7 @@ export default async function ExhibitionPage({ params }: { params: Promise<{ id:
 
       {objs.length === 2 && (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", margin: "0 auto" }}>
+          <div className="workspace-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", margin: "0 auto" }}>
             {[0, 1].map((pos) => {
               const obj = objs.find((o) => o.position === pos) ?? null;
               return (
@@ -249,6 +251,8 @@ export default async function ExhibitionPage({ params }: { params: Promise<{ id:
           })}
         </div>
       )}
+
+      <WorkspaceKeyboardShortcuts />
     </main>
   );
 }
