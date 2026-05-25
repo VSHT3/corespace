@@ -47,7 +47,7 @@
 
 ## General — Pages
 
-- [ ] **CAS page** — `/dashboard/cas` is a stub. Build real CAS tracker (hours log, learning outcomes, reflections).
+- [ ] **CAS tracker** — basic structure built (list + detail + reflections). Needs: hours breakdown per category, evidence links, supervisor export, deadline reminders. Migration `003_cas.sql` must be run in Supabase SQL Editor.
 - [ ] **EE page** — `/dashboard/ee` is a stub. Build real EE assistant (research question, outline, draft feedback).
 - [ ] **Contact page** — `/contact` is static. Wire to a form handler or mail service.
 

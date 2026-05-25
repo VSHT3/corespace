@@ -35,3 +35,27 @@ export interface AIRequestBody {
 export interface AIResponseBody {
   text: string;
 }
+
+export type CASCategory = "creativity" | "activity" | "service";
+export type CASStatus = "active" | "completed" | "planned";
+
+export interface CASExperience {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string;
+  category: CASCategory;
+  hours: number;
+  status: CASStatus;
+  learning_outcomes: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CASReflection {
+  id: string;
+  experience_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+}

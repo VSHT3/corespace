@@ -18,7 +18,7 @@ const modules = [
     description:
       "Log hours, write structured reflections, and hit every learning outcome.",
     href: "/dashboard/cas",
-    available: false,
+    available: true,
     accent: "#bbf7d0",
   },
   {
