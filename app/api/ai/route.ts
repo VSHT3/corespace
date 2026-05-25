@@ -219,9 +219,13 @@ export async function POST(request: NextRequest) {
   }
 
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  const { ok: withinLimit } = checkRateLimit(ip);
+  const { ok: withinLimit, resetAt } = checkRateLimit(ip);
   if (!withinLimit) {
-    return NextResponse.json({ error: "Too many requests. Please wait a minute before trying again." }, { status: 429 });
+    const retryAfter = Math.ceil((resetAt - Date.now()) / 1000);
+    return NextResponse.json(
+      { error: `Too many requests. Retry after ${retryAfter}s.`, retryAfter },
+      { status: 429, headers: { "Retry-After": String(retryAfter) } }
+    );
   }
 
   const { intent, userMessage, context, history } = body;

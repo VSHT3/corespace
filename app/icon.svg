@@ -3,7 +3,7 @@
   <text x="50" y="68" font-family="system-ui, sans-serif" font-size="52" font-weight="700" text-anchor="middle" fill="black">C</text>
   <style>
     @media (prefers-color-scheme: dark) {
-      path, text { stroke: white; fill: none; }
+      path { stroke: white; }
       text { fill: white; }
     }
   </style>
