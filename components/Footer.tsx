@@ -1,4 +1,5 @@
 import Link from "next/link";
+import CookiePreferencesLink from "./CookiePreferencesLink";
 
 const NAV_LINKS = [
   { label: "About", href: "/about" },
@@ -42,10 +43,11 @@ export default function Footer() {
             style={{ fontSize: "11px", color: "#aaa", textDecoration: "none" }}
             className="back-link"
           >
-            {l.label}
-          </Link>
-        ))}
-      </nav>
+          {l.label}
+            </Link>
+          ))}
+          <CookiePreferencesLink />
+        </nav>
     </footer>
   );
 }
