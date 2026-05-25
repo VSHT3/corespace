@@ -12,6 +12,7 @@ import WordCountSummary from "./WordCountSummary";
 import RubricPanel from "./RubricPanel";
 import ObjectIdeasButton from "./ObjectIdeasButton";
 import SubmissionChecklist from "./SubmissionChecklist";
+import ExhibitionNotes from "./ExhibitionNotes";
 import WorkspaceKeyboardShortcuts from "@/components/WorkspaceKeyboardShortcuts";
 import type { TOKExhibition, TOKObject } from "@/types";
 
@@ -63,130 +64,55 @@ export default async function ExhibitionPage({ params }: { params: Promise<{ id:
   }, 0);
 
   return (
-    <main
-      className="page-main"
-      style={{
-        width: "100%",
-        maxWidth: "1800px",
-        padding: "1.5rem 1.5rem 4rem",
-      }}
-    >
-      <section
-        aria-labelledby="tok-prompt-heading"
-        className="workspace-grid"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(180px, 1fr) minmax(420px, 980px) minmax(180px, 1fr)",
-          alignItems: "start",
-          gap: "1.25rem",
-          marginBottom: "1.5rem",
-        }}
-      >
+    <main style={{ flex: "1 1 auto", boxSizing: "border-box", animation: "fadeUp 0.28s ease both", padding: "2rem 2rem 4rem" }}>
+      <ExhibitionNotes exhibitionId={id} />
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "1rem", marginBottom: "2rem" }}>
         <div>
-          <Link href="/dashboard/tok/exhibition" className="back-link">← TOK Exhibition</Link>
+          <Link href="/dashboard/tok" className="back-link">← TOK</Link>
           <p className="eyebrow" style={{ marginTop: "0.65rem", marginBottom: "0.25rem" }}>Exhibition</p>
           <ExhibitionTitleEditor exhibitionId={id} initialTitle={ex.title} />
         </div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.5rem", flexShrink: 0 }}>
+          <span className="tag tag-yellow">Prompt {ex.prompt_id}</span>
+          <PrintButton exhibitionId={id} />
+        </div>
+      </div>
 
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: "2.5rem" }}>
         <div
           style={{
-            justifySelf: "center",
+            display: "inline-block",
             textAlign: "center",
-            padding: "0.35rem 0.75rem 0.6rem",
+            padding: "0 1rem 0.8rem",
             borderBottom: "6px solid var(--yellow)",
-            filter: "drop-shadow(5px 5px 0 var(--surface))",
           }}
         >
           <h2
             id="tok-prompt-heading"
             className="heading"
-            style={{
-              fontSize: "clamp(24px, 3.4vw, 48px)",
-              lineHeight: 1.1,
-              letterSpacing: "-0.03em",
-              margin: 0,
-            }}
+            style={{ fontSize: "clamp(22px, 3vw, 40px)", lineHeight: 1.15, letterSpacing: "-0.03em", margin: 0 }}
           >
             {prompt}
           </h2>
         </div>
-
-        <div style={{ justifySelf: "end", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.5rem" }}>
-          <span className="tag tag-yellow">Prompt {ex.prompt_id}</span>
-          <PrintButton exhibitionId={id} />
-        </div>
-      </section>
+      </div>
 
       {promptObj?.description && (
         <aside
           style={{
-            maxWidth: "860px",
-            margin: "0 auto 3rem",
+            maxWidth: "720px",
+            margin: "0 auto 2rem",
             background: "var(--yellow)",
             border: "2px solid var(--border)",
             borderRadius: "var(--radius)",
             padding: "1rem 1.25rem",
-            boxShadow: "4px 4px 0 0 var(--fg)",
           }}
         >
-          <p style={{ color: "#222", lineHeight: 1.7, margin: 0, fontWeight: 500 }}>{promptObj.description}</p>
+          <p style={{ color: "#222", lineHeight: 1.7, margin: 0, fontWeight: 500, textAlign: "justify" }}>{promptObj.description}</p>
         </aside>
       )}
 
-      <ObjectIdeasButton prompt={prompt} promptId={ex.prompt_id} />
-      <SubmissionChecklist objectCount={objs.length} justifiedCount={justifiedCount} totalWords={totalWords} />
-      <RubricPanel />
-
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "1rem",
-          marginBottom: "1rem",
-        }}
-      >
-        <p className="eyebrow">{["Add your first object", "Add a second object", "Two down, one to go", "Three Objects"][objs.length]}</p>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          {objs.length > 0 && (
-            <div style={{ display: "flex", gap: "6px" }}>
-              {[0, 1, 2].map((slot) => {
-                const obj = objs.find((o) => o.position === slot);
-                const accentColors = ["var(--pink)", "var(--mint)", "var(--sky)"];
-                const hasJustification = !!(obj?.justification?.trim());
-                return (
-                  <div
-                    key={slot}
-                    title={obj ? `Object ${slot + 1}: ${obj.title}${hasJustification ? " (justified)" : " (no justification)"}` : `Object ${slot + 1}: empty`}
-                    style={{
-                      width: "32px",
-                      height: "10px",
-                      borderRadius: "2px",
-                      border: "2px solid var(--border)",
-                      background: obj ? (hasJustification ? accentColors[slot] : "var(--surface)") : "transparent",
-                      position: "relative",
-                      overflow: "hidden",
-                    }}
-                  >
-                    {obj && !hasJustification && (
-                      <div style={{ position: "absolute", inset: 0, background: accentColors[slot], opacity: 0.35 }} />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-          <span style={{ fontSize: "11px", color: "#888", fontWeight: 700 }}>
-            {objs.length}/3 objects
-            {justifiedCount > 0 && (
-              <> · {justifiedCount}/3 justified</>
-            )}
-          </span>
-          <WordCountSummary initialJustifications={objs.map(o => o.justification)} />
-        </div>
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "1rem", maxWidth: "720px", margin: "0 auto" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem", maxWidth: "960px", margin: "0 auto" }}>
         {[0, 1, 2].map((slot) => {
           const obj = objs.find((o) => o.position === slot) ?? null;
           return obj ? (
@@ -204,6 +130,43 @@ export default async function ExhibitionPage({ params }: { params: Promise<{ id:
             <AddObjectSlot key={slot} slot={slot} exhibitionId={id} prompt={prompt} saveObject={saveObject} deleteObject={deleteObject} />
           );
         })}
+      </div>
+
+      <div style={{ maxWidth: "960px", margin: "1.5rem auto 0" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            {[0, 1, 2].map((slot) => {
+              const obj = objs.find((o) => o.position === slot);
+              const accentColors = ["var(--pink)", "var(--mint)", "var(--sky)"];
+              const hasJustification = !!(obj?.justification?.trim());
+              return (
+                <div
+                  key={slot}
+                  title={obj ? `Object ${slot + 1}: ${obj.title}${hasJustification ? " (justified)" : " (no justification)"}` : `Object ${slot + 1}: empty`}
+                  style={{
+                    width: "28px",
+                    height: "8px",
+                    borderRadius: "2px",
+                    border: "2px solid var(--border)",
+                    background: obj ? (hasJustification ? accentColors[slot] : "var(--surface)") : "transparent",
+                    position: "relative",
+                  }}
+                />
+              );
+            })}
+            <span style={{ fontSize: "11px", color: "#888", fontWeight: 700 }}>
+              {objs.length}/3 objects
+              {justifiedCount > 0 && <> · {justifiedCount}/3 justified</>}
+            </span>
+          </div>
+          <WordCountSummary initialJustifications={objs.map(o => o.justification)} />
+        </div>
+
+        <div style={{ marginTop: "2rem" }}>
+          <ObjectIdeasButton prompt={prompt} promptId={ex.prompt_id} />
+          <SubmissionChecklist objectCount={objs.length} justifiedCount={justifiedCount} totalWords={totalWords} />
+          <RubricPanel />
+        </div>
       </div>
 
       <WorkspaceKeyboardShortcuts />

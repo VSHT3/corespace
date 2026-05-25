@@ -5,6 +5,7 @@
 ### Layout & UX
 - [ ] **Fullscreen focus write mode** — textarea needs an expand-to-fullscreen button (modal or full viewport) for distraction-free writing, with the prompt and object info pinned at top.
 - [ ] **Auto-stretch textarea** — current `useEffect` auto-resize is jumpy. Switch to `useLayoutEffect` or a CSS-based approach (`field-sizing: content` in modern CSS). The textarea also has `overflow: hidden` which clips scrollable content — use `overflow-y: auto` when height exceeds max.
+- [ ] **Sliding notes panel** — `ExhibitionNotes` component exists but unfinished. Button+panel on right side, portal-based, fixed positioning. Still needs: proper notes persistence (DB instead of localStorage), better layout integration, possible DB-backed storage.
 
 ### AI & Features
 - [ ] **Object recommendator** — `ObjectIdeasButton` exists but is generic. Add per-object recommendations tied to the specific prompt + existing objects (avoid duplicates). Show suggestions inline in the add-object form.

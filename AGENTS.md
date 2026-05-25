@@ -34,6 +34,16 @@ opencode check     # tsc only
 opencode commit    # git add -A + conventional commit
 ```
 
+Running dev server in background:
+```bash
+nohup npm run dev > /tmp/dev.log 2>&1 &
+```
+
+Kill dev server:
+```bash
+kill $(lsof -ti:3000)
+```
+
 ## Available CLIs
 
 | Tool | How to use | Notes |

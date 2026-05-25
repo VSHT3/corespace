@@ -64,7 +64,7 @@ export default function CookieBanner() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem" }}>
             <div style={{ flex: 1 }}>
               <span style={{ fontSize: "12px", fontWeight: 700, display: "block", lineHeight: 1.3 }}>Essential</span>
-              <span style={{ fontSize: "10px", color: "#888" }}>Auth sessions (always on)</span>
+              <span style={{ fontSize: "10px", color: "#888" }}>Keeps you signed in (always on)</span>
             </div>
             <span style={{ fontSize: "11px", fontWeight: 700, color: "#888" }}>Required</span>
           </div>

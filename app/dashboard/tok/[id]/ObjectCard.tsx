@@ -412,502 +412,530 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
   }
 
   return (
-    <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-      <div style={{ height: "6px", background: accent }} />
-      <div style={{ padding: "1.25rem" }}>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.75rem", marginBottom: "1rem" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0, flexWrap: "wrap" }}>
-          <span className="tag" style={{ background: accent }}>{slotLabel} Object</span>
-          {object && !editing && (
-            <span style={{ fontWeight: 700, fontSize: "15px", lineHeight: 1.35, overflowWrap: "anywhere" }}>{object.title}</span>
-          )}
-        </div>
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
-          {object && (
-            <>
-              <button
-                onClick={() => setEditing((v) => !v)}
-                className="btn-ghost btn-ghost-hover"
-                style={{ fontSize: "11px", padding: "4px 10px" }}
-              >
-                {editing ? "Cancel" : "Edit"}
-              </button>
-              {!confirmingDelete ? (
-                <button
-                  onClick={() => setConfirmingDelete(true)}
-                  disabled={isPending}
-                  className="btn-ghost btn-ghost-hover"
-                  style={{ fontSize: "11px", padding: "4px 10px", color: "#c00", borderColor: "#c00" }}
-                >
-                  Remove
-                </button>
-              ) : (
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
-                  <span style={{ color: "#555", fontSize: "12px", fontWeight: 700 }}>Remove this object?</span>
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "minmax(280px, 0.36fr) minmax(380px, 0.64fr)",
+        gap: "1rem",
+        alignItems: "start",
+      }}
+      className="object-card-grid"
+    >
+      {/* Left card: Object Info + IB check + Score */}
+      <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+        <div style={{ height: "6px", background: accent }} />
+        <div style={{ padding: "1.25rem" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.75rem", marginBottom: "1rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0, flexWrap: "wrap" }}>
+              <span className="tag" style={{ background: accent }}>{slotLabel} Object</span>
+              {object && !editing && (
+                <span style={{ fontWeight: 700, fontSize: "15px", lineHeight: 1.35, overflowWrap: "anywhere" }}>{object.title}</span>
+              )}
+            </div>
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+              {object && (
+                <>
                   <button
-                    onClick={handleDelete}
-                    disabled={isPending}
+                    onClick={() => setEditing((v) => !v)}
                     className="btn-ghost btn-ghost-hover"
-                    style={{ fontSize: "11px", padding: "4px 10px", color: "#c00", borderColor: "#c00" }}
+                    style={{ fontSize: "11px", padding: "4px 10px" }}
                   >
-                    {isPending ? "Removing..." : "Yes, remove"}
+                    {editing ? "Cancel" : "Edit"}
                   </button>
+                  {!confirmingDelete ? (
+                    <button
+                      onClick={() => setConfirmingDelete(true)}
+                      disabled={isPending}
+                      className="btn-ghost btn-ghost-hover"
+                      style={{ fontSize: "11px", padding: "4px 10px", color: "#c00", borderColor: "#c00" }}
+                    >
+                      Remove
+                    </button>
+                  ) : (
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+                      <span style={{ color: "#555", fontSize: "12px", fontWeight: 700 }}>Remove this object?</span>
+                      <button
+                        onClick={handleDelete}
+                        disabled={isPending}
+                        className="btn-ghost btn-ghost-hover"
+                        style={{ fontSize: "11px", padding: "4px 10px", color: "#c00", borderColor: "#c00" }}
+                      >
+                        {isPending ? "Removing..." : "Yes, remove"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmingDelete(false)}
+                        className="back-link"
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          fontSize: "12px",
+                          fontWeight: 700,
+                          padding: "4px 0",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.06em",
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Object form (edit mode) */}
+          {editing && (
+            <form
+              action={async (formData) => {
+                formData.set("exhibition_id", exhibitionId);
+                formData.set("position", String(slot));
+                if (object) formData.set("object_id", object.id);
+                await saveObject(formData);
+                setEditing(false);
+              }}
+            >
+              <div>
+                <label style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: "4px" }}>
+                  Object Title
+                </label>
+                <input
+                  name="title"
+                  type="text"
+                  required
+                  maxLength={100}
+                  defaultValue={object?.title ?? ""}
+                  placeholder="e.g. Einstein's notebook"
+                  className="field-input"
+                />
+              </div>
+              <div style={{ marginTop: "0.6rem" }}>
+                <label style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: "4px" }}>
+                  Object Type
+                </label>
+                <select
+                  name="object_type"
+                  defaultValue={object?.object_type ?? ""}
+                  className="field-input"
+                >
+                  <option value="">— Select type —</option>
+                  <option value="Personal">Personal</option>
+                  <option value="Cultural">Cultural</option>
+                  <option value="Natural">Natural</option>
+                  <option value="Linguistic">Linguistic</option>
+                  <option value="Mathematical">Mathematical</option>
+                  <option value="Scientific">Scientific</option>
+                  <option value="Artistic">Artistic</option>
+                  <option value="Historical">Historical</option>
+                  <option value="Technological">Technological</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div style={{ marginTop: "0.6rem" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                  <label style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                    Description
+                  </label>
+                  {descValue.length > DESC_MAX * 0.8 && (
+                    <span style={{ fontSize: "10px", color: descValue.length >= DESC_MAX ? "#dc2626" : "#888" }}>
+                      {descValue.length}/{DESC_MAX}
+                    </span>
+                  )}
+                </div>
+                <textarea
+                  name="description"
+                  rows={3}
+                  maxLength={DESC_MAX}
+                  value={descValue}
+                  onChange={(e) => setDescValue(e.target.value)}
+                  placeholder="What is this object? Why does it relate to your prompt?"
+                  className="field-input"
+                  style={{ resize: "vertical" }}
+                />
+              </div>
+              <button type="submit" className="btn-primary btn-primary-hover" style={{ marginTop: "0.75rem" }}>
+                Save Object
+              </button>
+            </form>
+          )}
+
+          {/* Object info display + IB check */}
+          {object && !editing && (
+            <div>
+              <div style={{ marginBottom: "0.75rem", fontSize: "12px", color: "#666" }}>
+                {object.object_type && <span className="tag tag-sky" style={{ marginRight: "6px" }}>{object.object_type}</span>}
+                {object.description && <span>{object.description}</span>}
+              </div>
+
+              {/* IB suitability check */}
+              <div style={{ marginBottom: "0.5rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                   <button
-                    type="button"
-                    onClick={() => setConfirmingDelete(false)}
-                    className="back-link"
-                    style={{
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      fontSize: "12px",
-                      fontWeight: 700,
-                      padding: "4px 0",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.06em",
-                    }}
+                    onClick={handleCheck}
+                    disabled={checkLoading}
+                    className="btn-ghost btn-ghost-hover"
+                    style={{ fontSize: "10px", padding: "3px 9px" }}
+                    title="Check if this object is IB-appropriate"
                   >
-                    Cancel
+                    {checkLoading ? "Checking…" : checkResult ? "Re-check object" : "Check IB suitability"}
+                  </button>
+                  {checkResult && !checkLoading && (
+                    <span
+                      className="tag"
+                      style={{
+                        background: checkResult.verdict === "strong" ? "var(--mint)" : checkResult.verdict === "acceptable" ? "var(--yellow)" : "var(--pink)",
+                        fontSize: "10px",
+                      }}
+                    >
+                      {checkResult.verdict === "strong" ? "Strong" : checkResult.verdict === "acceptable" ? "Acceptable" : "Needs work"}
+                    </span>
+                  )}
+                </div>
+                {checkError && (
+                  <p style={{ fontSize: "11px", color: "#c00", marginTop: "4px" }}>{checkError}</p>
+                )}
+                {checkResult && !checkLoading && (
+                  <div style={{ marginTop: "6px", fontSize: "12px", lineHeight: 1.6, display: "flex", flexDirection: "column", gap: "3px" }}>
+                    {checkResult.issue && (
+                      <p style={{ color: "#c00", margin: 0 }}><strong>Issue:</strong> {checkResult.issue}</p>
+                    )}
+                    <p style={{ color: "#444", margin: 0 }}><strong>Prompt link:</strong> {checkResult.promptLink}</p>
+                    <p style={{ background: "var(--yellow)", border: "1px solid var(--border)", borderRadius: "2px", padding: "3px 7px", margin: 0 }}>
+                      <strong>Tip:</strong> {checkResult.tip}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <hr className="divider" style={{ margin: "1rem 0" }} />
+
+              {/* AI Score accordion */}
+              <AccordionSection title="AI Score" count={scoreHistory.length > 0 ? `${scoreHistory[scoreHistory.length - 1].score}/10` : undefined}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem", flexWrap: "wrap", gap: "0.5rem" }}>
+                  <button
+                    onClick={handleScore}
+                    disabled={scoreLoading || !justification.trim()}
+                    className="btn-ghost btn-ghost-hover"
+                    style={{ fontSize: "11px", padding: "4px 10px" }}
+                  >
+                    {scoreLoading ? "Scoring…" : scoreResult ? "Re-score" : "Score with AI"}
                   </button>
                 </div>
-              )}
-            </>
+
+                {scoreError && (
+                  <p className="tag tag-pink" style={{ display: "block", fontWeight: 400, textTransform: "none", letterSpacing: 0, fontSize: "12px", padding: "6px 10px", marginBottom: "0.5rem" }}>
+                    {scoreError}
+                  </p>
+                )}
+
+                {scoreLoading && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    {[60, 80, 50].map((w, i) => (
+                      <div key={i} style={{ height: "12px", width: `${w}%`, background: "var(--border)", borderRadius: "2px", animation: "pulse 1.4s ease-in-out infinite", animationDelay: `${i * 0.12}s` }} />
+                    ))}
+                  </div>
+                )}
+
+                {scoreResult && !scoreLoading && (
+                  <div style={{ background: "var(--bg)", border: "2px solid var(--border)", borderRadius: "var(--radius)", padding: "1rem", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                      <span
+                        className="heading"
+                        style={{
+                          fontSize: "28px",
+                          color: scoreResult.score >= 8 ? "#16a34a" : scoreResult.score >= 5 ? "#b45309" : "#dc2626",
+                        }}
+                      >
+                        {scoreResult.score}/10
+                      </span>
+                      <span
+                        className="tag"
+                        style={{
+                          background: scoreResult.score >= 8 ? "var(--mint)" : scoreResult.score >= 5 ? "var(--yellow)" : "var(--pink)",
+                        }}
+                      >
+                        {scoreResult.score >= 8 ? "Strong" : scoreResult.score >= 5 ? "Developing" : "Needs work"}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: "12px", color: "#444", lineHeight: 1.6 }}>
+                      <p style={{ marginBottom: "0.4rem" }}><strong>✓ </strong>{scoreResult.strength}</p>
+                      <p style={{ marginBottom: "0.4rem" }}><strong>△ </strong>{scoreResult.weakness}</p>
+                      <p style={{ background: "var(--yellow)", border: "1px solid var(--border)", borderRadius: "2px", padding: "4px 8px", marginTop: "0.25rem" }}>
+                        <strong>Tip: </strong>{scoreResult.tip}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {!scoreResult && !scoreLoading && !scoreError && (
+                  <p style={{ fontSize: "11px", color: "var(--muted)" }}>
+                    {justification.trim() ? "Get AI feedback on object quality and justification strength." : "Write a justification first to enable scoring."}
+                  </p>
+                )}
+
+                {scoreHistory.length > 1 && (
+                  <div style={{ marginTop: "0.75rem" }}>
+                    <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--muted)", marginBottom: "6px" }}>Score history</p>
+                    <div style={{ display: "flex", alignItems: "flex-end", gap: "4px" }}>
+                      {scoreHistory.map((entry, i) => (
+                        <div
+                          key={i}
+                          title={`${new Date(entry.ts).toLocaleDateString("en-GB", { day: "numeric", month: "short" })} — ${entry.score}/10`}
+                          style={{
+                            width: "16px",
+                            height: `${entry.score * 3.2}px`,
+                            background: entry.score >= 8 ? "var(--mint)" : entry.score >= 5 ? "var(--yellow)" : "var(--pink)",
+                            border: "1.5px solid var(--border)",
+                            borderRadius: "2px",
+                            position: "relative",
+                            flexShrink: 0,
+                          }}
+                        />
+                      ))}
+                      <span style={{ fontSize: "10px", color: "var(--muted)", marginLeft: "4px" }}>
+                        {scoreHistory.length > 1 && (() => {
+                          const first = scoreHistory[0].score;
+                          const last = scoreHistory[scoreHistory.length - 1].score;
+                          const diff = last - first;
+                          if (diff === 0) return "no change";
+                          return diff > 0 ? `+${diff} since first` : `${diff} since first`;
+                        })()}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </AccordionSection>
+            </div>
           )}
         </div>
       </div>
 
-      {/* Object form */}
-      {editing && (
-        <form
-          action={async (formData) => {
-            formData.set("exhibition_id", exhibitionId);
-            formData.set("position", String(slot));
-            if (object) formData.set("object_id", object.id);
-            await saveObject(formData);
-            setEditing(false);
-          }}
-          className="space-y-3 mb-4"
-        >
-          <div>
-            <label style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: "4px" }}>
-              Object Title
-            </label>
-            <input
-              name="title"
-              type="text"
-              required
-              maxLength={100}
-              defaultValue={object?.title ?? ""}
-              placeholder="e.g. Einstein's notebook"
-              className="field-input"
-            />
-          </div>
-          <div>
-            <label style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: "4px" }}>
-              Object Type
-            </label>
-            <select
-              name="object_type"
-              defaultValue={object?.object_type ?? ""}
-              className="field-input"
-            >
-              <option value="">— Select type —</option>
-              <option value="Personal">Personal</option>
-              <option value="Cultural">Cultural</option>
-              <option value="Natural">Natural</option>
-              <option value="Linguistic">Linguistic</option>
-              <option value="Mathematical">Mathematical</option>
-              <option value="Scientific">Scientific</option>
-              <option value="Artistic">Artistic</option>
-              <option value="Historical">Historical</option>
-              <option value="Technological">Technological</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
-          <div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-              <label style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                Description
-              </label>
-              {descValue.length > DESC_MAX * 0.8 && (
-                <span style={{ fontSize: "10px", color: descValue.length >= DESC_MAX ? "#dc2626" : "#888" }}>
-                  {descValue.length}/{DESC_MAX}
-                </span>
-              )}
-            </div>
-            <textarea
-              name="description"
-              rows={3}
-              maxLength={DESC_MAX}
-              value={descValue}
-              onChange={(e) => setDescValue(e.target.value)}
-              placeholder="What is this object? Why does it relate to your prompt?"
-              className="field-input"
-              style={{ resize: "vertical" }}
-            />
-          </div>
-          <button type="submit" className="btn-primary btn-primary-hover">
-            Save Object
-          </button>
-        </form>
-      )}
-
-      {/* Justification section */}
-      {object && !editing && (
-        <div>
-          <div style={{ marginBottom: "0.5rem", fontSize: "12px", color: "#666" }}>
-            {object.object_type && <span className="tag tag-sky" style={{ marginRight: "6px" }}>{object.object_type}</span>}
-            {object.description && <span>{object.description}</span>}
-          </div>
-
-          {/* Object suitability check */}
-          <div style={{ marginBottom: "0.5rem" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-              <button
-                onClick={handleCheck}
-                disabled={checkLoading}
-                className="btn-ghost btn-ghost-hover"
-                style={{ fontSize: "10px", padding: "3px 9px" }}
-                title="Check if this object is IB-appropriate"
-              >
-                {checkLoading ? "Checking…" : checkResult ? "Re-check object" : "Check IB suitability"}
-              </button>
-              {checkResult && !checkLoading && (
-                <span
-                  className="tag"
-                  style={{
-                    background: checkResult.verdict === "strong" ? "var(--mint)" : checkResult.verdict === "acceptable" ? "var(--yellow)" : "var(--pink)",
-                    fontSize: "10px",
-                  }}
-                >
-                  {checkResult.verdict === "strong" ? "Strong" : checkResult.verdict === "acceptable" ? "Acceptable" : "Needs work"}
-                </span>
-              )}
-            </div>
-            {checkError && (
-              <p style={{ fontSize: "11px", color: "#c00", marginTop: "4px" }}>{checkError}</p>
-            )}
-            {checkResult && !checkLoading && (
-              <div style={{ marginTop: "6px", fontSize: "12px", lineHeight: 1.6, display: "flex", flexDirection: "column", gap: "3px" }}>
-                {checkResult.issue && (
-                  <p style={{ color: "#c00", margin: 0 }}><strong>Issue:</strong> {checkResult.issue}</p>
-                )}
-                <p style={{ color: "#444", margin: 0 }}><strong>Prompt link:</strong> {checkResult.promptLink}</p>
-                <p style={{ background: "var(--yellow)", border: "1px solid var(--border)", borderRadius: "2px", padding: "3px 7px", margin: 0 }}>
-                  <strong>Tip:</strong> {checkResult.tip}
+      {/* Right card: Justification + KQs + Chat */}
+      <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+        <div style={{ height: "6px", background: accent }} />
+        <div style={{ padding: "1.25rem" }}>
+          {object && !editing && (
+            <div>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.75rem", marginBottom: "0.75rem", flexWrap: "wrap" }}>
+                <p style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                  Justification
                 </p>
-              </div>
-            )}
-          </div>
-
-          <hr className="divider" style={{ margin: "1rem 0" }} />
-
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.75rem", marginBottom: "0.75rem", flexWrap: "wrap" }}>
-            <p style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-              Justification
-            </p>
-            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-              {justification.trim() && (
-                <button
-                  onClick={handleImprove}
-                  disabled={improveLoading || aiLoading}
-                  className="btn-ghost btn-ghost-hover"
-                  style={{ fontSize: "11px", padding: "4px 10px" }}
-                  title="Rewrite justification to be stronger (keeps your ideas)"
-                >
-                  {improveLoading ? "Improving…" : "Improve"}
-                </button>
-              )}
-              <button
-                onClick={handleGenerateJustification}
-                disabled={aiLoading || improveLoading}
-                className="btn-primary btn-primary-hover"
-                style={{ fontSize: "11px", padding: "4px 12px", background: accent, color: "var(--fg)", borderColor: "var(--fg)" }}
-              >
-                {aiLoading ? "Generating…" : "Generate with AI"}
-              </button>
-            </div>
-          </div>
-
-          {aiError && (
-            <p className="tag tag-pink" style={{ display: "block", fontWeight: 400, textTransform: "none", letterSpacing: 0, fontSize: "12px", padding: "6px 10px", marginBottom: "0.5rem" }}>
-              {aiError}
-            </p>
-          )}
-
-          {aiLoading ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px", padding: "2px 0" }}>
-              {[80, 95, 70, 88, 60].map((w, i) => (
-                <div
-                  key={i}
-                  style={{
-                    height: "13px",
-                    width: `${w}%`,
-                    background: "var(--border)",
-                    borderRadius: "2px",
-                    animation: "pulse 1.4s ease-in-out infinite",
-                    animationDelay: `${i * 0.1}s`,
-                  }}
-                />
-              ))}
-            </div>
-          ) : (
-            <textarea
-              ref={textareaRef}
-              value={justification}
-              onChange={(e) => setJustification(e.target.value)}
-              onBlur={handleSaveJustification}
-              placeholder="Write your justification here, or generate one with AI above."
-              className="field-input"
-              style={{ resize: "none", overflow: "hidden", minHeight: "100px" }}
-            />
-          )}
-
-          {saveError && (
-            <p className="tag tag-pink" style={{ display: "block", fontWeight: 400, textTransform: "none", letterSpacing: 0, fontSize: "12px", padding: "6px 10px", marginTop: "4px" }}>
-              {saveError}
-            </p>
-          )}
-
-          {!aiLoading && (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "4px" }}>
-              <p style={{ fontSize: "11px", color: "var(--muted)" }}>
-                {savedOk ? "✓ Saved" : "Auto-saves 2s after you stop typing."}
-              </p>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                {wordCount >= maxWords && (
-                  <span style={{ fontSize: "11px", color: "#dc2626", fontWeight: 700 }}>⚠ Too long</span>
-                )}
-                <p style={{ fontSize: "11px", color: wordCountColor, fontWeight: 700 }}>
-                  {wordCount} {wordCount === 1 ? "word" : "words"}
-                  {wordCount > 0 && wordCount < targetWords && <span style={{ color: "var(--muted)", fontWeight: 400 }}> / {targetWords} target</span>}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Accordion sections for less-used tools */}
-          <AccordionSection title="AI Score" count={scoreHistory.length > 0 ? `${scoreHistory[scoreHistory.length - 1].score}/10` : undefined}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem", flexWrap: "wrap", gap: "0.5rem" }}>
-              <button
-                onClick={handleScore}
-                disabled={scoreLoading || !justification.trim()}
-                className="btn-ghost btn-ghost-hover"
-                style={{ fontSize: "11px", padding: "4px 10px" }}
-              >
-                {scoreLoading ? "Scoring…" : scoreResult ? "Re-score" : "Score with AI"}
-              </button>
-            </div>
-
-            {scoreError && (
-              <p className="tag tag-pink" style={{ display: "block", fontWeight: 400, textTransform: "none", letterSpacing: 0, fontSize: "12px", padding: "6px 10px", marginBottom: "0.5rem" }}>
-                {scoreError}
-              </p>
-            )}
-
-            {scoreLoading && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                {[60, 80, 50].map((w, i) => (
-                  <div key={i} style={{ height: "12px", width: `${w}%`, background: "var(--border)", borderRadius: "2px", animation: "pulse 1.4s ease-in-out infinite", animationDelay: `${i * 0.12}s` }} />
-                ))}
-              </div>
-            )}
-
-            {scoreResult && !scoreLoading && (
-              <div style={{ background: "var(--bg)", border: "2px solid var(--border)", borderRadius: "var(--radius)", padding: "1rem", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-                  <span
-                    className="heading"
-                    style={{
-                      fontSize: "28px",
-                      color: scoreResult.score >= 8 ? "#16a34a" : scoreResult.score >= 5 ? "#b45309" : "#dc2626",
-                    }}
+                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                  {justification.trim() && (
+                    <button
+                      onClick={handleImprove}
+                      disabled={improveLoading || aiLoading}
+                      className="btn-ghost btn-ghost-hover"
+                      style={{ fontSize: "11px", padding: "4px 10px" }}
+                      title="Rewrite justification to be stronger (keeps your ideas)"
+                    >
+                      {improveLoading ? "Improving…" : "Improve"}
+                    </button>
+                  )}
+                  <button
+                    onClick={handleGenerateJustification}
+                    disabled={aiLoading || improveLoading}
+                    className="btn-primary btn-primary-hover"
+                    style={{ fontSize: "11px", padding: "4px 12px", background: accent, color: "var(--fg)", borderColor: "var(--fg)" }}
                   >
-                    {scoreResult.score}/10
-                  </span>
-                  <span
-                    className="tag"
-                    style={{
-                      background: scoreResult.score >= 8 ? "var(--mint)" : scoreResult.score >= 5 ? "var(--yellow)" : "var(--pink)",
-                    }}
-                  >
-                    {scoreResult.score >= 8 ? "Strong" : scoreResult.score >= 5 ? "Developing" : "Needs work"}
-                  </span>
-                </div>
-                <div style={{ fontSize: "12px", color: "#444", lineHeight: 1.6 }}>
-                  <p style={{ marginBottom: "0.4rem" }}><strong>✓ </strong>{scoreResult.strength}</p>
-                  <p style={{ marginBottom: "0.4rem" }}><strong>△ </strong>{scoreResult.weakness}</p>
-                  <p style={{ background: "var(--yellow)", border: "1px solid var(--border)", borderRadius: "2px", padding: "4px 8px", marginTop: "0.25rem" }}>
-                    <strong>Tip: </strong>{scoreResult.tip}
-                  </p>
+                    {aiLoading ? "Generating…" : "Generate with AI"}
+                  </button>
                 </div>
               </div>
-            )}
 
-            {!scoreResult && !scoreLoading && !scoreError && (
-              <p style={{ fontSize: "11px", color: "var(--muted)" }}>
-                {justification.trim() ? "Get AI feedback on object quality and justification strength." : "Write a justification first to enable scoring."}
-              </p>
-            )}
+              {aiError && (
+                <p className="tag tag-pink" style={{ display: "block", fontWeight: 400, textTransform: "none", letterSpacing: 0, fontSize: "12px", padding: "6px 10px", marginBottom: "0.5rem" }}>
+                  {aiError}
+                </p>
+              )}
 
-            {scoreHistory.length > 1 && (
-              <div style={{ marginTop: "0.75rem" }}>
-                <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--muted)", marginBottom: "6px" }}>Score history</p>
-                <div style={{ display: "flex", alignItems: "flex-end", gap: "4px" }}>
-                  {scoreHistory.map((entry, i) => (
+              {aiLoading ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px", padding: "2px 0" }}>
+                  {[80, 95, 70, 88, 60].map((w, i) => (
                     <div
                       key={i}
-                      title={`${new Date(entry.ts).toLocaleDateString("en-GB", { day: "numeric", month: "short" })} — ${entry.score}/10`}
                       style={{
-                        width: "16px",
-                        height: `${entry.score * 3.2}px`,
-                        background: entry.score >= 8 ? "var(--mint)" : entry.score >= 5 ? "var(--yellow)" : "var(--pink)",
-                        border: "1.5px solid var(--border)",
+                        height: "13px",
+                        width: `${w}%`,
+                        background: "var(--border)",
                         borderRadius: "2px",
-                        position: "relative",
-                        flexShrink: 0,
+                        animation: "pulse 1.4s ease-in-out infinite",
+                        animationDelay: `${i * 0.1}s`,
                       }}
                     />
                   ))}
-                  <span style={{ fontSize: "10px", color: "var(--muted)", marginLeft: "4px" }}>
-                    {scoreHistory.length > 1 && (() => {
-                      const first = scoreHistory[0].score;
-                      const last = scoreHistory[scoreHistory.length - 1].score;
-                      const diff = last - first;
-                      if (diff === 0) return "no change";
-                      return diff > 0 ? `+${diff} since first` : `${diff} since first`;
-                    })()}
-                  </span>
                 </div>
-              </div>
-            )}
-          </AccordionSection>
+              ) : (
+                <textarea
+                  ref={textareaRef}
+                  value={justification}
+                  onChange={(e) => setJustification(e.target.value)}
+                  onBlur={handleSaveJustification}
+                  placeholder="Write your justification here, or generate one with AI above."
+                  className="field-input"
+                  style={{ resize: "none", overflow: "hidden", minHeight: "180px" }}
+                />
+              )}
 
-          <AccordionSection title="Knowledge Questions">
-            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "0.75rem" }}>
-              <button
-                onClick={handleKnowledgeQuestion}
-                disabled={kqLoading}
-                className="btn-ghost btn-ghost-hover"
-                style={{ fontSize: "11px", padding: "4px 10px" }}
-              >
-                {kqLoading ? "Generating…" : kqResult ? "Regenerate" : "Generate KQs"}
-              </button>
-            </div>
-            {kqError && (
-              <p className="tag tag-pink" style={{ display: "block", fontWeight: 400, textTransform: "none", letterSpacing: 0, fontSize: "12px", padding: "6px 10px", marginBottom: "0.5rem" }}>
-                {kqError}
-              </p>
-            )}
-            {kqLoading && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                {[70, 90, 60].map((w, i) => (
-                  <div key={i} style={{ height: "12px", width: `${w}%`, background: "var(--border)", borderRadius: "2px", animation: "pulse 1.4s ease-in-out infinite", animationDelay: `${i * 0.12}s` }} />
-                ))}
-              </div>
-            )}
-            {kqResult && !kqLoading && (
-              <div style={{ background: "var(--bg)", border: "2px solid var(--border)", borderRadius: "var(--radius)", padding: "0.875rem 1rem", fontSize: "12px", lineHeight: 1.6 }}>
-                <ReactMarkdown
-                  components={{
-                    p: ({ children }) => <p style={{ margin: "0 0 0.4em" }}>{children}</p>,
-                    strong: ({ children }) => <strong style={{ fontWeight: 700 }}>{children}</strong>,
-                    em: ({ children }) => <em style={{ fontStyle: "italic", color: "#555" }}>{children}</em>,
-                  }}
-                >
-                  {kqResult}
-                </ReactMarkdown>
-              </div>
-            )}
-            {!kqResult && !kqLoading && !kqError && (
-              <p style={{ fontSize: "11px", color: "var(--muted)" }}>
-                Generate IB-style knowledge questions that could anchor your justification.
-              </p>
-            )}
-          </AccordionSection>
+              {saveError && (
+                <p className="tag tag-pink" style={{ display: "block", fontWeight: 400, textTransform: "none", letterSpacing: 0, fontSize: "12px", padding: "6px 10px", marginTop: "4px" }}>
+                  {saveError}
+                </p>
+              )}
 
-          <AccordionSection title="Refine with AI & Chat">
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem", marginBottom: "0.75rem" }}>
-              <button
-                onClick={() => setChatOpen((v) => !v)}
-                className="btn-ghost btn-ghost-hover"
-                style={{ fontSize: "11px", padding: "4px 10px", position: "relative" }}
-              >
-                {chatOpen ? "Close chat" : "Open chat"}
-                {!chatOpen && chatMessages.length > 0 && (
-                  <span style={{ position: "absolute", top: "-3px", right: "-3px", width: "7px", height: "7px", borderRadius: "50%", background: "var(--fg)" }} />
-                )}
-              </button>
-            </div>
-
-            {chatOpen && (
-              <div style={{ border: "2px solid var(--border)", borderRadius: "var(--radius)", overflow: "hidden" }}>
-                <div style={{ maxHeight: "200px", overflowY: "auto", padding: "0.75rem", display: "flex", flexDirection: "column", gap: "8px", background: "var(--bg)" }}>
-                  {chatMessages.length === 0 && !chatLoading && (
-                    <p style={{ fontSize: "12px", color: "var(--muted)", textAlign: "center", margin: "0.5rem 0" }}>
-                      Ask AI to improve, explain, or critique your justification.
+              {!aiLoading && (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "4px" }}>
+                  <p style={{ fontSize: "11px", color: "var(--muted)" }}>
+                    {savedOk ? "✓ Saved" : "Auto-saves 2s after you stop typing."}
+                  </p>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    {wordCount >= maxWords && (
+                      <span style={{ fontSize: "11px", color: "#dc2626", fontWeight: 700 }}>⚠ Too long</span>
+                    )}
+                    <p style={{ fontSize: "11px", color: wordCountColor, fontWeight: 700 }}>
+                      {wordCount} {wordCount === 1 ? "word" : "words"}
+                      {wordCount > 0 && wordCount < targetWords && <span style={{ color: "var(--muted)", fontWeight: 400 }}> / {targetWords} target</span>}
                     </p>
-                  )}
-                  {chatMessages.map((msg, i) => (
-                    <div key={i} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start" }}>
-                      <div style={{
-                        maxWidth: "90%",
-                        padding: "6px 10px",
-                        borderRadius: "var(--radius)",
-                        border: "2px solid var(--border)",
-                        background: msg.role === "user" ? "var(--fg)" : accent,
-                        color: msg.role === "user" ? "var(--bg)" : "var(--fg)",
-                        fontSize: "12px",
-                        lineHeight: 1.5,
-                        whiteSpace: "pre-wrap",
-                      }}>
-                        {msg.text}
-                      </div>
-                    </div>
-                  ))}
-                  {chatLoading && (
-                    <div style={{ display: "flex", gap: "4px", padding: "4px 2px" }}>
-                      {[0, 1, 2].map((i) => (
-                        <span key={i} style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--fg)", opacity: 0.4, display: "inline-block", animation: "pulse 1.2s ease-in-out infinite", animationDelay: `${i * 0.18}s` }} />
-                      ))}
-                    </div>
-                  )}
-                  {chatError && (
-                    <p className="tag tag-pink" style={{ display: "block", fontWeight: 400, textTransform: "none", letterSpacing: 0, fontSize: "11px", padding: "4px 8px" }}>{chatError}</p>
-                  )}
+                  </div>
                 </div>
-                <form
-                  onSubmit={(e) => { e.preventDefault(); handleChatSend(chatInput); }}
-                  style={{ display: "flex", borderTop: "2px solid var(--border)", background: "var(--surface)" }}
-                >
-                  <input
-                    type="text"
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    placeholder="Ask about your justification…"
-                    disabled={chatLoading}
-                    style={{ flex: 1, border: "none", outline: "none", padding: "8px 10px", fontSize: "12px", background: "transparent", fontFamily: "inherit" }}
-                  />
-                  <button
-                    type="submit"
-                    disabled={chatLoading || !chatInput.trim()}
-                    className="btn-primary btn-primary-hover"
-                    style={{ fontSize: "11px", padding: "6px 12px", borderRadius: 0, borderLeft: "2px solid var(--border)", opacity: chatLoading || !chatInput.trim() ? 0.4 : 1 }}
-                  >
-                    Send
-                  </button>
-                </form>
-              </div>
-            )}
+              )}
 
-            {!chatOpen && (
-              <p style={{ fontSize: "11px", color: "var(--muted)" }}>
-                Chat with AI to refine your justification, ask for improvements, or get specific feedback.
-              </p>
-            )}
-          </AccordionSection>
+              <hr className="divider" style={{ margin: "1rem 0" }} />
+
+              <AccordionSection title="Knowledge Questions">
+                <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "0.75rem" }}>
+                  <button
+                    onClick={handleKnowledgeQuestion}
+                    disabled={kqLoading}
+                    className="btn-ghost btn-ghost-hover"
+                    style={{ fontSize: "11px", padding: "4px 10px" }}
+                  >
+                    {kqLoading ? "Generating…" : kqResult ? "Regenerate" : "Generate KQs"}
+                  </button>
+                </div>
+                {kqError && (
+                  <p className="tag tag-pink" style={{ display: "block", fontWeight: 400, textTransform: "none", letterSpacing: 0, fontSize: "12px", padding: "6px 10px", marginBottom: "0.5rem" }}>
+                    {kqError}
+                  </p>
+                )}
+                {kqLoading && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    {[70, 90, 60].map((w, i) => (
+                      <div key={i} style={{ height: "12px", width: `${w}%`, background: "var(--border)", borderRadius: "2px", animation: "pulse 1.4s ease-in-out infinite", animationDelay: `${i * 0.12}s` }} />
+                    ))}
+                  </div>
+                )}
+                {kqResult && !kqLoading && (
+                  <div style={{ background: "var(--bg)", border: "2px solid var(--border)", borderRadius: "var(--radius)", padding: "0.875rem 1rem", fontSize: "12px", lineHeight: 1.6 }}>
+                    <ReactMarkdown
+                      components={{
+                        p: ({ children }) => <p style={{ margin: "0 0 0.4em" }}>{children}</p>,
+                        strong: ({ children }) => <strong style={{ fontWeight: 700 }}>{children}</strong>,
+                        em: ({ children }) => <em style={{ fontStyle: "italic", color: "#555" }}>{children}</em>,
+                      }}
+                    >
+                      {kqResult}
+                    </ReactMarkdown>
+                  </div>
+                )}
+                {!kqResult && !kqLoading && !kqError && (
+                  <p style={{ fontSize: "11px", color: "var(--muted)" }}>
+                    Generate IB-style knowledge questions that could anchor your justification.
+                  </p>
+                )}
+              </AccordionSection>
+
+              <AccordionSection title="Refine with AI & Chat">
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem", marginBottom: "0.75rem" }}>
+                  <button
+                    onClick={() => setChatOpen((v) => !v)}
+                    className="btn-ghost btn-ghost-hover"
+                    style={{ fontSize: "11px", padding: "4px 10px", position: "relative" }}
+                  >
+                    {chatOpen ? "Close chat" : "Open chat"}
+                    {!chatOpen && chatMessages.length > 0 && (
+                      <span style={{ position: "absolute", top: "-3px", right: "-3px", width: "7px", height: "7px", borderRadius: "50%", background: "var(--fg)" }} />
+                    )}
+                  </button>
+                </div>
+
+                {chatOpen && (
+                  <div style={{ border: "2px solid var(--border)", borderRadius: "var(--radius)", overflow: "hidden" }}>
+                    <div style={{ maxHeight: "200px", overflowY: "auto", padding: "0.75rem", display: "flex", flexDirection: "column", gap: "8px", background: "var(--bg)" }}>
+                      {chatMessages.length === 0 && !chatLoading && (
+                        <p style={{ fontSize: "12px", color: "var(--muted)", textAlign: "center", margin: "0.5rem 0" }}>
+                          Ask AI to improve, explain, or critique your justification.
+                        </p>
+                      )}
+                      {chatMessages.map((msg, i) => (
+                        <div key={i} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start" }}>
+                          <div style={{
+                            maxWidth: "90%",
+                            padding: "6px 10px",
+                            borderRadius: "var(--radius)",
+                            border: "2px solid var(--border)",
+                            background: msg.role === "user" ? "var(--fg)" : accent,
+                            color: msg.role === "user" ? "var(--bg)" : "var(--fg)",
+                            fontSize: "12px",
+                            lineHeight: 1.5,
+                            whiteSpace: "pre-wrap",
+                          }}>
+                            {msg.text}
+                          </div>
+                        </div>
+                      ))}
+                      {chatLoading && (
+                        <div style={{ display: "flex", gap: "4px", padding: "4px 2px" }}>
+                          {[0, 1, 2].map((i) => (
+                            <span key={i} style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--fg)", opacity: 0.4, display: "inline-block", animation: "pulse 1.2s ease-in-out infinite", animationDelay: `${i * 0.18}s` }} />
+                          ))}
+                        </div>
+                      )}
+                      {chatError && (
+                        <p className="tag tag-pink" style={{ display: "block", fontWeight: 400, textTransform: "none", letterSpacing: 0, fontSize: "11px", padding: "4px 8px" }}>{chatError}</p>
+                      )}
+                    </div>
+                    <form
+                      onSubmit={(e) => { e.preventDefault(); handleChatSend(chatInput); }}
+                      style={{ display: "flex", borderTop: "2px solid var(--border)", background: "var(--surface)" }}
+                    >
+                      <input
+                        type="text"
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        placeholder="Ask about your justification…"
+                        disabled={chatLoading}
+                        style={{ flex: 1, border: "none", outline: "none", padding: "8px 10px", fontSize: "12px", background: "transparent", fontFamily: "inherit" }}
+                      />
+                      <button
+                        type="submit"
+                        disabled={chatLoading || !chatInput.trim()}
+                        className="btn-primary btn-primary-hover"
+                        style={{ fontSize: "11px", padding: "6px 12px", borderRadius: 0, borderLeft: "2px solid var(--border)", opacity: chatLoading || !chatInput.trim() ? 0.4 : 1 }}
+                      >
+                        Send
+                      </button>
+                    </form>
+                  </div>
+                )}
+
+                {!chatOpen && (
+                  <p style={{ fontSize: "11px", color: "var(--muted)" }}>
+                    Chat with AI to refine your justification, ask for improvements, or get specific feedback.
+                  </p>
+                )}
+              </AccordionSection>
+            </div>
+          )}
+
+          {!object && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", minHeight: "120px" }}>
+              <p style={{ fontSize: "12px", color: "var(--muted)" }}>Save object details first to start writing.</p>
+            </div>
+          )}
         </div>
-      )}
       </div>
     </div>
   );
