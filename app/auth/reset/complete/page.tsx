@@ -12,6 +12,13 @@ export default function ResetCompletePage() {
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
 
+  const pwStrength = password.length > 0
+    ? password.length < 8 ? "weak"
+    : password.length < 12 && !/[^a-zA-Z0-9]/.test(password) ? "fair"
+    : "strong"
+    : null;
+  const pwStrengthColor = pwStrength === "weak" ? "#dc2626" : pwStrength === "fair" ? "#b45309" : "#16a34a";
+
   useEffect(() => {
     // Supabase SSR client picks up the session from the URL fragment automatically
     // on the next getSession call. We just need to confirm the session is established.
@@ -81,6 +88,16 @@ export default function ResetCompletePage() {
                 placeholder="••••••••"
                 minLength={8}
               />
+              {pwStrength && (
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <div style={{ flex: 1, height: "3px", borderRadius: "2px", background: "#eee", overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: pwStrength === "weak" ? "33%" : pwStrength === "fair" ? "66%" : "100%", background: pwStrengthColor, transition: "width 0.2s, background 0.2s" }} />
+                  </div>
+                  <span style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", color: pwStrengthColor, letterSpacing: "0.04em", minWidth: "36px" }}>
+                    {pwStrength}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="space-y-1">

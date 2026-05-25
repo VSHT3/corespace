@@ -28,6 +28,8 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [confirmationSent, setConfirmationSent] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendOk, setResendOk] = useState(false);
 
   const pwStrength = mode === "signup" && password.length > 0
     ? password.length < 8 ? "weak"
@@ -59,6 +61,20 @@ export default function LoginPage() {
     }
   }
 
+  async function handleResend() {
+    setResending(true);
+    setResendOk(false);
+    setError(null);
+    const supabase = createClient();
+    const { error } = await supabase.auth.resend({ type: "signup", email });
+    setResending(false);
+    if (error) {
+      setError(error.message);
+    } else {
+      setResendOk(true);
+    }
+  }
+
   if (confirmationSent) {
     return (
       <main className="flex flex-1 items-center justify-center px-6 py-24">
@@ -68,13 +84,33 @@ export default function LoginPage() {
           <p style={{ fontSize: "14px", color: "#555" }}>
             Sent confirmation link to <strong>{email}</strong>. Click it to activate your account.
           </p>
-          <button
-            onClick={() => { setConfirmationSent(false); setMode("login"); }}
-            className="btn-ghost btn-ghost-hover"
-            style={{ padding: "8px 16px", fontSize: "13px" }}
-          >
-            Back to sign in
-          </button>
+          {resendOk && (
+            <p style={{ fontSize: "13px", color: "#16a34a", fontWeight: 600 }}>
+              ✓ Confirmation email resent
+            </p>
+          )}
+          {error && (
+            <p className="tag tag-pink" style={{ display: "block", fontWeight: 400, textTransform: "none", letterSpacing: 0, fontSize: "12px", padding: "6px 10px" }}>
+              {error}
+            </p>
+          )}
+          <div style={{ display: "flex", gap: "8px", justifyContent: "center", flexWrap: "wrap" }}>
+            <button
+              onClick={handleResend}
+              disabled={resending}
+              className="btn-ghost btn-ghost-hover"
+              style={{ padding: "8px 16px", fontSize: "13px", opacity: resending ? 0.6 : 1 }}
+            >
+              {resending ? "Sending…" : "Resend confirmation email"}
+            </button>
+            <button
+              onClick={() => { setConfirmationSent(false); setMode("login"); }}
+              className="btn-ghost btn-ghost-hover"
+              style={{ padding: "8px 16px", fontSize: "13px" }}
+            >
+              Back to sign in
+            </button>
+          </div>
         </div>
       </main>
     );
