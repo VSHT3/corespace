@@ -15,6 +15,9 @@
   - Difficulty dots + label
   - AI chat panel (session-persistent history, markdown rendering)
   - 3 suggestion chips (explain prompt, suggest objects, KQs)
+  - Chat panel position: absolute (not flex stretch) — prompt card stays natural height
+  - Width transition (not maxWidth) for smooth container expansion
+  - Shadow only on prompt card, not on chat panel
 - Exhibition creation with custom title
 
 ### Exhibition Workspace (`/dashboard/tok/[id]`)

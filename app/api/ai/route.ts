@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readFileSync } from "fs";
 import { join } from "path";
-import { gemini } from "@/lib/gemini";
+import { generateAIResponse } from "@/lib/ai";
+import type { AIChatMessage } from "@/lib/ai";
 import { checkRateLimit } from "@/lib/rate-limit";
 import type { AIRequestBody, AIResponseBody, AIIntent } from "@/types";
 
@@ -249,28 +250,38 @@ export async function POST(request: NextRequest) {
 
   const systemPrompt = buildSystemPrompt(intent, context ?? {});
 
-  // Build contents array: prior history turns + current user message
-  const contents = [
+  // Build messages array: prior history turns + current user message
+  const messages: AIChatMessage[] = [
     ...(history ?? []).map((turn) => ({
-      role: turn.role,
-      parts: [{ text: turn.text }],
+      role: (turn.role === "model" ? "assistant" : "user") as "user" | "assistant",
+      content: turn.text,
     })),
-    { role: "user" as const, parts: [{ text: userMessage }] },
+    { role: "user" as const, content: userMessage },
   ];
 
-  try {
-    const response = await gemini.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents,
-      config: {
-        systemInstruction: systemPrompt,
-        maxOutputTokens: intent === "object_scoring" || intent === "object_check" ? 400
-          : intent === "knowledge_question" || intent === "object_ideas" || intent === "prompt_explainer" ? 1500
-          : 1000,
-      },
-    });
+  const maxOutputTokens =
+    intent === "object_scoring" || intent === "object_check" ? 400
+      : intent === "knowledge_question" || intent === "object_ideas" || intent === "prompt_explainer" ? 1500
+      : 1000;
 
-    const text = response.text ?? "";
+  const THINKING_BUDGET: Record<AIIntent, number | undefined> = {
+    prompt_explainer: 0,
+    object_justification: 8192,
+    object_scoring: 0,
+    justification_chat: 4096,
+    object_ideas: 4096,
+    knowledge_question: 8192,
+    justification_improve: 8192,
+    object_check: 0,
+  };
+
+  try {
+    const text = await generateAIResponse({
+      system: systemPrompt,
+      messages,
+      maxOutputTokens,
+      thinkingBudget: THINKING_BUDGET[intent],
+    });
     return NextResponse.json<AIResponseBody>({ text });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);

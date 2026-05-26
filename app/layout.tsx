@@ -16,6 +16,12 @@ export const metadata: Metadata = {
     "AI-powered tools for IB Diploma students. TOK Exhibition helper, CAS tracker, and Extended Essay assistant — built by an IB student, for IB students.",
   keywords: ["IB Diploma", "Theory of Knowledge", "TOK exhibition", "CAS tracker", "Extended Essay", "IB student tools"],
   authors: [{ name: "Corespace" }],
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+  },
   openGraph: {
     type: "website",
     siteName: "Corespace",

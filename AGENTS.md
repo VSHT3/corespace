@@ -105,7 +105,9 @@ Routes:
 
 ### AI calls: server-only
 
-All Gemini calls go through `app/api/ai/route.ts` (POST). Client components call this endpoint — never import `lib/gemini.ts` on client. Endpoint accepts `{ intent, userMessage, context?, history? }`, returns `{ text }`. Model: `gemini-2.5-flash`.
+All AI calls go through Vercel AI Gateway (`@ai-sdk/gateway`) via `lib/ai.ts` (wraps `generateText` from Vercel AI SDK v6). Route at `app/api/ai/route.ts` (POST). Client components call this endpoint — never import `lib/ai.ts` on client. Endpoint accepts `{ intent, userMessage, context?, history? }`, returns `{ text }`. Model: `google/gemini-2.5-flash` (gateway format).
+
+Auth via `VERCEL_OIDC_TOKEN` (pulled by `vc env pull .env.local --environment production`). No `GEMINI_API_KEY` needed locally.
 
 **Intents:**
 - `prompt_explainer` — chat AI in prompt picker. Context: `promptId`, `promptTitle`, `promptDescription`. Supports `history` for multi-turn.
@@ -116,6 +118,11 @@ All Gemini calls go through `app/api/ai/route.ts` (POST). Client components call
 - `object_ideas` — 3 concrete object suggestions. maxOutputTokens 1200.
 - `justification_improve` — rewrite justification to be stronger.
 - `justification_chat` — multi-turn refinement chat. Supports `history`.
+
+**Thinking budget per intent** (passed as `providerOptions.google.thinkingConfig.thinkingBudget`):
+- `prompt_explainer`, `object_scoring`, `object_check` — 0 (disabled)
+- `justification_chat`, `object_ideas` — 4096
+- `object_justification`, `knowledge_question`, `justification_improve` — 8192
 
 Justification-related intents (`object_justification`, `justification_improve`, `justification_chat`) receive the full `JUSTIFICATION_CONTEXT` which includes `lib/ai-docs/justification-examples.md` with annotated strong/weak examples and phrase banks.
 
@@ -295,10 +302,13 @@ ___
 - Google OAuth: direct flow bypasses Supabase proxy — `/api/auth/google` + `/auth/callback/google` with `signInWithIdToken()`. Consent screen shows user Vercel domain instead of supabase.co.
 - `.env.local.example` updated with GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, NEXT_PUBLIC_SITE_URL
 - Vercel env vars set for production: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, NEXT_PUBLIC_SITE_URL
+- AI Gateway migration: `@google/genai` → Vercel AI SDK v6 (`ai` + `@ai-sdk/gateway`). Auth via `VERCEL_OIDC_TOKEN`, no `GEMINI_API_KEY` needed locally. `lib/gemini.ts` → `lib/ai.ts`. Model string: `google/gemini-2.5-flash` (gateway format).
+- Thinking budget per intent: 0 for JSON/deterministic (scoring, check, explainer), 4096 for chat/ideas, 8192 for justification/KQ generation.
 
 ## New env vars (added May 2026)
 | Variable | Purpose |
 |---|---|
+| `VERCEL_OIDC_TOKEN` | AI Gateway auth — pulled via `vc env pull .env.local --environment production`. Replaces `GEMINI_API_KEY`. |
 | `SUPABASE_SERVICE_ROLE_KEY` | Required for account deletion (admin.deleteUser). Server-only, never expose to client. |
 | `GOOGLE_CLIENT_ID` | Google OAuth client ID for direct OAuth flow (server-only). |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth client secret for token exchange (server-only, never expose to client). |
@@ -314,7 +324,8 @@ Primary deploy target. GitHub push → auto-build. Hobby tier free, works for �
 |---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project settings → API |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase project settings → API |
-| `GEMINI_API_KEY` | Google AI Studio |
+| `VERCEL_OIDC_TOKEN` | `vc env pull .env.local --environment production` (pulled from Vercel) |
+| `AI_GATEWAY_API_KEY` | Same value as VERCEL_OIDC_TOKEN (set locally, not in Vercel) |
 | `PADDLE_API_KEY` | Paddle dashboard (server-only) |
 | `PADDLE_WEBHOOK_SECRET` | Paddle webhook settings (server-only) |
 | `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` | Paddle dashboard |
@@ -342,7 +353,7 @@ Primary deploy target. GitHub push → auto-build. Hobby tier free, works for �
 
 ### Favicon
 
-- `app/icon.svg` — Next.js 16 auto-serves as primary favicon. Clean hexagon outline + bold "C". Dark mode via `@media (prefers-color-scheme: dark)` (black → white).
+- `public/icon.svg` — SVG favicon served via explicit metadata. Hexagon outline + bold "C". Dark mode via `@media (prefers-color-scheme: dark)` (black → white).
 - `public/favicon.ico` — legacy browser fallback, multi-res (16–256px), dark logo for light tabs.
 
 ## TODO

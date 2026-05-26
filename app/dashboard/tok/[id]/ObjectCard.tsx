@@ -1,9 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useTransition, useMemo } from "react";
+import { createPortal } from "react-dom";
 import ReactMarkdown from "react-markdown";
 import type { TOKObject } from "@/types";
 import { useToast } from "@/lib/toast";
+
+const NOISE_DATA_URI =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E";
+const PAPER_NOISE_URI =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.7'/%3E%3C/svg%3E";
 
 interface ScoreEntry {
   ts: string;
@@ -99,6 +105,12 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
   const [checkResult, setCheckResult] = useState<{ verdict: "strong" | "acceptable" | "weak"; issue: string | null; promptLink: string; tip: string } | null>(null);
   const [checkError, setCheckError] = useState("");
   const [scoreHistory, setScoreHistory] = useState<ScoreEntry[]>(() => Array.isArray(initialScores) ? initialScores : []);
+  const [focusMode, setFocusMode] = useState(false);
+  const [rendered, setRendered] = useState(false);
+  const [exiting, setExiting] = useState(false);
+  const [entered, setEntered] = useState(false);
+  const focusRef = useRef<HTMLTextAreaElement>(null);
+  const exitTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
 
   const DESC_MAX = 500;
 
@@ -132,6 +144,41 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
   }, [justification]);
+
+  useEffect(() => {
+    if (!focusMode) {
+      setExiting(true);
+      document.body.style.overflow = "";
+      exitTimerRef.current = setTimeout(() => {
+        setRendered(false);
+        setExiting(false);
+        setEntered(false);
+      }, 250);
+      return () => { if (exitTimerRef.current) clearTimeout(exitTimerRef.current); };
+    }
+
+    setRendered(true);
+    setExiting(false);
+    setEntered(false);
+    document.body.style.overflow = "hidden";
+
+    const raf = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setEntered(true);
+        focusRef.current?.focus();
+      });
+    });
+
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setFocusMode(false);
+    };
+    window.addEventListener("keydown", handler);
+
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", handler);
+    };
+  }, [focusMode]);
 
   const slotLabel = ["First", "Second", "Third"][slot];
   const accentColors = ["var(--pink)", "var(--mint)", "var(--sky)"];
@@ -216,9 +263,11 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
         body: JSON.stringify({ exhibitionId, objectId: object.id, justification }),
       });
       if (!res.ok) throw new Error("Save failed");
-      setSavedOk(true);
-      setTimeout(() => setSavedOk(false), 2000);
-      showToast("Justification saved");
+      if (!focusMode) {
+        setSavedOk(true);
+        setTimeout(() => setSavedOk(false), 2000);
+        showToast("Justification saved");
+      }
     } catch {
       setSaveError("Failed to save. Check connection and try again.");
       showToast("Save failed — check connection", "error");
@@ -412,6 +461,7 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
   }
 
   return (
+    <>
     <div
       style={{
         display: "grid",
@@ -735,6 +785,17 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
                     </button>
                   )}
                   <button
+                    onClick={() => setFocusMode(true)}
+                    className="btn-ghost btn-ghost-hover"
+                    style={{ fontSize: "11px", padding: "4px 10px", display: "inline-flex", alignItems: "center", gap: "4px" }}
+                    title="Fullscreen writing mode"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 1H1v2M9 1h2v2M1 9v2h2M11 9v2H9" />
+                    </svg>
+                    Fullscreen
+                  </button>
+                  <button
                     onClick={handleGenerateJustification}
                     disabled={aiLoading || improveLoading}
                     className="btn-primary btn-primary-hover"
@@ -938,5 +999,165 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
         </div>
       </div>
     </div>
+
+    {rendered && createPortal(
+      <>
+        <div
+          onClick={() => setFocusMode(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9998,
+            background: "rgba(0,0,0,0.75)",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+            opacity: exiting ? 0 : entered ? 1 : 0,
+            transition: "opacity 0.25s ease",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              backgroundImage: `url("${NOISE_DATA_URI}")`,
+              backgroundRepeat: "repeat",
+              backgroundSize: "300px 300px",
+              opacity: 0.3,
+              mixBlendMode: "overlay",
+            }}
+          />
+        </div>
+
+        <div
+          onClick={(e) => {
+            if (e.target !== focusRef.current) setFocusMode(false);
+          }}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            display: "flex",
+            flexDirection: "column",
+            padding: "2.5rem 2rem",
+            opacity: exiting ? 0 : entered ? 1 : 0,
+            transform: exiting ? "translateY(-6px)" : entered ? "translateY(0)" : "translateY(6px)",
+            transition: "opacity 0.28s ease, transform 0.28s ease",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+              maxWidth: "760px",
+              width: "100%",
+              margin: "0 auto 1.5rem",
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  margin: "0 0 0.25rem",
+                  color: "#ccc",
+                }}
+              >
+                {object?.title ?? "Justification"}
+              </p>
+              <p
+                style={{
+                  margin: 0,
+                  fontWeight: 700,
+                  fontSize: "18px",
+                  lineHeight: 1.3,
+                  color: "#fff",
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                {prompt}
+              </p>
+            </div>
+            <button
+              onClick={() => setFocusMode(false)}
+              style={{
+                background: "rgba(255,255,255,0.12)",
+                border: "1px solid rgba(255,255,255,0.2)",
+                borderRadius: "4px",
+                color: "#fff",
+                cursor: "pointer",
+                fontSize: "12px",
+                fontWeight: 600,
+                padding: "6px 14px",
+                fontFamily: "inherit",
+                lineHeight: 1,
+                flexShrink: 0,
+                marginLeft: "1rem",
+              }}
+            >
+              ✕ Close
+            </button>
+          </div>
+
+          <textarea
+            ref={focusRef}
+            value={justification}
+            onChange={(e) => setJustification(e.target.value)}
+            onBlur={handleSaveJustification}
+            placeholder="Write your justification here…"
+            style={{
+              flex: 1,
+              maxWidth: "760px",
+              width: "100%",
+              margin: "0 auto",
+              padding: "1.5rem 1.75rem",
+              fontSize: "18px",
+              lineHeight: 1.9,
+              fontFamily: "inherit",
+              color: "#000",
+              backgroundColor: "#ede4d0",
+              backgroundImage: `url("${NOISE_DATA_URI}"), url("${PAPER_NOISE_URI}")`,
+              backgroundRepeat: "repeat, repeat",
+              backgroundSize: "200px 200px, 80px 80px",
+              backgroundBlendMode: "overlay, multiply",
+              border: "none",
+              borderRadius: "4px",
+              outline: "none",
+              resize: "none",
+              boxShadow: "0 4px 32px rgba(0,0,0,0.25)",
+            }}
+          />
+
+          <div
+            style={{
+              maxWidth: "760px",
+              width: "100%",
+              margin: "0.75rem auto 0",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <span
+              style={{
+                fontSize: "12px",
+                fontWeight: 600,
+                color: "rgba(255,255,255,0.7)",
+                letterSpacing: "0.02em",
+              }}
+            >
+              {wordCount} {wordCount === 1 ? "word" : "words"}
+              {wordCount > 0 && wordCount < targetWords && (
+                <span style={{ color: "rgba(255,255,255,0.4)", fontWeight: 400 }}> / {targetWords} target</span>
+              )}
+            </span>
+          </div>
+        </div>
+      </>,
+      document.body,
+    )}
+    </>
   );
 }

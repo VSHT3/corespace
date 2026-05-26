@@ -131,8 +131,12 @@ body {
   font-size: 14px;
   color: var(--fg);
   outline: none;
+  box-shadow: none;
+  &:focus, &:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
   &::placeholder { color: #aaa; }
-  &:focus { outline: var(--border-w) solid var(--fg); outline-offset: 2px; }
 }
 
 @utility tag {

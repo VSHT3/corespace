@@ -13,6 +13,7 @@ import RubricPanel from "./RubricPanel";
 import ObjectIdeasButton from "./ObjectIdeasButton";
 import SubmissionChecklist from "./SubmissionChecklist";
 import ExhibitionNotes from "./ExhibitionNotes";
+import DeleteExhibitionButton from "./DeleteExhibitionButton";
 import WorkspaceKeyboardShortcuts from "@/components/WorkspaceKeyboardShortcuts";
 import type { TOKExhibition, TOKObject } from "@/types";
 
@@ -75,6 +76,7 @@ export default async function ExhibitionPage({ params }: { params: Promise<{ id:
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.5rem", flexShrink: 0 }}>
           <span className="tag tag-yellow">Prompt {ex.prompt_id}</span>
           <PrintButton exhibitionId={id} />
+          <DeleteExhibitionButton exhibitionId={id} />
         </div>
       </div>
 

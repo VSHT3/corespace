@@ -942,7 +942,7 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
   const [input, setInput] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
-  const [titleValue, setTitleValue] = useState("My TOK Exhibition");
+  const [titleValue, setTitleValue] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -1045,19 +1045,11 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
         }}
       >
         <div
-          style={{
-            maxWidth: chatOpen ? "1060px" : "640px",
-            overflow: "hidden",
-            transition: `max-width 380ms cubic-bezier(${EASE_OUT_EXPO.join(",")})`,
-          }}
-        >
-        <div
           onClick={(e) => e.stopPropagation()}
           style={{
-            display: "flex",
-            gap: "12px",
-            width: "1060px",
-            alignItems: "stretch",
+            width: chatOpen ? "1060px" : "640px",
+            transition: `width 380ms cubic-bezier(${EASE_OUT_EXPO.join(",")})`,
+            position: "relative",
           }}
         >
           <motion.div
@@ -1070,7 +1062,7 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
               position: "relative",
               overflowY: "auto",
               maxHeight: "85vh",
-              flex: "0 0 640px",
+              width: "640px",
             }}
           >
             <button
@@ -1149,13 +1141,14 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
                   background: "var(--surface)",
                   border: "2px solid var(--border)",
                   borderRadius: "var(--radius)",
-                  boxShadow: "8px 8px 0 0 var(--fg)",
                   display: "flex",
                   flexDirection: "column",
-                  maxHeight: "85vh",
-                  minWidth: 0,
                   overflow: "hidden",
-                  flex: 1,
+                  position: "absolute",
+                  left: "calc(640px + 12px)",
+                  top: 0,
+                  bottom: 0,
+                  right: 0,
                 }}
               >
                 <div style={{
@@ -1335,7 +1328,6 @@ function ExpandedCard({ id, onClose, createAction }: { id: number; onClose: () =
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
         </div>
       </motion.div>
     </>,
