@@ -99,8 +99,9 @@
 ## Design System
 
 - Brutalist Pastel: warm cream bg, ink black borders, pastel accents
-- Custom CSS utilities: `card`, `btn-primary`, `btn-ghost`, `tag`, `field-input`, `eyebrow`, `heading`
+- Custom CSS utilities: `card`, `btn-primary`, `btn-ghost`, `btn-danger`, `tag`, `field-input`, `eyebrow`, `heading`
 - Card-bump hover effect (diagonal shadow)
+- Danger buttons: gradient fill animation from mouse entry point (clip-path circle reveal)
 - SVG brush-stroke highlights (yellow, mint, pink)
 - No shadows/gradients/blur/pill shapes
 - System font stack, no Google Fonts

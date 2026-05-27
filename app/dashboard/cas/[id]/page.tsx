@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { updateExperience, deleteExperience, addReflection } from "../actions";
 import type { CASExperience, CASReflection } from "@/types";
+import DangerSubmitButton from "@/components/DangerSubmitButton";
 
 const OUTCOMES = [
   "Identify own strengths and develop areas for growth",
@@ -134,9 +135,7 @@ export default async function CASDetailPage({ params }: { params: Promise<{ id: 
           </form>
 
           <form action={deleteExperience.bind(null, experience.id)} style={{ marginTop: "1rem" }}>
-            <button type="submit" className="btn-ghost btn-ghost-hover" style={{ fontSize: "11px", padding: "4px 10px", color: "#c00", borderColor: "#c00" }}>
-              Delete experience
-            </button>
+            <DangerSubmitButton>Delete experience</DangerSubmitButton>
           </form>
         </div>
       </div>

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { deleteExhibition } from "../actions";
+import DangerButton from "@/components/DangerButton";
 
 interface Props {
   exhibitionId: string;
@@ -19,14 +20,9 @@ export default function DeleteExhibitionButton({ exhibitionId }: Props) {
     return (
       <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
         <span style={{ color: "#555", fontSize: "12px", fontWeight: 700 }}>Delete this exhibition?</span>
-        <button
-          onClick={handleDelete}
-          disabled={isPending}
-          className="btn-ghost btn-ghost-hover"
-          style={{ fontSize: "11px", padding: "4px 10px", color: "#c00", borderColor: "#c00" }}
-        >
+        <DangerButton onClick={handleDelete} disabled={isPending} style={{ fontSize: "11px", padding: "4px 10px" }}>
           {isPending ? "Deleting..." : "Yes, delete"}
-        </button>
+        </DangerButton>
         <button
           type="button"
           onClick={() => setConfirming(false)}
@@ -49,12 +45,8 @@ export default function DeleteExhibitionButton({ exhibitionId }: Props) {
   }
 
   return (
-    <button
-      onClick={() => setConfirming(true)}
-      className="btn-ghost btn-ghost-hover"
-      style={{ fontSize: "11px", padding: "4px 10px", color: "#c00", borderColor: "#c00" }}
-    >
+    <DangerButton onClick={() => setConfirming(true)} style={{ fontSize: "11px", padding: "4px 10px" }}>
       Delete exhibition
-    </button>
+    </DangerButton>
   );
 }

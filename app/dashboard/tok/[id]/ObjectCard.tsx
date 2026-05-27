@@ -7,6 +7,7 @@ import type { TOKObject } from "@/types";
 import { useToast } from "@/lib/toast";
 import { Select } from "@/components/Select";
 import RichEditor from "@/components/RichEditor";
+import DangerButton from "@/components/DangerButton";
 
 const NOISE_DATA_URI =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E";
@@ -488,25 +489,23 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
                     {editing ? "Cancel" : "Edit"}
                   </button>
                   {!confirmingDelete ? (
-                    <button
+                    <DangerButton
                       onClick={() => setConfirmingDelete(true)}
                       disabled={isPending}
-                      className="btn-ghost btn-ghost-hover"
-                      style={{ fontSize: "11px", padding: "4px 10px", color: "#c00", borderColor: "#c00" }}
+                      style={{ fontSize: "11px", padding: "4px 10px" }}
                     >
                       Remove
-                    </button>
+                    </DangerButton>
                   ) : (
                     <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
                       <span style={{ color: "#555", fontSize: "12px", fontWeight: 700 }}>Remove this object?</span>
-                      <button
+                      <DangerButton
                         onClick={handleDelete}
                         disabled={isPending}
-                        className="btn-ghost btn-ghost-hover"
-                        style={{ fontSize: "11px", padding: "4px 10px", color: "#c00", borderColor: "#c00" }}
+                        style={{ fontSize: "11px", padding: "4px 10px" }}
                       >
                         {isPending ? "Removing..." : "Yes, remove"}
-                      </button>
+                      </DangerButton>
                       <button
                         type="button"
                         onClick={() => setConfirmingDelete(false)}

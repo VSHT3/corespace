@@ -20,7 +20,6 @@ export default function ExhibitionNotes({ exhibitionId }: Props) {
 
   const [open, setOpen] = useState(false);
   const [notes, setNotes] = useState("");
-  const [hovered, setHovered] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_PREFIX + exhibitionId);
@@ -33,13 +32,10 @@ export default function ExhibitionNotes({ exhibitionId }: Props) {
 
   if (!mounted) return null;
 
-  const bump = hovered && open;
-
   return createPortal(
     <>
       <button
         onClick={() => setOpen((v) => !v)}
-        title={open ? "Close notes" : "Open notes"}
         style={{
           position: "fixed",
           right: 0,
@@ -73,9 +69,7 @@ export default function ExhibitionNotes({ exhibitionId }: Props) {
           right: 0,
           top: "48%",
           transform: open
-            ? (bump
-              ? "translateX(-4px) translateY(calc(-50% - 4px))"
-              : "translateX(0) translateY(-50%)")
+            ? "translateX(0) translateY(-50%)"
             : "translateX(100%) translateY(-50%)",
           zIndex: 49,
           width: "300px",
@@ -86,12 +80,9 @@ export default function ExhibitionNotes({ exhibitionId }: Props) {
           borderRadius: "4px 0 0 4px",
           display: "flex",
           flexDirection: "column",
-          transition: "transform 0.15s ease, box-shadow 0.15s ease",
+          transition: "transform 0.22s ease",
           overflow: "hidden",
-          boxShadow: bump ? "8px 8px 0 0 var(--fg)" : "0 0 0 0 var(--fg)",
         }}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
       >
         <div style={{ height: "4px", background: "var(--sky)" }} />
         <div
@@ -119,11 +110,13 @@ export default function ExhibitionNotes({ exhibitionId }: Props) {
             if (e.key === "Escape") setOpen(false);
           }}
           placeholder="Jot down thoughts…"
+          className="hide-scrollbar"
           style={{
             flex: 1,
             border: "none",
             outline: "none",
             resize: "none",
+            scrollbarWidth: "none",
             padding: "0.75rem 1rem",
             fontSize: "13px",
             lineHeight: 1.6,

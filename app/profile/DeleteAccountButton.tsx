@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { deleteAccount } from "./actions";
+import DangerButton from "@/components/DangerButton";
 
 export default function DeleteAccountButton() {
   const [step, setStep] = useState<"idle" | "confirm" | "loading">("idle");
@@ -20,13 +21,9 @@ export default function DeleteAccountButton() {
 
   if (step === "idle") {
     return (
-      <button
-        onClick={() => setStep("confirm")}
-        className="btn-ghost btn-ghost-hover"
-        style={{ fontSize: "11px", padding: "5px 12px", color: "#c00", borderColor: "#c00", width: "100%" }}
-      >
+      <DangerButton onClick={() => setStep("confirm")} style={{ fontSize: "11px", padding: "5px 12px", width: "100%" }}>
         Delete account
-      </button>
+      </DangerButton>
     );
   }
 
