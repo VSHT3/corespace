@@ -7,7 +7,7 @@ import { saveObject, deleteObject } from "../actions";
 import ObjectCard from "./ObjectCard";
 import AddObjectSlot from "./AddObjectSlot";
 import ExhibitionTitleEditor from "./ExhibitionTitleEditor";
-import PrintButton from "./PrintButton";
+import ExportButton from "./ExportButton";
 import WordCountSummary from "./WordCountSummary";
 import RubricPanel from "./RubricPanel";
 import ObjectIdeasButton from "./ObjectIdeasButton";
@@ -75,7 +75,7 @@ export default async function ExhibitionPage({ params }: { params: Promise<{ id:
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.5rem", flexShrink: 0 }}>
           <span className="tag tag-yellow">Prompt {ex.prompt_id}</span>
-          <PrintButton exhibitionId={id} />
+          <ExportButton exhibitionId={id} />
           <DeleteExhibitionButton exhibitionId={id} />
         </div>
       </div>

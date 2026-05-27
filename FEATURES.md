@@ -44,9 +44,7 @@
 - IB marking rubric reference panel
 - Object ideas panel (per-prompt AI suggestions)
 - Word count summary bar with total/950 target
-- Print button + keyboard shortcut (`P`)
-- Keyboard shortcuts: `P` print
-- Plain text export (`/api/tok/export-text`) — all objects + prompt in one file
+- Unified Export overlay: preview + download TXT / MD / Print PDF
 - Copy-to-clipboard on justifications
 - Accordion-collapsed AI sections (scoring, KQs, chat) — card stays compact by default
 - Mobile responsive: workspace grid → single column, 2-col object views → stack

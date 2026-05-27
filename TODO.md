@@ -10,6 +10,7 @@
 
 ### AI & Features
 - [ ] **Object recommendator** — `ObjectIdeasButton` exists but is generic. Add per-object recommendations tied to the specific prompt + existing objects (avoid duplicates). Show suggestions inline in the add-object form.
+- [ ] **Object justification** — Generate object button should take into account pre-existing written justification. 
 - [ ] **AI call counting is inaccurate** — dashboard/profile counts 1 per object with justification + 1 per scores object, but doesn't count actual API calls (generating, improving, scoring, KQs, chat). Build a proper `ai_usage` table or increment a counter per profile.
 - [ ] **Justification word count target metadata** — WordCountSummary uses 950 total target. The IB Exhibition limit is 950 words for all 3 justifications combined. Show per-justification target (≈300) in the card.
 - [ ] **AI usage gate (server-side)** — free tier limits (20 calls/month) only displayed on profile, not enforced server-side. Reject AI calls when limit exceeded.
