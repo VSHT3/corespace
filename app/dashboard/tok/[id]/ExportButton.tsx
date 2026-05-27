@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useToast } from "@/lib/toast";
 
 interface Props {
@@ -39,27 +40,25 @@ export default function ExportButton({ exhibitionId }: Props) {
     if (open) fetchContent();
   }, [open, fetchContent]);
 
+  useEffect(() => {
+    if (open) document.body.style.overflow = "hidden";
+    else document.body.style.overflow = "";
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
+
   function mdFromText(text: string): string {
     const lines = text.split("\n");
     const md: string[] = [];
-    let inObject = false;
     for (const line of lines) {
       const t = line.trim();
-      if (t.startsWith("TOK EXHIBITION")) {
-        md.push("# TOK Exhibition");
-        continue;
-      }
+      if (t.startsWith("TOK EXHIBITION")) { md.push("# TOK Exhibition"); continue; }
       if (t.startsWith("=")) continue;
       if (t.startsWith("-".repeat(20))) continue;
       if (t.startsWith("Title:")) { md.push(`**${t}**`); continue; }
       if (t.startsWith("Prompt ")) { md.push(`*${t}*`); continue; }
       if (t.startsWith("Exported:")) { md.push(`*${t}*`); continue; }
-      if (t.startsWith("Prompt description:")) { md.push("\n" + t); continue; }
-      if (t.endsWith("Object") && !t.includes(":") && !t.startsWith(" ")) {
-        md.push(`\n---\n\n### ${t}`);
-        inObject = true;
-        continue;
-      }
+      if (t.startsWith("Prompt description:")) { md.push(`\n${t}`); continue; }
+      if (t.endsWith("Object") && !t.includes(":") && !t.startsWith(" ")) { md.push(`\n---\n\n### ${t}`); continue; }
       if (t.startsWith("Object:")) { md.push(`\n**${t}**`); continue; }
       if (t.startsWith("Type:")) { md.push(`\n*${t}*`); continue; }
       if (t.startsWith("Description:")) { md.push(`\n${t}`); continue; }
@@ -82,11 +81,10 @@ export default function ExportButton({ exhibitionId }: Props) {
     URL.revokeObjectURL(a.href);
   }
 
-  function formatPreview(text: string): string {
-    return text.split("\n").slice(0, 40).join("\n") + (text.split("\n").length > 40 ? "\n\n..." : "");
+  function handlePrint() {
+    setOpen(false);
+    setTimeout(() => window.print(), 100);
   }
-
-  const displayText = mode === "md" ? mdFromText(content) : content;
 
   return (
     <>
@@ -98,13 +96,13 @@ export default function ExportButton({ exhibitionId }: Props) {
         Export
       </button>
 
-      {open && (
+      {open && typeof document !== "undefined" && createPortal(
         <div
           style={{
             position: "fixed",
             inset: 0,
-            zIndex: 9999,
-            background: "rgba(26,26,26,0.4)",
+            zIndex: 99999,
+            background: "rgba(26,26,26,0.45)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -119,7 +117,7 @@ export default function ExportButton({ exhibitionId }: Props) {
               borderRadius: "var(--radius)",
               width: "100%",
               maxWidth: "680px",
-              maxHeight: "90vh",
+              maxHeight: "min(90vh, 700px)",
               display: "flex",
               flexDirection: "column",
               boxShadow: "10px 10px 0 0 var(--fg)",
@@ -185,8 +183,8 @@ export default function ExportButton({ exhibitionId }: Props) {
               flex: 1,
               overflow: "auto",
               padding: "1rem 1.25rem",
-              minHeight: "200px",
-              maxHeight: "50vh",
+              minHeight: "160px",
+              maxHeight: "400px",
             }}>
               {loading ? (
                 <p style={{ color: "var(--muted)", fontSize: "13px" }}>Loading…</p>
@@ -200,7 +198,9 @@ export default function ExportButton({ exhibitionId }: Props) {
                   wordBreak: "break-word",
                   color: "var(--fg)",
                 }}>
-                  {mode === "preview" ? formatPreview(content) : displayText}
+                  {mode === "preview"
+                    ? (content.split("\n").slice(0, 40).join("\n") + (content.split("\n").length > 40 ? "\n\n..." : ""))
+                    : (mode === "md" ? mdFromText(content) : content)}
                 </pre>
               )}
             </div>
@@ -211,11 +211,12 @@ export default function ExportButton({ exhibitionId }: Props) {
               gap: "8px",
               padding: "0.75rem 1.25rem",
               borderTop: "2px solid var(--border)",
+              flexWrap: "wrap",
             }}>
               <button
                 onClick={() => download(content, `tok-exhibition-${exhibitionId.slice(0, 8)}.txt`, "text/plain")}
                 className="btn-primary btn-primary-hover"
-                style={{ flex: 1, fontSize: "11px", padding: "6px 12px" }}
+                style={{ flex: "1 1 140px", fontSize: "11px", padding: "6px 12px" }}
               >
                 Download TXT
               </button>
@@ -225,20 +226,21 @@ export default function ExportButton({ exhibitionId }: Props) {
                   download(md, `tok-exhibition-${exhibitionId.slice(0, 8)}.md`, "text/markdown");
                 }}
                 className="btn-primary btn-primary-hover"
-                style={{ flex: 1, fontSize: "11px", padding: "6px 12px" }}
+                style={{ flex: "1 1 140px", fontSize: "11px", padding: "6px 12px" }}
               >
                 Download MD
               </button>
               <button
-                onClick={() => { window.print(); setOpen(false); }}
+                onClick={handlePrint}
                 className="btn-ghost btn-ghost-hover"
-                style={{ flex: 1, fontSize: "11px", padding: "6px 12px" }}
+                style={{ flex: "1 1 140px", fontSize: "11px", padding: "6px 12px" }}
               >
                 Print PDF
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
