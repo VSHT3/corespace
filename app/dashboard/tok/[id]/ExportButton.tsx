@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useToast } from "@/lib/toast";
 
@@ -10,10 +10,12 @@ interface Props {
 
 export default function ExportButton({ exhibitionId }: Props) {
   const [open, setOpen] = useState(false);
+  const [exiting, setExiting] = useState(false);
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"preview" | "txt" | "md">("preview");
   const { showToast } = useToast();
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(null);
 
   const url = `/api/tok/export-text?id=${exhibitionId}`;
 
@@ -24,27 +26,47 @@ export default function ExportButton({ exhibitionId }: Props) {
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: "Load failed" }));
         showToast(err.error ?? "Load failed", "error");
-        setOpen(false);
+        close();
         return;
       }
       setContent(await res.text());
     } catch {
       showToast("Load failed", "error");
-      setOpen(false);
+      close();
     } finally {
       setLoading(false);
     }
   }, [url, showToast]);
 
   useEffect(() => {
-    if (open) fetchContent();
-  }, [open, fetchContent]);
+    if (open && !exiting) fetchContent();
+  }, [open, exiting, fetchContent]);
 
   useEffect(() => {
-    if (open) document.body.style.overflow = "hidden";
+    if (open && !exiting) document.body.style.overflow = "hidden";
     else document.body.style.overflow = "";
     return () => { document.body.style.overflow = ""; };
+  }, [open, exiting]);
+
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape" && open) close();
+    }
+    if (open) window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
   }, [open]);
+
+  function close() {
+    setExiting(true);
+    timerRef.current = setTimeout(() => {
+      setOpen(false);
+      setExiting(false);
+    }, 180);
+  }
+
+  useEffect(() => {
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, []);
 
   function mdFromText(text: string): string {
     const lines = text.split("\n");
@@ -82,9 +104,11 @@ export default function ExportButton({ exhibitionId }: Props) {
   }
 
   function handlePrint() {
-    setOpen(false);
-    setTimeout(() => window.print(), 100);
+    close();
+    setTimeout(() => window.print(), 200);
   }
+
+  const show = open || exiting;
 
   return (
     <>
@@ -96,19 +120,20 @@ export default function ExportButton({ exhibitionId }: Props) {
         Export
       </button>
 
-      {open && typeof document !== "undefined" && createPortal(
+      {show && typeof document !== "undefined" && createPortal(
         <div
           style={{
             position: "fixed",
             inset: 0,
             zIndex: 99999,
-            background: "rgba(26,26,26,0.45)",
+            background: exiting ? "rgba(26,26,26,0)" : "rgba(26,26,26,0.45)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             padding: "1rem",
+            transition: "background 0.18s ease",
           }}
-          onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}
+          onClick={(e) => { if (e.target === e.currentTarget) close(); }}
         >
           <div
             style={{
@@ -117,13 +142,14 @@ export default function ExportButton({ exhibitionId }: Props) {
               borderRadius: "var(--radius)",
               width: "100%",
               maxWidth: "680px",
-              maxHeight: "min(90vh, 700px)",
+              maxHeight: "min(92vh, 800px)",
               display: "flex",
               flexDirection: "column",
-              boxShadow: "10px 10px 0 0 var(--fg)",
+              opacity: exiting ? 0 : 1,
+              transform: exiting ? "translateY(-6px)" : "translateY(0)",
+              transition: "opacity 0.18s ease, transform 0.18s ease",
             }}
           >
-            {/* Header */}
             <div style={{
               display: "flex",
               alignItems: "center",
@@ -133,7 +159,7 @@ export default function ExportButton({ exhibitionId }: Props) {
             }}>
               <span className="eyebrow" style={{ fontSize: "13px" }}>Export Exhibition</span>
               <button
-                onClick={() => setOpen(false)}
+                onClick={close}
                 style={{
                   background: "none",
                   border: "none",
@@ -148,7 +174,6 @@ export default function ExportButton({ exhibitionId }: Props) {
               </button>
             </div>
 
-            {/* Format selector */}
             <div style={{
               display: "flex",
               gap: "4px",
@@ -178,13 +203,12 @@ export default function ExportButton({ exhibitionId }: Props) {
               ))}
             </div>
 
-            {/* Preview area */}
             <div style={{
               flex: 1,
               overflow: "auto",
               padding: "1rem 1.25rem",
-              minHeight: "160px",
-              maxHeight: "400px",
+              minHeight: "220px",
+              maxHeight: "60vh",
             }}>
               {loading ? (
                 <p style={{ color: "var(--muted)", fontSize: "13px" }}>Loading…</p>
@@ -205,7 +229,6 @@ export default function ExportButton({ exhibitionId }: Props) {
               )}
             </div>
 
-            {/* Actions */}
             <div style={{
               display: "flex",
               gap: "8px",
