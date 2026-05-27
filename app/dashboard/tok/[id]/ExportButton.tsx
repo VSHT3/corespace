@@ -203,9 +203,7 @@ export default function ExportButton({ exhibitionId }: Props) {
               minHeight: "280px",
               maxHeight: "55vh",
             }}>
-              {loading ? (
-                <p style={{ color: "var(--muted)", fontSize: "13px" }}>Loading…</p>
-              ) : (
+              {!loading && content && (
                 <pre style={{
                   margin: 0, fontFamily: "monospace", fontSize: "12px",
                   lineHeight: 1.6, whiteSpace: "pre-wrap", wordBreak: "break-word",
