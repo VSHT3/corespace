@@ -32,8 +32,11 @@ export default function ExportButton({ exhibitionId }: Props) {
   }, [url, showToast]);
 
   useEffect(() => {
-    if (open && !visible) fetchContent();
-  }, [open, visible, fetchContent]);
+    if (visible) {
+      const t = setTimeout(fetchContent, 200);
+      return () => clearTimeout(t);
+    }
+  }, [visible, fetchContent]);
 
   useEffect(() => {
     if (visible && !exiting) document.body.style.overflow = "hidden";
