@@ -20,6 +20,7 @@ export default function ExhibitionNotes({ exhibitionId }: Props) {
 
   const [open, setOpen] = useState(false);
   const [notes, setNotes] = useState("");
+  const [hovered, setHovered] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_PREFIX + exhibitionId);
@@ -31,6 +32,8 @@ export default function ExhibitionNotes({ exhibitionId }: Props) {
   }, [notes, exhibitionId]);
 
   if (!mounted) return null;
+
+  const bump = hovered && open;
 
   return createPortal(
     <>
@@ -70,7 +73,9 @@ export default function ExhibitionNotes({ exhibitionId }: Props) {
           right: 0,
           top: "48%",
           transform: open
-            ? "translateX(0) translateY(-50%)"
+            ? (bump
+              ? "translateX(-4px) translateY(calc(-50% - 4px))"
+              : "translateX(0) translateY(-50%)")
             : "translateX(100%) translateY(-50%)",
           zIndex: 49,
           width: "300px",
@@ -81,9 +86,12 @@ export default function ExhibitionNotes({ exhibitionId }: Props) {
           borderRadius: "4px 0 0 4px",
           display: "flex",
           flexDirection: "column",
-          transition: "transform 0.22s ease",
+          transition: "transform 0.15s ease, box-shadow 0.15s ease",
           overflow: "hidden",
+          boxShadow: bump ? "8px 8px 0 0 var(--fg)" : "0 0 0 0 var(--fg)",
         }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
       >
         <div style={{ height: "4px", background: "var(--sky)" }} />
         <div
@@ -107,6 +115,9 @@ export default function ExhibitionNotes({ exhibitionId }: Props) {
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setOpen(false);
+          }}
           placeholder="Jot down thoughts…"
           style={{
             flex: 1,

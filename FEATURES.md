@@ -43,7 +43,7 @@
 - Submission checklist (8 items: 3 auto-tracked, 5 manual)
 - IB marking rubric reference panel
 - Object ideas panel (per-prompt AI suggestions)
-- Word count summary bar with total/950 target
+- Notes sidebar (right-edge flap, localStorage-persisted, Esc dismiss, card-bump hover)
 - Unified Export overlay: preview + download TXT / MD / Print PDF
 - Copy-to-clipboard on justifications
 - Accordion-collapsed AI sections (scoring, KQs, chat) — card stays compact by default
