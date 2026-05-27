@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useToast } from "@/lib/toast";
 
@@ -9,73 +9,58 @@ interface Props {
 }
 
 export default function ExportButton({ exhibitionId }: Props) {
-  const [open, setOpen] = useState(false);
-  const [visible, setVisible] = useState(false);
-  const [exiting, setExiting] = useState(false);
+  const [phase, setPhase] = useState<"idle" | "fetching" | "ready" | "visible" | "exiting">("idle");
   const [content, setContent] = useState("");
-  const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"preview" | "txt" | "md">("preview");
   const { showToast } = useToast();
   const timerRef = useRef<ReturnType<typeof setTimeout>>(null);
-  const rafRef = useRef<number>(0);
-
-  const url = `/api/tok/export-text?id=${exhibitionId}`;
-
-  const fetchContent = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(url);
-      if (!res.ok) { const err = await res.json().catch(() => ({ error: "Load failed" })); showToast(err.error ?? "Load failed", "error"); close(); return; }
-      setContent(await res.text());
-    } catch { showToast("Load failed", "error"); close(); }
-    finally { setLoading(false); }
-  }, [url, showToast]);
 
   useEffect(() => {
-    if (visible) {
-      const t = setTimeout(fetchContent, 200);
-      return () => clearTimeout(t);
-    }
-  }, [visible, fetchContent]);
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, []);
 
   useEffect(() => {
-    if (visible && !exiting) document.body.style.overflow = "hidden";
+    if (phase === "visible") document.body.style.overflow = "hidden";
     else document.body.style.overflow = "";
     return () => { document.body.style.overflow = ""; };
-  }, [visible, exiting]);
+  }, [phase]);
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape" && visible) close();
+      if (e.key === "Escape" && phase === "visible") close();
     }
-    if (visible) window.addEventListener("keydown", handleKey);
+    if (phase === "visible") window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [visible]);
+  }, [phase]);
 
-  function openModal() {
-    setOpen(true);
-    rafRef.current = requestAnimationFrame(() => {
-      rafRef.current = requestAnimationFrame(() => {
-        setVisible(true);
+  async function openModal() {
+    if (phase !== "idle") return;
+    setPhase("fetching");
+    try {
+      const res = await fetch(`/api/tok/export-text?id=${exhibitionId}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Load failed" }));
+        showToast(err.error ?? "Load failed", "error");
+        setPhase("idle");
+        return;
+      }
+      setContent(await res.text());
+      setPhase("ready");
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setPhase("visible");
+        });
       });
-    });
+    } catch {
+      showToast("Load failed", "error");
+      setPhase("idle");
+    }
   }
 
   function close() {
-    setExiting(true);
-    setVisible(false);
-    timerRef.current = setTimeout(() => {
-      setOpen(false);
-      setExiting(false);
-    }, 180);
+    setPhase("exiting");
+    timerRef.current = setTimeout(() => setPhase("idle"), 180);
   }
-
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-      cancelAnimationFrame(rafRef.current);
-    };
-  }, []);
 
   function mdFromText(text: string): string {
     const lines = text.split("\n");
@@ -117,7 +102,9 @@ export default function ExportButton({ exhibitionId }: Props) {
     setTimeout(() => window.print(), 200);
   }
 
-  const shouldRender = open || exiting;
+  const show = phase === "ready" || phase === "visible" || phase === "exiting";
+  const isVisible = phase === "visible";
+  const isExiting = phase === "exiting";
 
   return (
     <>
@@ -126,36 +113,29 @@ export default function ExportButton({ exhibitionId }: Props) {
         className="btn-ghost btn-ghost-hover"
         style={{ fontSize: "11px", padding: "4px 10px" }}
       >
-        Export
+        {phase === "fetching" ? "Loading…" : "Export"}
       </button>
 
-      {shouldRender && typeof document !== "undefined" && createPortal(
+      {show && typeof document !== "undefined" && createPortal(
         <div
           style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 99999,
-            background: visible ? "rgba(26,26,26,0.45)" : "rgba(26,26,26,0)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "1rem",
+            position: "fixed", inset: 0, zIndex: 99999,
+            background: isExiting ? "rgba(26,26,26,0)" : "rgba(26,26,26,0.45)",
+            display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem",
             transition: "background 0.18s ease",
           }}
-          onClick={(e) => { if (e.target === e.currentTarget) close(); }}
+          onClick={(e) => { if (e.target === e.currentTarget && isVisible) close(); }}
         >
           <div
             style={{
               background: "var(--surface)",
               border: "2px solid var(--fg)",
               borderRadius: "var(--radius)",
-              width: "100%",
-              maxWidth: "680px",
+              width: "100%", maxWidth: "680px",
               maxHeight: "min(92vh, 800px)",
-              display: "flex",
-              flexDirection: "column",
-              opacity: visible ? 1 : 0,
-              transform: visible ? "translateY(0)" : "translateY(-6px)",
+              display: "flex", flexDirection: "column",
+              opacity: isVisible ? 1 : 0,
+              transform: isVisible ? "translateY(0)" : "translateY(-6px)",
               transition: "opacity 0.18s ease, transform 0.18s ease",
             }}
           >
@@ -164,13 +144,10 @@ export default function ExportButton({ exhibitionId }: Props) {
               padding: "1rem 1.25rem", borderBottom: "2px solid var(--border)",
             }}>
               <span className="eyebrow" style={{ fontSize: "13px" }}>Export Exhibition</span>
-              <button
-                onClick={close}
-                style={{
-                  background: "none", border: "none", cursor: "pointer",
-                  fontSize: "16px", fontWeight: 700, padding: "2px 6px", lineHeight: 1,
-                }}
-              >
+              <button onClick={close} style={{
+                background: "none", border: "none", cursor: "pointer",
+                fontSize: "16px", fontWeight: 700, padding: "2px 6px", lineHeight: 1,
+              }}>
                 ✕
               </button>
             </div>
@@ -180,9 +157,7 @@ export default function ExportButton({ exhibitionId }: Props) {
               padding: "0.75rem 1.25rem", borderBottom: "1px solid #f0ebe0",
             }}>
               {(["preview", "txt", "md"] as const).map((fmt) => (
-                <button
-                  key={fmt}
-                  onClick={() => setMode(fmt)}
+                <button key={fmt} onClick={() => setMode(fmt)}
                   style={{
                     background: mode === fmt ? "var(--fg)" : "transparent",
                     color: mode === fmt ? "var(--bg)" : "var(--fg)",
@@ -199,21 +174,17 @@ export default function ExportButton({ exhibitionId }: Props) {
 
             <div style={{
               flex: 1, overflow: "auto",
-              padding: "1rem 1.25rem",
-              minHeight: "280px",
-              maxHeight: "55vh",
+              padding: "1rem 1.25rem", minHeight: "280px", maxHeight: "55vh",
             }}>
-              {!loading && content && (
-                <pre style={{
-                  margin: 0, fontFamily: "monospace", fontSize: "12px",
-                  lineHeight: 1.6, whiteSpace: "pre-wrap", wordBreak: "break-word",
-                  color: "var(--fg)",
-                }}>
-                  {mode === "preview"
-                    ? (content.split("\n").slice(0, 40).join("\n") + (content.split("\n").length > 40 ? "\n\n..." : ""))
-                    : (mode === "md" ? mdFromText(content) : content)}
-                </pre>
-              )}
+              <pre style={{
+                margin: 0, fontFamily: "monospace", fontSize: "12px",
+                lineHeight: 1.6, whiteSpace: "pre-wrap", wordBreak: "break-word",
+                color: "var(--fg)",
+              }}>
+                {mode === "preview"
+                  ? (content.split("\n").slice(0, 40).join("\n") + (content.split("\n").length > 40 ? "\n\n..." : ""))
+                  : (mode === "md" ? mdFromText(content) : content)}
+              </pre>
             </div>
 
             <div style={{
@@ -221,21 +192,18 @@ export default function ExportButton({ exhibitionId }: Props) {
               padding: "0.75rem 1.25rem", borderTop: "2px solid var(--border)",
               flexWrap: "wrap",
             }}>
-              <button
-                onClick={() => downloadFile(content, `tok-exhibition-${exhibitionId.slice(0, 8)}.txt`, "text/plain")}
+              <button onClick={() => downloadFile(content, `tok-exhibition-${exhibitionId.slice(0, 8)}.txt`, "text/plain")}
                 className="btn-primary btn-primary-hover"
-                style={{ flex: "1 1 140px", fontSize: "11px", padding: "6px 12px" }}
-              >
+                style={{ flex: "1 1 140px", fontSize: "11px", padding: "6px 12px" }}>
                 Download TXT
               </button>
-              <button
-                onClick={() => { const md = mdFromText(content); downloadFile(md, `tok-exhibition-${exhibitionId.slice(0, 8)}.md`, "text/markdown"); }}
+              <button onClick={() => { const md = mdFromText(content); downloadFile(md, `tok-exhibition-${exhibitionId.slice(0, 8)}.md`, "text/markdown"); }}
                 className="btn-primary btn-primary-hover"
-                style={{ flex: "1 1 140px", fontSize: "11px", padding: "6px 12px" }}
-              >
+                style={{ flex: "1 1 140px", fontSize: "11px", padding: "6px 12px" }}>
                 Download MD
               </button>
-              <button onClick={handlePrint} className="btn-ghost btn-ghost-hover" style={{ flex: "1 1 140px", fontSize: "11px", padding: "6px 12px" }}>
+              <button onClick={handlePrint} className="btn-ghost btn-ghost-hover"
+                style={{ flex: "1 1 140px", fontSize: "11px", padding: "6px 12px" }}>
                 Print PDF
               </button>
             </div>
