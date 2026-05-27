@@ -1,31 +1,27 @@
 "use client";
 
-import { useState } from "react";
-
-interface Props {
-  onClick?: () => void;
-  disabled?: boolean;
-  children: React.ReactNode;
-  style?: React.CSSProperties;
-  type?: "button" | "submit";
-}
-
 export default function DangerButton({
   onClick,
   disabled,
   children,
   style,
   type = "button",
-}: Props) {
-  const [enterPos, setEnterPos] = useState<{ x: number; y: number } | null>(null);
-
+}: {
+  onClick?: () => void;
+  disabled?: boolean;
+  children: React.ReactNode;
+  style?: React.CSSProperties;
+  type?: "button" | "submit";
+}) {
   function handleMouseEnter(e: React.MouseEvent<HTMLButtonElement>) {
     const rect = e.currentTarget.getBoundingClientRect();
-    setEnterPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    e.currentTarget.style.setProperty("--enter-x", `${e.clientX - rect.left}px`);
+    e.currentTarget.style.setProperty("--enter-y", `${e.clientY - rect.top}px`);
   }
 
-  function handleMouseLeave() {
-    setEnterPos(null);
+  function handleMouseLeave(e: React.MouseEvent<HTMLButtonElement>) {
+    e.currentTarget.style.setProperty("--enter-x", "50%");
+    e.currentTarget.style.setProperty("--enter-y", "50%");
   }
 
   return (
@@ -36,13 +32,7 @@ export default function DangerButton({
       className="btn-danger"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      style={
-        {
-          "--enter-x": enterPos ? `${enterPos.x}px` : "50%",
-          "--enter-y": enterPos ? `${enterPos.y}px` : "50%",
-          ...style,
-        } as React.CSSProperties
-      }
+      style={style}
     >
       {children}
     </button>

@@ -1,21 +1,15 @@
 "use client";
 
-import { useState } from "react";
-
-interface Props {
-  children: React.ReactNode;
-}
-
-export default function DangerSubmitButton({ children }: Props) {
-  const [enterPos, setEnterPos] = useState<{ x: number; y: number } | null>(null);
-
+export default function DangerSubmitButton({ children }: { children: React.ReactNode }) {
   function handleMouseEnter(e: React.MouseEvent<HTMLButtonElement>) {
     const rect = e.currentTarget.getBoundingClientRect();
-    setEnterPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    e.currentTarget.style.setProperty("--enter-x", `${e.clientX - rect.left}px`);
+    e.currentTarget.style.setProperty("--enter-y", `${e.clientY - rect.top}px`);
   }
 
-  function handleMouseLeave() {
-    setEnterPos(null);
+  function handleMouseLeave(e: React.MouseEvent<HTMLButtonElement>) {
+    e.currentTarget.style.setProperty("--enter-x", "50%");
+    e.currentTarget.style.setProperty("--enter-y", "50%");
   }
 
   return (
@@ -24,14 +18,7 @@ export default function DangerSubmitButton({ children }: Props) {
       className="btn-danger"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      style={
-        {
-          fontSize: "11px",
-          padding: "4px 10px",
-          "--enter-x": enterPos ? `${enterPos.x}px` : "50%",
-          "--enter-y": enterPos ? `${enterPos.y}px` : "50%",
-        } as React.CSSProperties
-      }
+      style={{ fontSize: "11px", padding: "4px 10px" }}
     >
       {children}
     </button>
