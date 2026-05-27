@@ -14,14 +14,22 @@ export default function DangerButton({
   type?: "button" | "submit";
 }) {
   function handleMouseEnter(e: React.MouseEvent<HTMLButtonElement>) {
-    const rect = e.currentTarget.getBoundingClientRect();
-    e.currentTarget.style.setProperty("--enter-x", `${e.clientX - rect.left}px`);
-    e.currentTarget.style.setProperty("--enter-y", `${e.clientY - rect.top}px`);
+    const btn = e.currentTarget;
+    btn.style.setProperty("--clip-size", "0%");
+    btn.classList.remove("btn-danger-exiting");
+    const rect = btn.getBoundingClientRect();
+    btn.style.setProperty("--enter-x", `${e.clientX - rect.left}px`);
+    btn.style.setProperty("--enter-y", `${e.clientY - rect.top}px`);
+    btn.style.color = "#000";
+    btn.classList.add("btn-danger-entering");
   }
 
   function handleMouseLeave(e: React.MouseEvent<HTMLButtonElement>) {
-    e.currentTarget.style.setProperty("--enter-x", "50%");
-    e.currentTarget.style.setProperty("--enter-y", "50%");
+    const btn = e.currentTarget;
+    btn.style.color = "";
+    btn.style.setProperty("--clip-size", "150%");
+    btn.classList.remove("btn-danger-entering");
+    btn.classList.add("btn-danger-exiting");
   }
 
   return (
