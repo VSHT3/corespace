@@ -56,7 +56,7 @@ Exhibition prompt: "${context.prompt ?? ""}"
 Object: "${context.objectTitle ?? ""}" (type: ${context.objectType || "unspecified"})
 ${context.objectDescription ? `Student's description: ${context.objectDescription}` : ""}
 
-Write a clear, concise justification (3-4 sentences) explaining why this object is relevant to the prompt. Focus on the knowledge question it raises, the connection to ways of knowing or areas of knowledge, and what makes this object analytically interesting for the prompt. Write in first person as if the student is explaining their choice. Do not be generic — be specific to this object and this prompt.`;
+Write a justification of approximately 280–320 words explaining why this object is relevant to the prompt. Focus on the knowledge question it raises, the connection to ways of knowing or areas of knowledge, and what makes this object analytically interesting for the prompt. Write in first person as if the student is explaining their choice. Do not be generic — be specific to this object and this prompt.`;
 
     case "object_ideas":
       return `${BASE_CONTEXT}
@@ -262,6 +262,7 @@ export async function POST(request: NextRequest) {
   const maxOutputTokens =
     intent === "object_scoring" || intent === "object_check" ? 400
       : intent === "knowledge_question" || intent === "object_ideas" || intent === "prompt_explainer" ? 1500
+      : intent === "object_justification" ? 2000
       : 1000;
 
   const THINKING_BUDGET: Record<AIIntent, number | undefined> = {

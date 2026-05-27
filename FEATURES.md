@@ -23,9 +23,10 @@
 ### Exhibition Workspace (`/dashboard/tok/[id]`)
 - Inline title editing
 - 3 object slots with accent colors (pink, mint, sky)
-- Object editor: title, type (8 IB categories), description (500 char limit)
+- Object editor: title, type (8 IB categories, custom Select with accent-colored tactile dropdown), description (500 char limit)
+- Rich text justification editor with markdown bold/italic rendering and Ctrl+B/I keyboard shortcuts
 - Auto-save justification (2s debounced)
-- Live word count per justification + color-coded progress (target ~300, max 950)
+- Live word count per justification + color-coded progress (target ~280-320, max 950)
 - Live word count synced across workspace via `CustomEvent`
 
 ### AI Features (all via `/api/ai`, `gemini-2.5-flash`)
@@ -145,8 +146,9 @@
 - Single `/api/ai` endpoint with 8 intents, system prompts built server-side
 - Reference docs loaded at module init (`lib/ai-docs/tok-overview.md`, `-guide.md`, `justification-examples.md`)
 - In-memory rate limiter: 20 req/min per IP, `Retry-After` header on 429
-- `maxOutputTokens` tuned per intent: 400 for JSON, 1200 for multi-item, 1000 default
+- `maxOutputTokens` tuned per intent: 400 for JSON, 2000 for justification, 1500 for multi-item, 1000 default
 - Error handling: quota/safety/network fallbacks
+- JSON responses stripped of markdown code fences before parsing (resilient to Gemini output formatting)
 
 ## Database (Supabase)
 

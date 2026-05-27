@@ -5,6 +5,8 @@ import { createPortal } from "react-dom";
 import ReactMarkdown from "react-markdown";
 import type { TOKObject } from "@/types";
 import { useToast } from "@/lib/toast";
+import { Select } from "@/components/Select";
+import RichEditor from "@/components/RichEditor";
 
 const NOISE_DATA_URI =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E";
@@ -90,7 +92,6 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
   const [scoreLoading, setScoreLoading] = useState(false);
   const [scoreError, setScoreError] = useState("");
   const [scoreResult, setScoreResult] = useState<{ score: number; strength: string; weakness: string; tip: string } | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<{ role: "user" | "ai"; text: string }[]>([]);
   const [chatInput, setChatInput] = useState("");
@@ -109,7 +110,6 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
   const [rendered, setRendered] = useState(false);
   const [exiting, setExiting] = useState(false);
   const [entered, setEntered] = useState(false);
-  const focusRef = useRef<HTMLTextAreaElement>(null);
   const exitTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
 
   const DESC_MAX = 500;
@@ -139,13 +139,6 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
   }, [slot, wordCount]);
 
   useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
-  }, [justification]);
-
-  useEffect(() => {
     if (!focusMode) {
       setExiting(true);
       document.body.style.overflow = "";
@@ -165,7 +158,7 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
     const raf = requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         setEntered(true);
-        focusRef.current?.focus();
+        document.getElementById("focus-justification-editor")?.focus();
       });
     });
 
@@ -404,7 +397,8 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Check failed");
-      setCheckResult(JSON.parse(data.text));
+      const checkCleaned = data.text.replace(/```(?:json)?\s*/gi, "").replace(/\s*```/g, "").trim();
+      setCheckResult(JSON.parse(checkCleaned));
     } catch (e: unknown) {
       setCheckError(e instanceof Error ? e.message : "Check failed");
     } finally {
@@ -435,7 +429,8 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Scoring failed");
-      const parsed = JSON.parse(data.text);
+      const cleaned = data.text.replace(/```(?:json)?\s*/gi, "").replace(/\s*```/g, "").trim();
+      const parsed = JSON.parse(cleaned);
       setScoreResult(parsed);
 
       // Persist score to DB (fire-and-forget)
@@ -565,23 +560,24 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
                 <label style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: "4px" }}>
                   Object Type
                 </label>
-                <select
+                <Select
                   name="object_type"
                   defaultValue={object?.object_type ?? ""}
-                  className="field-input"
-                >
-                  <option value="">— Select type —</option>
-                  <option value="Personal">Personal</option>
-                  <option value="Cultural">Cultural</option>
-                  <option value="Natural">Natural</option>
-                  <option value="Linguistic">Linguistic</option>
-                  <option value="Mathematical">Mathematical</option>
-                  <option value="Scientific">Scientific</option>
-                  <option value="Artistic">Artistic</option>
-                  <option value="Historical">Historical</option>
-                  <option value="Technological">Technological</option>
-                  <option value="Other">Other</option>
-                </select>
+                  placeholder="— Select type —"
+                  accentColor={accent}
+                  options={[
+                    { value: "Personal", label: "Personal" },
+                    { value: "Cultural", label: "Cultural" },
+                    { value: "Natural", label: "Natural" },
+                    { value: "Linguistic", label: "Linguistic" },
+                    { value: "Mathematical", label: "Mathematical" },
+                    { value: "Scientific", label: "Scientific" },
+                    { value: "Artistic", label: "Artistic" },
+                    { value: "Historical", label: "Historical" },
+                    { value: "Technological", label: "Technological" },
+                    { value: "Other", label: "Other" },
+                  ]}
+                />
               </div>
               <div style={{ marginTop: "0.6rem" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
@@ -829,14 +825,13 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
                   ))}
                 </div>
               ) : (
-                <textarea
-                  ref={textareaRef}
+                <RichEditor
                   value={justification}
-                  onChange={(e) => setJustification(e.target.value)}
+                  onChange={setJustification}
                   onBlur={handleSaveJustification}
                   placeholder="Write your justification here, or generate one with AI above."
                   className="field-input"
-                  style={{ resize: "none", overflow: "hidden", minHeight: "180px" }}
+                  style={{ minHeight: "180px" }}
                 />
               )}
 
@@ -1030,7 +1025,8 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
 
         <div
           onClick={(e) => {
-            if (e.target !== focusRef.current) setFocusMode(false);
+            const el = document.getElementById("focus-justification-editor");
+            if (el && !el.contains(e.target as Node)) setFocusMode(false);
           }}
           style={{
             position: "fixed",
@@ -1101,12 +1097,13 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
             </button>
           </div>
 
-          <textarea
-            ref={focusRef}
+          <RichEditor
             value={justification}
-            onChange={(e) => setJustification(e.target.value)}
+            onChange={setJustification}
             onBlur={handleSaveJustification}
             placeholder="Write your justification here…"
+            editorId="focus-justification-editor"
+            spellcheck={false}
             style={{
               flex: 1,
               maxWidth: "760px",
@@ -1115,9 +1112,7 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
               padding: "1.5rem 1.75rem",
               fontSize: "18px",
               lineHeight: 1.9,
-              fontFamily: "inherit",
-              color: "#000",
-              backgroundColor: "#ede4d0",
+              background: "#ede4d0",
               backgroundImage: `url("${NOISE_DATA_URI}"), url("${PAPER_NOISE_URI}")`,
               backgroundRepeat: "repeat, repeat",
               backgroundSize: "200px 200px, 80px 80px",
@@ -1125,8 +1120,9 @@ export default function ObjectCard({ slot, exhibitionId, object, prompt, saveObj
               border: "none",
               borderRadius: "4px",
               outline: "none",
-              resize: "none",
               boxShadow: "0 4px 32px rgba(0,0,0,0.25)",
+              minHeight: "unset",
+              overflowY: "auto",
             }}
           />
 
